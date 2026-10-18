@@ -11,35 +11,15 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="flag-ca" viewBox="0 0 200 100">
-    <rect width="200" height="100" fill="#fff"/>
-    <rect width="50" height="100" fill="#d52b1e"/>
-    <rect x="150" width="50" height="100" fill="#d52b1e"/>
-    <path fill="#d52b1e" d="M100 10 L107 24 L116 20 L112 43 L124 32 L127 39 L138 37 L133 49 L139 52 L119 67 L122 74 L102 71 L102 90 L98 90 L98 71 L78 74 L81 67 L61 52 L67 49 L62 37 L73 39 L76 32 L88 43 L84 20 L93 24 Z"/>
-  </symbol>
-</svg>
-
-<div class="backdrop" aria-hidden="true">
-  <div class="grid"></div>
-  <div class="monitors" id="monitors"></div>
-  <svg class="flag-bg flag-bg-1"><use href="#flag-ca"/></svg>
-  <svg class="flag-bg flag-bg-2"><use href="#flag-ca"/></svg>
-  <div class="scan"></div>
-</div>
-
 <header class="top">
   <div class="wrap top-inner">
-    <div class="brand"><svg class="flag" aria-label="Canadian flag" role="img"><use href="#flag-ca"/></svg> Market Leaders <span class="live"><i></i>LIVE DESK</span></div>
-    <div class="clocks" id="clocks"></div>
+    <div class="brand"><span class="logo" aria-hidden="true">▲</span> Market Leaders</div>
     <div class="updated" id="updated">Loading data…</div>
   </div>
-  <div class="ticker" aria-label="Market ticker"><div class="ticker-track" id="ticker"></div></div>
 </header>
 
 <main class="wrap">
   <section class="hero">
-    <div class="kicker">Trading desk · Market control room</div>
     <h1>The strongest stocks in seven markets</h1>
     <p>Ranked on recent performance first, then analyst ratings, then company size. Updated every weekday after US markets close.</p>
   </section>
@@ -71,7 +51,7 @@
   </section>
 </main>
 
-<footer class="wrap foot"><svg class="flag" aria-hidden="true"><use href="#flag-ca"/></svg> Data: Yahoo Finance via yfinance. Index member lists: Wikipedia, Nikkei Inc. and exchange listings.</footer>
+<footer class="wrap foot">Data: Yahoo Finance via yfinance. Index member lists: Wikipedia, Nikkei Inc. and exchange listings.</footer>
 
 <script src="app.js"></script>
 </body>
