@@ -1,61 +1,221 @@
 symbol,name
+VNP,5N Plus Inc.
+ABRA,AbraSilver Resource Corp.
+AAV,Advantage Energy Ltd.
+ARE,Aecon Group Inc.
 AEM,Agnico Eagle Mines Limited
+AC,Air Canada
+AGI,Alamos Gold Inc.
+AQN,Algonquin Power & Utilities Corp.
 ATD,Alimentation Couche-Tard Inc.
+AAUC,Allied Gold Corporation
+AP.UN,Allied Properties Real Estate Investment Trust
+ALA,AltaGas Ltd.
+AIF,Altus Group Limited
+USA,Americas Gold And Silver Corporation
+ARX,ARC Resources Ltd.
+ARIS,Aris Mining Corporation
+ATZ,Aritzia Inc.
+ACO.X,ATCO Ltd.
+ATH,Athabasca Oil Corporation
+ATRL,AtkinsRéalis Group Inc.
+ATS,ATS Corporation
+ASM,Avino Silver & Gold Mines Ltd.
+AYA,Aya Gold & Silver Inc.
+BTO,B2Gold Corp.
+BDGI,Badger Infrastructure Solutions Ltd.
 BMO,Bank of Montreal
 BNS,Bank of Nova Scotia
-ABX,Barrick Mining Corporation
+ABX,Barrick Gold Corporation
+BHC,Bausch Health Companies Inc.
+BTE,Baytex Energy Corp.
 BCE,BCE Inc.
+BIR,Birchcliff Energy Ltd.
+BDT,Bird Construction Inc.
+BB,BlackBerry Limited
+BEI.UN,Boardwalk Real Estate Investment Trust
+BBD.B,Bombardier Inc.
+BLX,Boralex Inc.
+BYD,Boyd Group Services Inc.
 BAM,Brookfield Asset Management Ltd.
+BBUC,Brookfield Business Corporation
 BN,Brookfield Corporation
 BIP.UN,Brookfield Infrastructure Partners L.P.
+BEP.UN,Brookfield Renewable Partners L.P.
+DOO,BRP Inc.
 CAE,CAE Inc.
 CCO,Cameco Corporation
+CAR.UN,Canadian Apartment Properties Real Estate Investment Trust
 CM,Canadian Imperial Bank of Commerce
 CNR,Canadian National Railway Company
 CNQ,Canadian Natural Resources Limited
 CP,Canadian Pacific Kansas City Limited
 CTC.A,Canadian Tire Corporation Limited
+CU,Canadian Utilities Limited
+CPX,Capital Power Corporation
+CS,Capstone Copper Corp.
+CJT,Cargojet Inc.
 CCL.B,CCL Industries Inc.
 CLS,Celestica Inc.
 CVE,Cenovus Energy Inc.
+CG,Centerra Gold Inc.
+CEU,CES Energy Solutions Corp.
 GIB.A,CGI Inc.
+CSH.UN,Chartwell Retirement Residences
+CHP.UN,Choice Properties Real Estate Investment Trust
+CCA,Cogeco Communications Inc.
+CIGI,Colliers International Group Inc.
 CSU,Constellation Software Inc.
+CRR.UN,Crombie Real Estate Investment Trust
+CRT.UN,CT Real Estate Investment Trust
+CURA,"Curaleaf Holdings, Inc."
+DFY,Definity Financial Corporation
+DML,Denison Mines Corp.
+DSG,Descartes Systems Group Inc.
+DSV,Discovery Silver Corp.
 DOL,Dollarama Inc.
+DIR.UN,Dream Industrial Real Estate Investment Trust
+DPM,Dundee Precious Metals Inc.
+ELD,Eldorado Gold Corporation
+EFN,Element Fleet Management Corp.
 EMA,Emera Incorporated
+EMP.A,Empire Company Limited
 ENB,Enbridge Inc.
+EDR,Endeavour Silver Corp.
+EFR,Energy Fuels Inc.
+EQB,EQB Inc.
+EFX,Equifax Inc.
+EQX,Equinox Gold Corp.
+ERO,Ero Copper Corp.
+EIF,Exchange Income Corporation
 FFH,Fairfax Financial Holdings Limited
+FTT,Finning International Inc.
+FCR.UN,First Capital Real Estate Investment Trust
+AG,First Majestic Silver Corp.
 FM,First Quantum Minerals Ltd.
 FSV,FirstService Corporation
 FTS,Fortis Inc.
+FVI,Fortuna Mining Corp.
 FNV,Franco-Nevada Corporation
+FRU,Freehold Royalties Ltd.
+GMIN,G Mining Ventures Corp.
 WN,George Weston Limited
+GFL,GFL Environmental Inc.
+GEI,Gibson Energy Inc.
 GIL,Gildan Activewear Inc.
+GSY,goeasy Ltd.
+GRT.UN,Granite Real Estate Investment Trust
+GWO,Great-West Lifeco Inc.
+HR.UN,H&R Real Estate Investment Trust
+HWX,Headwater Exploration Inc.
+HBM,Hudbay Minerals Inc.
 H,Hydro One Limited
+IAU,I-80 Gold Corp.
+IAG,iA Financial Corporation Inc.
+IMG,Iamgold Corporation
+IGM,IGM Financial Inc.
 IMO,Imperial Oil Limited
 IFC,Intact Financial Corporation
+IPCO,International Petroleum Corporation
+IIP.UN,InterRent Real Estate Investment Trust
+IVN,Ivanhoe Mines Ltd.
+JWEL,Jamieson Wellness Inc.
+KNT,K92 Mining Inc.
+KEL,Kelt Exploration Ltd.
+KEY,Keyera Corp.
+KMP.UN,Killam Apartment Real Estate Investment Trust
+KXS,Kinaxis Inc.
 K,Kinross Gold Corporation
+LIF,Labrador Iron Ore Royalty Corporation
+LB,Laurentian Bank of Canada
+LSPD,Lightspeed Commerce Inc.
+LNR,Linamar Corporation
+LAC,Lithium Americas Corp.
 L,Loblaw Companies Limited
+LUG,Lundin Gold Inc.
+LUN,Lundin Mining Corporation
 MG,Magna International Inc.
 MFC,Manulife Financial Corporation
+MFI,Maple Leaf Foods Inc.
+MDA,MDA Space Ltd.
+MX,Methanex Corporation
 MRU,Metro Inc.
+MAU,Montage Gold Corp.
+MTL,Mullen Group Ltd.
 NA,National Bank of Canada
+NXE,NexGen Energy Ltd.
+NFI,NFI Group Inc.
+NGEX,NGEx Minerals Ltd.
+NWC,North West Company Inc.
+NPI,Northland Power Inc.
+NG,NovaGold Resources Inc.
 NTR,Nutrien Ltd.
+OGC,OceanaGold Corporation
+ONEX,Onex Corporation
 OTEX,Open Text Corporation
+OLA,Orla Mining Ltd.
+OR,Osisko Gold Royalties Ltd.
+PAAS,Pan American Silver Corp.
+POU,Paramount Resources Ltd.
+PXT,Parex Resources Inc.
 PPL,Pembina Pipeline Corporation
+PPTA,Perpetua Resources Corp.
+PET,Pet Valu Holdings Ltd.
+PEY,Peyto Exploration & Development Corp.
 POW,Power Corporation of Canada
+PSK,PrairieSky Royalty Ltd.
+PBH,Premium Brands Holdings Corporation
+PMZ.UN,Primaris Real Estate Investment Trust
+QBR.B,Quebecor Inc.
+RBA,"RB Global, Inc."
 QSR,Restaurant Brands International Inc.
+RCH,Richelieu Hardware Ltd.
+REI.UN,RioCan Real Estate Investment Trust
 RCI.B,Rogers Communications Inc.
 RY,Royal Bank of Canada
+RUS,Russel Metals Inc.
 SAP,Saputo Inc.
+SEA,Seabridge Gold Inc.
+SES,Secure Energy Services Inc.
 SHOP,Shopify Inc.
+SIA,Sienna Senior Living Inc.
+SVM,Silvercorp Metals Inc.
+SKE,Skeena Resources Limited
+SRU.UN,SmartCentres Real Estate Investment Trust
+SOBO,South Bow Corporation
+SII,Sprott Inc.
+SSRM,SSR Mining Inc.
+STN,Stantec Inc.
+SJ,Stella-Jones Inc.
+SCR,Strathcona Resources Ltd.
 SLF,Sun Life Financial Inc.
 SU,Suncor Energy Inc.
+SPB,Superior Plus Corp.
+TVE,Tamarack Valley Energy Ltd.
+TKO,Taseko Mines Limited
 TRP,TC Energy Corporation
 TECK.B,Teck Resources Limited
 T,Telus Corporation
+TVK,TerraVest Industries Inc.
+TFII,TFI International Inc.
 TRI,Thomson Reuters Corporation
+X,TMX Group Limited
+TPZ,Topaz Energy Corp.
+TXG,Torex Gold Resources Inc.
+TIH,Toromont Industries Ltd.
 TD,Toronto-Dominion Bank
 TOU,Tourmaline Oil Corp.
+TA,TransAlta Corporation
+TCL.A,Transcontinental Inc.
+TFPM,Triple Flag Precious Metals Corp.
+TSU,Trisura Group Ltd.
+VET,Vermilion Energy Inc.
+VITL.UN,Vital Infrastructure Property Trust.
+VZLA,Vizsla Silver Corp.
 WCN,Waste Connections Inc.
+WDO,Wesdome Gold Mines Ltd.
+WFG,West Fraser Timber Co. Ltd.
 WPM,Wheaton Precious Metals Corp.
+WCP,Whitecap Resources Inc.
+WPK,Winpak Ltd.
 WSP,WSP Global Inc.
