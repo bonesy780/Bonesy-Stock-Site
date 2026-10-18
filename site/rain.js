@@ -50,7 +50,7 @@ window.startRain = function (words) {
     window.addEventListener("resize", fit);
     if (still) { for (let k = 0; k < 120; k++) draw(); return; }
     let last = 0;
-    const loop = (t) => { if (t - last > 110 && w) { draw(); last = t; } requestAnimationFrame(loop); };
+    const loop = (t) => { if (t - last > 88 && w) { draw(); last = t; } requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
   });
 
