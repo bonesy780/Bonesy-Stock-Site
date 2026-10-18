@@ -284,7 +284,7 @@ def build():
     caps = market_caps(sorted(closes))
     log(f"got market caps for {len(caps)} tickers")
 
-    indexes_out, pool, weak, div_rows = [], {}, {}, []
+    indexes_out, pool, weak, div_rows, everyone = [], {}, {}, [], {}
     for ix in INDEXES:
         rate = rates[ix["currency"]]
         names = dict(zip(members[ix["id"]]["symbol"], members[ix["id"]]["name"]))
@@ -297,8 +297,10 @@ def build():
             if st["price"] / rate < MIN_PRICE_USD or st["chg3m"] is None:
                 continue
             cap = caps.get(t)
-            rows.append({"ticker": t, "symbol": sym, "name": name, **st,
+            rows.append({"ticker": t, "symbol": sym, "name": name, "currency": ix["currency"], **st,
                          "mcap": cap, "mcapUsd": cap / rate if cap else None})
+        for r in rows:
+            everyone.setdefault(r["ticker"], r).setdefault("markets", []).append(ix["name"])
         largest = sorted((r for r in rows if r["mcapUsd"]), key=lambda r: r["mcapUsd"], reverse=True)[:10]
         rows.sort(key=lambda r: r["chg3m"], reverse=True)
         cands = rows[:CANDIDATES_PER_INDEX]
@@ -360,6 +362,7 @@ def build():
         "buyIdeas": buy_ideas(stocks),
         "sellIdeas": sell_ideas(list(weak.values()) + stocks),
         "watchlist": watchlist(stocks, now),
+        "snapshots": snapshots(list(everyone.values())),
         # S&P 500 tickers for the Matrix rain background
         "rainTickers": sorted({str(t) for t in members["sp500"]["symbol"] if str(t).strip()}),
     }
@@ -380,7 +383,7 @@ def build():
 def clean(r: dict) -> dict:
     keep = ("ticker", "symbol", "name", "sector", "price", "chg1d", "chg1w", "chg1m", "chg3m", "ytd",
             "high52", "low52", "fromHigh", "mcap", "mcapUsd", "recMean", "rating", "analysts", "target",
-            "upside", "earnings", "score", "spark", "indexes", "divYield", "divFreq")
+            "upside", "earnings", "score", "spark", "indexes", "divYield", "divFreq", "currency", "markets")
     r = {**_div.get(r.get("ticker"), {}), **r}
     out = {}
     for k in keep:
@@ -429,6 +432,14 @@ def sell_ideas(stocks: list[dict]) -> list[dict]:
         ideas.append({**clean(r), "why": why, "ideaScore": round(weakness, 1)})
     ideas.sort(key=lambda r: r["ideaScore"], reverse=True)
     return ideas[:12]
+
+
+def snapshots(rows: list[dict]) -> dict:
+    """Quick-look cards: the biggest gainers today and over the past week."""
+    ok = [r for r in rows if r.get("mcapUsd") and r["mcapUsd"] >= MIN_MCAP_USD]
+    def best(key):
+        return [clean(r) for r in sorted((r for r in ok if r.get(key) is not None), key=lambda r: r[key], reverse=True)[:10]]
+    return {"day": best("chg1d"), "week": best("chg1w")}
 
 
 def watchlist(stocks: list[dict], now: datetime) -> list[dict]:

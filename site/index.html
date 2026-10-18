@@ -27,6 +27,17 @@
     <p>Ranked on recent performance first, then analyst ratings, then company size. Updated every weekday after US markets close.</p>
   </section>
 
+  <section class="snap" aria-label="Snapshot">
+    <div class="markets" id="markets"></div>
+    <div class="snap-head">
+      <h2>Doing well</h2>
+      <div class="seg" role="tablist" aria-label="Period">
+        <button role="tab" aria-selected="true" data-p="day">Today</button><button role="tab" aria-selected="false" data-p="week">This week</button>
+      </div>
+    </div>
+    <div class="snap-row" id="snaps"></div>
+  </section>
+
   <nav class="tabs" id="tabs" aria-label="Index"></nav>
 
   <section id="index-view" aria-live="polite"></section>

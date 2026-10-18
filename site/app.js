@@ -56,6 +56,7 @@
     current = b.dataset.id;
     renderTabs();
     renderIndex();
+    renderMarkets();
   });
 
   function renderIndex() {
@@ -107,15 +108,15 @@
         </div>
         ${spark(ix.spark, 160, 40)}
       </div>
-      <div class="subhead"><h3>Biggest companies</h3><p>The 10 largest by market cap: the most watched names and how they're doing.</p></div>
+      <div class="subhead"><h3>Biggest companies</h3><p>The 10 largest by market cap: the most watched names and how they're doing. Tap a name for its chart.</p></div>
       <div class="panel table-wrap">
-        ${largest.length ? `<table>
+        ${largest.length ? `<table class="largest">
           <thead><tr><th>#</th><th>Company</th><th>Mkt cap (USD)</th><th>Price</th><th>Day</th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>From 52W high</th><th>Div yield</th><th>Pays</th><th>3M trend</th></tr></thead>
           <tbody>${bigRows}</tbody></table>` : `<div class="empty">No market cap data for this index today.</div>`}
       </div>
       <div class="subhead"><h3>Top 10 ranked</h3><p>Ranked on 3-month performance, then analyst ratings, then company size.</p></div>
       <div class="panel table-wrap">
-        ${ix.top.length ? `<table>
+        ${ix.top.length ? `<table class="ranked">
           <thead><tr><th>#</th><th>Company</th><th>Price</th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>Analysts</th><th>Upside</th><th>Mkt cap</th><th>Div yield</th><th>Pays</th><th>Score</th><th>3M trend</th></tr></thead>
           <tbody>${rows}</tbody></table>` : `<div class="empty">No data for this index today.</div>`}
       </div>`;
@@ -157,6 +158,42 @@
       </div>`).join("") : `<div class="panel empty">Nothing stands out for the coming week.</div>`;
   }
 
+  // Snapshot strip: every market's day move, then the biggest gainers
+  function renderMarkets() {
+    $("markets").innerHTML = data.indexes.map((i) => `
+      <button class="mkt ${i.id === current ? "on" : ""}" data-id="${i.id}">
+        <span class="mkt-name">${esc(i.name.replace(/ \(.*\)/, ""))}</span>
+        <span class="num">${i.level ? i.level.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "–"}</span>
+        ${pct(i.chg1d)}
+      </button>`).join("");
+  }
+  $("markets").addEventListener("click", (e) => {
+    const b = e.target.closest(".mkt");
+    if (!b) return;
+    current = b.dataset.id;
+    renderTabs(); renderIndex(); renderMarkets();
+    $("tabs").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  let period = "day";
+  function renderSnaps() {
+    const list = ((data.snapshots || {})[period] || []);
+    const key = period === "day" ? "chg1d" : "chg1w";
+    $("snaps").innerHTML = list.length ? list.map((s) => `
+      <a class="panel snapcard" href="stock.html?t=${encodeURIComponent(s.ticker)}">
+        <div class="tk">${esc(s.symbol)} · ${esc((s.markets || s.indexes || [])[0] || "")}</div>
+        <div class="nm">${esc(s.name)}</div>
+        <div class="snap-chg ${s[key] >= 0 ? "up" : "down"} num">${s[key] >= 0 ? "+" : ""}${s[key].toFixed(1)}%</div>
+        <div class="snap-foot"><span class="num">${money(s.price, s.currency || curOf(s.ticker))}</span>${spark((s.spark || []).slice(-22), 72, 24)}</div>
+      </a>`).join("") : `<div class="panel empty">Snapshots appear after the next data refresh.</div>`;
+  }
+  document.querySelector(".seg").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    period = b.dataset.p;
+    document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    renderSnaps();
+  });
+
   const st = data.settings;
   $("method").innerHTML = [
     `Each index's ${st.candidates} best performers over the last 3 months are scored. Performance counts for ${st.weights.perf * 100}%, the average analyst rating for ${st.weights.analyst * 100}% and market cap for ${st.weights.mcap * 100}%. The 10 highest scores make the list.`,
@@ -169,6 +206,8 @@
   // Matrix-style rain of digits and tickers in the side gutters
   if (window.startRain) window.startRain(data.rainTickers || data.indexes.flatMap((i) => i.top.map((t) => t.symbol)));
 
+  renderMarkets();
+  renderSnaps();
   renderTabs();
   renderIndex();
   renderIdeas();
