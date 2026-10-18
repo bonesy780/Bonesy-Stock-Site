@@ -29,6 +29,8 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: python scripts/build_data.py
+      - name: Bust browser cache for CSS and JS
+        run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/index.html
       - name: Save refreshed member lists
         run: |
           git config user.name "github-actions[bot]"
