@@ -134,3 +134,37 @@ section { margin-bottom: 40px; }
 .side-art.left::after { right: 0; background: linear-gradient(90deg, rgba(1,10,3,0), var(--bg)); }
 .side-art.right::after { left: 0; background: linear-gradient(270deg, rgba(1,10,3,0), var(--bg)); }
 @media (min-width: 1300px) { .side-art { display: block; } }
+
+/* top menu */
+.brand { color: inherit; text-decoration: none; }
+.menu { display: flex; gap: 4px; margin-right: auto; margin-left: 20px; }
+.menu a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 8px; }
+.menu a:hover { color: var(--text); background: var(--surface-2); }
+.menu a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+
+/* news page */
+.news-head { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 14px; flex-wrap: wrap; }
+.news-head h2 { margin: 0; font-size: 22px; }
+.news-head .region { color: var(--muted); font-size: 14px; }
+.story { display: flex; gap: 16px; padding: 16px; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+.story:hover { border-color: var(--accent); transform: translateY(-1px); }
+.story img { width: 132px; height: 88px; object-fit: cover; border-radius: 8px; flex: none; background: var(--surface-2); }
+.story-body { min-width: 0; }
+.story h3 { margin: 6px 0 4px; font-size: 16px; line-height: 1.35; }
+.story p { margin: 0; color: var(--muted); font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.story-meta { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+.story-meta span:first-child { font-weight: 600; color: var(--text); }
+.story.lead { margin-bottom: 12px; }
+.story.lead img { width: 280px; height: 170px; }
+.story.lead h3 { font-size: 22px; }
+.story.lead p { -webkit-line-clamp: 3; }
+.story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.news + .disclaimer { margin-bottom: 32px; }
+@media (max-width: 640px) {
+  .menu { margin-left: 8px; }
+  .menu a { padding: 6px 8px; font-size: 13px; }
+  .top-inner .updated { display: none; }
+  .story, .story.lead { flex-direction: column; }
+  .story img, .story.lead img { width: 100%; height: 160px; }
+  .story-grid { grid-template-columns: 1fr; }
+}

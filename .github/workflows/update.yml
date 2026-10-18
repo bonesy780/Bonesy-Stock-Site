@@ -29,6 +29,8 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: python scripts/build_data.py
+      - name: Gather market news
+        run: python scripts/build_news.py || echo "::warning::news step failed, deploying without fresh news"
       - name: Bust browser cache for CSS and JS
         run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/index.html
       - name: Save refreshed member lists

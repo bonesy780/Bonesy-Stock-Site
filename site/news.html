@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market News · Market Leaders</title>
+<meta name="description" content="Top news stories for the S&P 500, Nasdaq-100, Dow, TSX, Nikkei 225, KOSPI 200 and Taiwan 50.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> Market Leaders</a>
+    <nav class="menu" aria-label="Pages"><a href="./">Stocks</a><a href="news.html" aria-current="page">Market News</a></nav>
+    <div class="updated" id="updated">Loading news…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Top market news</h1>
+    <p>The latest stories from the past week for each of the seven markets, covering each index and its biggest companies. Updated with the stock data.</p>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Market"></nav>
+
+  <section id="news" class="news" aria-live="polite"></section>
+
+  <p class="disclaimer">Headlines link to the original publishers. Stories are gathered automatically from Yahoo Finance and Google News and are not checked or endorsed by this site. Not financial advice.</p>
+</main>
+
+<footer class="wrap foot">News: Yahoo Finance via yfinance and Google News.</footer>
+
+<script src="rain.js?v=__V__"></script>
+<script src="news.js?v=__V__"></script>
+</body>
+</html>
