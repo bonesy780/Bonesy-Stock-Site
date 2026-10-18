@@ -72,6 +72,22 @@
         <td><span class="score"><span class="bar"><i style="width:${s.score}%"></i></span><span class="num">${s.score.toFixed(0)}</span></span></td>
         <td>${spark(s.spark)}</td>
       </tr>`).join("");
+    const largest = ix.largest || [];
+    const maxCap = Math.max(...largest.map((s) => s.mcapUsd || 0), 1);
+    const bigRows = largest.map((s, n) => `
+      <tr>
+        <td class="rank num">${n + 1}</td>
+        <td><div class="co"><span class="nm" title="${esc(s.name)}">${esc(s.name)}</span><span class="tk">${esc(s.symbol)}</span></div></td>
+        <td><span class="score"><span class="bar"><i style="width:${(s.mcapUsd || 0) / maxCap * 100}%"></i></span><span class="num">${big(s.mcapUsd)}</span></span></td>
+        <td class="num">${money(s.price, ix.currency)}</td>
+        <td>${pct(s.chg1d)}</td>
+        <td>${pct(s.chg1w)}</td>
+        <td>${pct(s.chg1m)}</td>
+        <td>${pct(s.chg3m)}</td>
+        <td>${pct(s.ytd)}</td>
+        <td>${pct(s.fromHigh)}</td>
+        <td>${spark(s.spark)}</td>
+      </tr>`).join("");
     $("index-view").innerHTML = `
       <div class="panel summary">
         <div><h2>${esc(ix.name)}</h2><div class="region">${esc(ix.region)} · ${ix.members} members · prices in ${ix.currency}</div></div>
@@ -84,6 +100,13 @@
         </div>
         ${spark(ix.spark, 160, 40)}
       </div>
+      <div class="subhead"><h3>Biggest companies</h3><p>The 10 largest by market cap: the most watched names and how they're doing.</p></div>
+      <div class="panel table-wrap">
+        ${largest.length ? `<table>
+          <thead><tr><th>#</th><th>Company</th><th>Mkt cap (USD)</th><th>Price</th><th>Day</th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>From 52W high</th><th>3M trend</th></tr></thead>
+          <tbody>${bigRows}</tbody></table>` : `<div class="empty">No market cap data for this index today.</div>`}
+      </div>
+      <div class="subhead"><h3>Top 10 ranked</h3><p>Ranked on 3-month performance, then analyst ratings, then company size.</p></div>
       <div class="panel table-wrap">
         ${ix.top.length ? `<table>
           <thead><tr><th>#</th><th>Company</th><th>Price</th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>Analysts</th><th>Upside</th><th>Mkt cap</th><th>Score</th><th>3M trend</th></tr></thead>
@@ -103,6 +126,19 @@
       </article>`).join("") : `<div class="panel empty">No stocks pass every buy test today.</div>`;
   }
 
+  function renderSells() {
+    const list = data.sellIdeas || [];
+    $("sells").innerHTML = list.length ? list.map((s) => `
+      <article class="panel card">
+        <div class="card-top">
+          <div><div class="nm">${esc(s.name)}</div><div class="tk">${esc(s.ticker)} · ${esc((s.indexes || []).join(", "))}</div></div>
+          <span class="pill sell">${esc(s.rating)}</span>
+        </div>
+        <ul>${s.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>
+        <div class="meta"><span class="num">${money(s.price, curOf(s.ticker))}</span><span>Target <span class="num">${money(s.target, curOf(s.ticker))}</span></span></div>
+      </article>`).join("") : `<div class="panel empty">No stocks pass every sell test today.</div>`;
+  }
+
   function renderWatch() {
     $("watch").innerHTML = data.watchlist.length ? data.watchlist.map((s) => `
       <div class="panel watch-row">
@@ -116,6 +152,7 @@
   $("method").innerHTML = [
     `Each index's ${st.candidates} best performers over the last 3 months are scored. Performance counts for ${st.weights.perf * 100}%, the average analyst rating for ${st.weights.analyst * 100}% and market cap for ${st.weights.mcap * 100}%. The 10 highest scores make the list.`,
     `Buy ideas need an analyst consensus of Buy or better from at least 5 analysts, 10% or more upside to the average price target, a positive 3-month return and a price above the 50-day average.`,
+    `Sell ideas are stocks down over the last 3 months and below their 50-day average, where analysts rate them Hold or worse (at least 3 analysts) or the price is above the average target.`,
     `Taiwan 50 is approximated by the 50 largest companies on the Taiwan Stock Exchange. Member lists are refreshed from public sources when available.`,
   ].map((t) => `<li>${esc(t)}</li>`).join("");
 
@@ -162,5 +199,6 @@
   renderTabs();
   renderIndex();
   renderIdeas();
+  renderSells();
   renderWatch();
 })();

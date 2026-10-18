@@ -10,6 +10,7 @@ import json
 import math
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -24,6 +25,7 @@ OUT = ROOT / "site" / "data.json"
 # Ranking settings
 PERF_WINDOW = "3m"          # performance used for ranking
 CANDIDATES_PER_INDEX = 40   # best performers per index that get full analyst data
+SELL_CANDIDATES_PER_INDEX = 15  # weakest performers per index checked for sell ideas
 WEIGHTS = {"perf": 0.5, "analyst": 0.3, "mcap": 0.2}
 MIN_PRICE_USD = 1.0         # no penny stocks (with MIN_MCAP_USD)
 MIN_MCAP_USD = 300e6
@@ -170,6 +172,20 @@ def fx_rates() -> dict[str, float]:
     return rates
 
 
+def market_caps(tickers: list[str]) -> dict[str, float]:
+    """Market cap in local currency for every ticker, fetched in parallel."""
+    def one(t):
+        for attempt in range(3):
+            try:
+                v = yf.Ticker(t).fast_info["marketCap"]
+                return t, float(v) if v else None
+            except Exception:
+                time.sleep(1 + attempt)
+        return t, None
+    with ThreadPoolExecutor(max_workers=12) as ex:
+        return {t: v for t, v in ex.map(one, tickers) if v}
+
+
 # ---------------------------------------------------------------- analyst data
 
 _info_cache: dict[str, dict] = {}
@@ -233,7 +249,10 @@ def build():
     bench = download_prices([ix["benchmark"] for ix in INDEXES])
     log(f"got prices for {len(closes)} tickers")
 
-    indexes_out, pool = [], {}
+    caps = market_caps(sorted(closes))
+    log(f"got market caps for {len(caps)} tickers")
+
+    indexes_out, pool, weak = [], {}, {}
     for ix in INDEXES:
         rate = rates[ix["currency"]]
         names = dict(zip(members[ix["id"]]["symbol"], members[ix["id"]]["name"]))
@@ -245,13 +264,17 @@ def build():
             st = price_stats(closes[t])
             if st["price"] / rate < MIN_PRICE_USD or st["chg3m"] is None:
                 continue
-            rows.append({"ticker": t, "symbol": sym, "name": name, **st})
+            cap = caps.get(t)
+            rows.append({"ticker": t, "symbol": sym, "name": name, **st,
+                         "mcap": cap, "mcapUsd": cap / rate if cap else None})
+        largest = sorted((r for r in rows if r["mcapUsd"]), key=lambda r: r["mcapUsd"], reverse=True)[:10]
         rows.sort(key=lambda r: r["chg3m"], reverse=True)
         cands = rows[:CANDIDATES_PER_INDEX]
 
-        for r in cands:
+        losers = [r for r in rows[-SELL_CANDIDATES_PER_INDEX:] if r not in cands and r["chg3m"] < 0]
+        for r in cands + losers:
             inf = info(r["ticker"])
-            mcap = inf.get("marketCap")
+            mcap = inf.get("marketCap") or r["mcap"]
             r["name"] = inf.get("shortName") or inf.get("longName") or r["name"]
             r["sector"] = inf.get("sector")
             r["mcap"] = mcap
@@ -264,6 +287,10 @@ def build():
             r["earnings"] = ed.date().isoformat() if ed else None
             r["rating"] = rating_label(r["recMean"])
         cands = [r for r in cands if not r["mcapUsd"] or r["mcapUsd"] >= MIN_MCAP_USD]
+        for r in losers:
+            if r["mcapUsd"] and r["mcapUsd"] >= MIN_MCAP_USD:
+                r["score"] = None
+                weak.setdefault(r["ticker"], {**r, "indexes": []})["indexes"].append(ix["name"])
 
         perf = rank_pct([r["chg3m"] for r in cands])
         analyst = rank_pct([(5 - r["recMean"]) if r["recMean"] else None for r in cands])
@@ -283,10 +310,12 @@ def build():
             "level": bstats.get("price"), "chg1d": bstats.get("chg1d"), "chg1w": bstats.get("chg1w"),
             "chg1m": bstats.get("chg1m"), "ytd": bstats.get("ytd"), "spark": bstats.get("spark", []),
             "top": cands[:10],
+            "largest": largest,
         })
 
     for ixo in indexes_out:
         ixo["top"] = [clean(r) for r in ixo["top"]]
+        ixo["largest"] = [clean(r) for r in sorted(ixo["largest"], key=lambda r: r["mcapUsd"] or 0, reverse=True)]
     stocks = list(pool.values())
     out = {
         "generated": now.isoformat(timespec="minutes"),
@@ -294,6 +323,7 @@ def build():
                      "minMcapUsd": MIN_MCAP_USD, "candidates": CANDIDATES_PER_INDEX},
         "indexes": indexes_out,
         "buyIdeas": buy_ideas(stocks),
+        "sellIdeas": sell_ideas(list(weak.values()) + stocks),
         "watchlist": watchlist(stocks, now),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -301,7 +331,10 @@ def build():
     for ixo in indexes_out:
         log(f"{ixo['name']}: {ixo['priced']}/{ixo['members']} priced, top: "
             + ", ".join(f"{r['symbol']} {r['chg3m']:+.0f}%" for r in ixo["top"][:3]))
+    for ixo in indexes_out:
+        log(f"{ixo['name']} largest: " + ", ".join(f"{r['symbol']} ${(r['mcapUsd'] or 0) / 1e9:,.0f}B" for r in ixo["largest"][:5]))
     log(f"buy ideas: {len(out['buyIdeas'])} ({', '.join(r['symbol'] for r in out['buyIdeas'][:5])})")
+    log(f"sell ideas: {len(out['sellIdeas'])} ({', '.join(r['symbol'] for r in out['sellIdeas'][:5])})")
     log(f"watchlist: {len(out['watchlist'])} ({', '.join(r['symbol'] for r in out['watchlist'][:5])})")
     log(f"wrote {OUT}")
 
@@ -333,6 +366,28 @@ def buy_ideas(stocks: list[dict]) -> list[dict]:
                 why.append("trading near its 52-week high")
             ideas.append({**clean(r), "why": why,
                           "ideaScore": round(r["score"] + min(r["upside"], 50) * 0.4, 1)})
+    ideas.sort(key=lambda r: r["ideaScore"], reverse=True)
+    return ideas[:12]
+
+
+def sell_ideas(stocks: list[dict]) -> list[dict]:
+    """Falling stocks that analysts are cool on or that trade above their price target."""
+    ideas, seen = [], set()
+    for r in stocks:
+        if r["ticker"] in seen or r["chg3m"] is None or r["chg3m"] >= 0 or r["aboveSma50"]:
+            continue
+        rated_low = r["recMean"] is not None and r["recMean"] >= 2.8 and (r["analysts"] or 0) >= 3
+        over_target = r["upside"] is not None and r["upside"] < 0
+        if not (rated_low or over_target):
+            continue
+        seen.add(r["ticker"])
+        why = [f"down {abs(r['chg3m']):.0f}% in 3 months", "trading below its 50-day average"]
+        if rated_low:
+            why.append(f"{r['analysts']} analysts rate it {r['rating']}")
+        if over_target:
+            why.append(f"price is {abs(r['upside']):.0f}% above the average analyst target")
+        weakness = -r["chg3m"] + (r["recMean"] or 2.5) * 8 + max(0, -(r["upside"] or 0))
+        ideas.append({**clean(r), "why": why, "ideaScore": round(weakness, 1)})
     ideas.sort(key=lambda r: r["ideaScore"], reverse=True)
     return ideas[:12]
 
