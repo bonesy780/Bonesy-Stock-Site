@@ -35,10 +35,10 @@ INDEXES = [
      "benchmark": "^GSPC", "wiki": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
      "col": "Symbol", "min_rows": 450},
     {"id": "nasdaq100", "name": "Nasdaq-100", "region": "United States", "currency": "USD", "suffix": "",
-     "benchmark": "^NDX", "wiki": "https://en.wikipedia.org/wiki/Nasdaq-100",
+     "benchmark": "^NDX", "wiki": "https://stockanalysis.com/list/nasdaq-100-stocks/",
      "col": "Ticker", "min_rows": 95},
     {"id": "dow", "name": "Dow Jones Industrial Average", "region": "United States", "currency": "USD", "suffix": "",
-     "benchmark": "^DJI", "wiki": "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average",
+     "benchmark": "^DJI", "wiki": "https://stockanalysis.com/list/dow-jones-stocks/",
      "col": "Symbol", "min_rows": 30},
     {"id": "tsx60", "name": "S&P/TSX 60", "region": "Canada", "currency": "CAD", "suffix": ".TO",
      "benchmark": "^GSPTSE", "wiki": "https://en.wikipedia.org/wiki/S%26P/TSX_60",
@@ -65,7 +65,7 @@ def log(*a):
 def _from_wiki(ix):
     html = requests.get(ix["wiki"], headers=UA, timeout=30).text
     seen = []
-    for t in pd.read_html(io.StringIO(html)):
+    for t in pd.read_html(io.StringIO(html), keep_default_na=False):
         if isinstance(t.columns, pd.MultiIndex):
             t.columns = [str(c[-1]) for c in t.columns]
         cols = {str(c).strip(): c for c in t.columns}
@@ -75,6 +75,7 @@ def _from_wiki(ix):
         if sym is None or name is None or len(t) < ix["min_rows"]:
             continue
         df = pd.DataFrame({"symbol": t[sym].astype(str).str.strip(), "name": t[name].astype(str).str.strip()})
+        df = df[df["symbol"].ne("") & df["symbol"].ne("nan")]
         if ix.get("pad"):
             df["symbol"] = df["symbol"].str.zfill(ix["pad"])
         return df
@@ -85,6 +86,7 @@ def _from_nikkei(ix):
     html = requests.get(ix["nikkei"], headers=UA, timeout=30).text
     frames = [t for t in pd.read_html(io.StringIO(html)) if "Code" in map(str, t.columns)]
     t = pd.concat(frames)
+    t = t[t["Code"].notna()]
     name_col = next(c for c in t.columns if "name" in str(c).lower())
     return pd.DataFrame({"symbol": t["Code"].astype(str).str.strip(), "name": t[name_col].astype(str).str.strip()})
 
@@ -111,7 +113,7 @@ def load_constituents(ix) -> pd.DataFrame:
 
 
 def to_yahoo(symbol: str, ix) -> str:
-    return symbol.replace(".", "-") + ix["suffix"]
+    return str(symbol).replace(".", "-") + ix["suffix"]
 
 
 # ---------------------------------------------------------------- prices
