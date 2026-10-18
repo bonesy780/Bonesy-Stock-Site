@@ -115,7 +115,6 @@
   const st = data.settings;
   $("method").innerHTML = [
     `Each index's ${st.candidates} best performers over the last 3 months are scored. Performance counts for ${st.weights.perf * 100}%, the average analyst rating for ${st.weights.analyst * 100}% and market cap for ${st.weights.mcap * 100}%. The 10 highest scores make the list.`,
-    `Penny stocks are excluded: any share price below $${st.minPriceUsd} (converted from local currency) or market cap under $${st.minMcapUsd / 1e6}M.`,
     `Buy ideas need an analyst consensus of Buy or better from at least 5 analysts, 10% or more upside to the average price target, a positive 3-month return and a price above the 50-day average.`,
     `Taiwan 50 is approximated by the 50 largest companies on the Taiwan Stock Exchange. Member lists are refreshed from public sources when available.`,
   ].map((t) => `<li>${esc(t)}</li>`).join("");
