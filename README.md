@@ -1,6 +1,6 @@
 # Market Leaders
 
-A static website showing the top 10 stocks in the S&P 500, Nasdaq-100, Dow Jones, S&P/TSX 60, Nikkei 225, KOSPI 200 and Taiwan 50, plus buy ideas and stocks to watch in the coming week.
+A static website showing the top 10 stocks in the S&P 500, Nasdaq-100, Dow Jones, TSX (S&P/TSX Composite), Nikkei 225, KOSPI 200 and Taiwan 50, plus buy ideas and stocks to watch in the coming week.
 
 - `scripts/build_data.py` pulls prices, analyst ratings and market caps from Yahoo Finance (via yfinance) and writes `site/data.json`.
 - `site/` is the website (plain HTML, CSS and JS).
