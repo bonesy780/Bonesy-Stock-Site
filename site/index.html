@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market Leaders</title>
+<meta name="description" content="Top 10 stocks across the S&P 500, Nasdaq-100, Dow, TSX 60, Nikkei 225, KOSPI 200 and Taiwan 50, with buy ideas and stocks to watch this week.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand"><span class="logo" aria-hidden="true">▲</span> Market Leaders</div>
+    <div class="updated" id="updated">Loading data…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>The strongest stocks in seven markets</h1>
+    <p>Ranked on recent performance first, then analyst ratings, then company size. Penny stocks are left out. Updated every weekday after US markets close.</p>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Index"></nav>
+
+  <section id="index-view" aria-live="polite"></section>
+
+  <section>
+    <div class="section-head">
+      <h2>Buy ideas</h2>
+      <p>Strong momentum that analysts also rate a buy, with at least 10% to their average price target.</p>
+    </div>
+    <div class="cards" id="ideas"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Stocks to watch this week</h2>
+      <p>Earnings reports in the next 7 days, breakouts to new highs, and last week's biggest movers.</p>
+    </div>
+    <div class="watch" id="watch"></div>
+  </section>
+
+  <section class="method">
+    <h2>How the ranking works</h2>
+    <ul id="method"></ul>
+    <p class="disclaimer"><strong>Not financial advice.</strong> This site is generated automatically from public market data for information only. Data can be delayed or wrong, and past performance does not predict future returns. Do your own research or talk to a licensed advisor before investing.</p>
+  </section>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance. Index member lists: Wikipedia, Nikkei Inc. and exchange listings.</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
