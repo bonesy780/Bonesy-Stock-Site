@@ -25,7 +25,7 @@ OUT = ROOT / "site" / "data.json"
 PERF_WINDOW = "3m"          # performance used for ranking
 CANDIDATES_PER_INDEX = 40   # best performers per index that get full analyst data
 WEIGHTS = {"perf": 0.5, "analyst": 0.3, "mcap": 0.2}
-MIN_PRICE_USD = 5.0         # no penny stocks
+MIN_PRICE_USD = 1.0         # no penny stocks (with MIN_MCAP_USD)
 MIN_MCAP_USD = 300e6
 
 UA = {"User-Agent": "Mozilla/5.0 (stocks-site data builder)"}
