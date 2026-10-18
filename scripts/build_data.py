@@ -64,17 +64,21 @@ def log(*a):
 
 def _from_wiki(ix):
     html = requests.get(ix["wiki"], headers=UA, timeout=30).text
+    seen = []
     for t in pd.read_html(io.StringIO(html)):
+        if isinstance(t.columns, pd.MultiIndex):
+            t.columns = [str(c[-1]) for c in t.columns]
         cols = {str(c).strip(): c for c in t.columns}
-        sym = next((cols[c] for c in cols if c.lower().startswith(ix["col"].lower())), None)
-        name = next((cols[c] for c in cols if c.lower() in ("security", "company", "name", "company name")), None)
+        seen.append(list(cols))
+        sym = next((cols[c] for c in cols if c.lower().startswith((ix["col"].lower(), "symbol", "ticker", "code"))), None)
+        name = next((cols[c] for c in cols if any(w in c.lower() for w in ("security", "company", "name"))), None)
         if sym is None or name is None or len(t) < ix["min_rows"]:
             continue
         df = pd.DataFrame({"symbol": t[sym].astype(str).str.strip(), "name": t[name].astype(str).str.strip()})
         if ix.get("pad"):
             df["symbol"] = df["symbol"].str.zfill(ix["pad"])
         return df
-    raise ValueError("no constituents table found")
+    raise ValueError(f"no constituents table found; tables had columns {seen[:12]}")
 
 
 def _from_nikkei(ix):
@@ -98,6 +102,9 @@ def load_constituents(ix) -> pd.DataFrame:
             log(f"{ix['id']}: source returned only {len(df)} rows, using saved list")
         except Exception as e:  # network or layout change: fall back to saved list
             log(f"{ix['id']}: source failed ({e}), using saved list")
+    if not cache.exists():
+        log(f"{ix['id']}: no saved list, skipping this index today")
+        return pd.DataFrame({"symbol": [], "name": []})
     df = pd.read_csv(cache, dtype=str, keep_default_na=False)
     log(f"{ix['id']}: {len(df)} members from saved list")
     return df
