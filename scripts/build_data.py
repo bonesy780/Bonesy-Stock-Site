@@ -186,6 +186,38 @@ def market_caps(tickers: list[str]) -> dict[str, float]:
         return {t: v for t, v in ex.map(one, tickers) if v}
 
 
+# ---------------------------------------------------------------- dividends
+
+_div: dict[str, dict] = {}
+FREQS = ((45, "Monthly", 12), (130, "Quarterly", 4), (240, "Semi-annual", 2), (400, "Annual", 1))
+
+
+def dividend(t: str, price: float) -> tuple[str, dict]:
+    """Payout frequency from the gaps between recent payments, and yield from the last year's payments."""
+    for attempt in range(3):
+        try:
+            d = yf.Ticker(t).dividends
+            break
+        except Exception:
+            time.sleep(1 + attempt)
+    else:
+        return t, {}
+    d = d[d > 0]
+    if d.empty or (pd.Timestamp.now(tz=d.index.tz) - d.index[-1]).days > 400:
+        return t, {"divFreq": "None", "divYield": None}
+    recent = d[d.index >= d.index[-1] - pd.Timedelta(days=760)]
+    gap = recent.index.to_series().diff().dt.days.dropna().median() if len(recent) > 1 else 365
+    label, per_year = next(((l, n) for g, l, n in FREQS if gap <= g), ("Irregular", 1))
+    paid = float(d.iloc[-per_year:].sum())
+    return t, {"divFreq": label, "divYield": paid / price * 100 if price else None}
+
+
+def dividends(rows: list[dict]) -> None:
+    todo = {r["ticker"]: r["price"] for r in rows if r["ticker"] not in _div}
+    with ThreadPoolExecutor(max_workers=12) as ex:
+        _div.update(ex.map(lambda kv: dividend(*kv), todo.items()))
+
+
 # ---------------------------------------------------------------- analyst data
 
 _info_cache: dict[str, dict] = {}
@@ -304,6 +336,7 @@ def build():
 
         b = bench.get(ix["benchmark"])
         bstats = price_stats(b) if b is not None else {}
+        dividends(cands + largest + losers)
         indexes_out.append({
             "id": ix["id"], "name": ix["name"], "region": ix["region"], "currency": ix["currency"],
             "members": len(names), "priced": len(rows),
@@ -338,13 +371,15 @@ def build():
     log(f"buy ideas: {len(out['buyIdeas'])} ({', '.join(r['symbol'] for r in out['buyIdeas'][:5])})")
     log(f"sell ideas: {len(out['sellIdeas'])} ({', '.join(r['symbol'] for r in out['sellIdeas'][:5])})")
     log(f"watchlist: {len(out['watchlist'])} ({', '.join(r['symbol'] for r in out['watchlist'][:5])})")
+    log(f"dividends: {sum(1 for v in _div.values() if v.get('divYield'))}/{len(_div)} payers")
     log(f"wrote {OUT}")
 
 
 def clean(r: dict) -> dict:
     keep = ("ticker", "symbol", "name", "sector", "price", "chg1d", "chg1w", "chg1m", "chg3m", "ytd",
             "high52", "low52", "fromHigh", "mcap", "mcapUsd", "recMean", "rating", "analysts", "target",
-            "upside", "earnings", "score", "spark", "indexes")
+            "upside", "earnings", "score", "spark", "indexes", "divYield", "divFreq")
+    r = {**_div.get(r.get("ticker"), {}), **r}
     out = {}
     for k in keep:
         v = r.get(k)

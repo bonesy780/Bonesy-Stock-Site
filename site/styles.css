@@ -183,3 +183,4 @@ section { margin-bottom: 40px; }
   .tabs { padding: 8px; background: var(--bg); border-radius: var(--radius); margin-bottom: 12px; }
   .foot { margin-bottom: 24px; padding-bottom: 14px; }
 }
+.muted { color: var(--muted); }
