@@ -325,6 +325,8 @@ def build():
         "buyIdeas": buy_ideas(stocks),
         "sellIdeas": sell_ideas(list(weak.values()) + stocks),
         "watchlist": watchlist(stocks, now),
+        # S&P 500 tickers for the Matrix rain background
+        "rainTickers": sorted({str(t) for t in members["sp500"]["symbol"] if str(t).strip()}),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, separators=(",", ":"), allow_nan=False, default=str))

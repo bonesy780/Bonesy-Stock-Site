@@ -157,7 +157,7 @@
   ].map((t) => `<li>${esc(t)}</li>`).join("");
 
   // Matrix-style rain of digits and tickers in the side gutters
-  if (window.startRain) window.startRain(data.indexes.flatMap((i) => i.top.map((t) => t.symbol)));
+  if (window.startRain) window.startRain(data.rainTickers || data.indexes.flatMap((i) => i.top.map((t) => t.symbol)));
 
   renderTabs();
   renderIndex();

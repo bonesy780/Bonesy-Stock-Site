@@ -1,6 +1,8 @@
 // Matrix-style rain of digits and tickers in the empty space beside the content
 window.startRain = function (words) {
-  const glyphs = "0123456789$%+-.".split("").concat((words || []).filter((t) => /^[A-Z]{1,4}$/.test(t)));
+  // Mostly tickers, with a few loose digits and symbols mixed in
+  const tickers = (words || []).filter((t) => /^[A-Z][A-Z.]{0,5}$/.test(t));
+  const glyphs = tickers.length ? tickers.concat("0123456789$%+-".split("").slice(0, Math.ceil(tickers.length / 8))) : "0123456789$%+-.".split("");
   const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   document.querySelectorAll(".side-art").forEach((el) => {
     const cv = document.createElement("canvas");

@@ -168,3 +168,18 @@ section { margin-bottom: 40px; }
   .story img, .story.lead img { width: 100%; height: 160px; }
   .story-grid { grid-template-columns: 1fr; }
 }
+
+/* narrower screens: no side gutters, so the rain fills the whole background */
+@media (max-width: 1299px) {
+  .side-art.left { display: block; width: 100%; }
+  .side-art.left::after { display: none; }
+  .hero, .section-head, .subhead, .method, .news-head, .foot {
+    background: var(--bg); border-radius: var(--radius); padding: 14px 16px;
+  }
+  .hero { margin-top: 16px; padding: 20px 16px; }
+  .section-head { margin-bottom: 12px; }
+  .section-head p { margin-bottom: 0; }
+  .subhead { margin-top: 20px; }
+  .tabs { padding: 8px; background: var(--bg); border-radius: var(--radius); margin-bottom: 12px; }
+  .foot { margin-bottom: 24px; padding-bottom: 14px; }
+}
