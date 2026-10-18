@@ -33,6 +33,9 @@ MIN_MCAP_USD = 300e6
 UA = {"User-Agent": "Mozilla/5.0 (stocks-site data builder)"}
 
 INDEXES = [
+    {"id": "tsx", "name": "TSX (S&P/TSX Composite)", "region": "Canada", "currency": "CAD", "suffix": ".TO",
+     "benchmark": "^GSPTSE", "wiki": "https://en.wikipedia.org/wiki/S%26P/TSX_Composite_Index",
+     "col": "Ticker", "min_rows": 200},
     {"id": "sp500", "name": "S&P 500", "region": "United States", "currency": "USD", "suffix": "",
      "benchmark": "^GSPC", "wiki": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
      "col": "Symbol", "min_rows": 450},
@@ -42,9 +45,6 @@ INDEXES = [
     {"id": "dow", "name": "Dow Jones Industrial Average", "region": "United States", "currency": "USD", "suffix": "",
      "benchmark": "^DJI", "wiki": "https://stockanalysis.com/list/dow-jones-stocks/",
      "col": "Symbol", "min_rows": 30},
-    {"id": "tsx", "name": "TSX (S&P/TSX Composite)", "region": "Canada", "currency": "CAD", "suffix": ".TO",
-     "benchmark": "^GSPTSE", "wiki": "https://en.wikipedia.org/wiki/S%26P/TSX_Composite_Index",
-     "col": "Ticker", "min_rows": 200},
     {"id": "nikkei225", "name": "Nikkei 225", "region": "Japan", "currency": "JPY", "suffix": ".T",
      "benchmark": "^N225", "nikkei": "https://indexes.nikkei.co.jp/en/nkave/index/component?idx=nk225",
      "min_rows": 200},

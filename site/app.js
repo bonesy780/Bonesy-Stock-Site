@@ -40,7 +40,8 @@
   $("updated").textContent = "Updated " + when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
   // Index tabs
-  let current = (() => { try { return localStorage.getItem("ix"); } catch { return null; } })() || data.indexes[0].id;
+  // Always open on the first index (TSX)
+  let current = data.indexes[0].id;
   if (!data.indexes.some((i) => i.id === current)) current = data.indexes[0].id;
   function renderTabs() {
     $("tabs").innerHTML = data.indexes.map((i) =>
@@ -50,7 +51,6 @@
     const b = e.target.closest(".tab");
     if (!b) return;
     current = b.dataset.id;
-    try { localStorage.setItem("ix", current); } catch {}
     renderTabs();
     renderIndex();
   });
