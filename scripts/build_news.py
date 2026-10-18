@@ -7,6 +7,7 @@ companies, topped up with Google News search results. Run after build_data.py:
 from __future__ import annotations
 
 import json
+import re
 import sys
 import time
 import xml.etree.ElementTree as ET
@@ -24,6 +25,8 @@ OUT = ROOT / "site" / "news.json"
 
 STORIES_PER_MARKET = 12
 MAX_AGE = timedelta(days=7)
+# Quote and price pages show up in search feeds but are not news stories
+NOT_NEWS = re.compile(r"\b(stock price|price & quote|price and quote|quote & history|historical prices|stock quote|share price & news)\b", re.I)
 UA = {"User-Agent": "Mozilla/5.0 (stocks-site news builder)"}
 
 # Index id -> Yahoo index symbol and a Google News search for that market
@@ -111,7 +114,8 @@ def build():
             stories += google_news(query)
 
         seen, picked = set(), []
-        fresh = [s for s in stories if s["published"] and now - s["published"] <= MAX_AGE]
+        fresh = [s for s in stories if s["published"] and now - s["published"] <= MAX_AGE
+                 and not NOT_NEWS.search(s["title"])]
         for s in sorted(fresh, key=lambda s: s["published"], reverse=True):
             key = s["title"].lower()[:80]
             if key in seen:
