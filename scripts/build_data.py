@@ -214,7 +214,7 @@ def dividend(t: str, price: float) -> tuple[str, dict]:
 
 def dividends(rows: list[dict]) -> None:
     todo = {r["ticker"]: r["price"] for r in rows if r["ticker"] not in _div}
-    with ThreadPoolExecutor(max_workers=12) as ex:
+    with ThreadPoolExecutor(max_workers=4) as ex:
         _div.update(ex.map(lambda kv: dividend(*kv), todo.items()))
 
 
@@ -284,7 +284,7 @@ def build():
     caps = market_caps(sorted(closes))
     log(f"got market caps for {len(caps)} tickers")
 
-    indexes_out, pool, weak = [], {}, {}
+    indexes_out, pool, weak, div_rows = [], {}, {}, []
     for ix in INDEXES:
         rate = rates[ix["currency"]]
         names = dict(zip(members[ix["id"]]["symbol"], members[ix["id"]]["name"]))
@@ -336,7 +336,7 @@ def build():
 
         b = bench.get(ix["benchmark"])
         bstats = price_stats(b) if b is not None else {}
-        dividends(cands + largest + losers)
+        div_rows += cands + largest + losers
         indexes_out.append({
             "id": ix["id"], "name": ix["name"], "region": ix["region"], "currency": ix["currency"],
             "members": len(names), "priced": len(rows),
@@ -346,6 +346,8 @@ def build():
             "largest": largest,
         })
 
+    # After all analyst lookups, so the extra Yahoo calls can't disturb them
+    dividends(div_rows)
     for ixo in indexes_out:
         ixo["top"] = [clean(r) for r in ixo["top"]]
         ixo["largest"] = [clean(r) for r in sorted(ixo["largest"], key=lambda r: r["mcapUsd"] or 0, reverse=True)]
