@@ -298,6 +298,11 @@ def build():
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, separators=(",", ":"), allow_nan=False, default=str))
+    for ixo in indexes_out:
+        log(f"{ixo['name']}: {ixo['priced']}/{ixo['members']} priced, top: "
+            + ", ".join(f"{r['symbol']} {r['chg3m']:+.0f}%" for r in ixo["top"][:3]))
+    log(f"buy ideas: {len(out['buyIdeas'])} ({', '.join(r['symbol'] for r in out['buyIdeas'][:5])})")
+    log(f"watchlist: {len(out['watchlist'])} ({', '.join(r['symbol'] for r in out['watchlist'][:5])})")
     log(f"wrote {OUT}")
 
 
