@@ -1,31 +1,31 @@
 symbol,name
-NVDA,NVIDIA
-AAPL,Apple
-MSFT,Microsoft
-AMZN,Amazon.com
-WMT,Walmart
-JPM,JPMorgan Chase
-V,Visa
+GS,"The Goldman Sachs Group, Inc."
+CAT,Caterpillar Inc.
+MSFT,Microsoft Corporation
+AMGN,Amgen Inc.
+V,Visa Inc.
+UNH,UnitedHealth Group Incorporated
+TRV,"The Travelers Companies, Inc."
+AAPL,Apple Inc.
+GOOGL,Alphabet Inc.
+JPM,JPMorgan Chase & Co.
+SHW,The Sherwin-Williams Company
+AXP,American Express Company
+HD,"The Home Depot, Inc."
 JNJ,Johnson & Johnson
-CVX,Chevron
-CSCO,Cisco Systems
-KO,Coca-Cola
-PG,Procter & Gamble
-UNH,UnitedHealth Group
-MRK,Merck
-CAT,Caterpillar
-HD,Home Depot
-GS,Goldman Sachs
-AMGN,Amgen
-IBM,IBM
-AXP,American Express
-CRM,Salesforce
-DIS,Walt Disney
-VZ,Verizon
-MCD,McDonald's
-BA,Boeing
-MMM,3M
-SHW,Sherwin-Williams
-TRV,Travelers
-HON,Honeywell
-NKE,Nike
+AMZN,"Amazon.com, Inc."
+MCD,McDonald's Corporation
+CRM,"Salesforce, Inc."
+IBM,International Business Machines Corporation
+CVX,Chevron Corporation
+NVDA,NVIDIA Corporation
+HON,Honeywell International Inc.
+BA,The Boeing Company
+MMM,3M Company
+PG,The Procter & Gamble Company
+MRK,"Merck & Co., Inc."
+WMT,Walmart Inc.
+DIS,The Walt Disney Company
+CSCO,"Cisco Systems, Inc."
+KO,The Coca-Cola Company
+NKE,"NIKE, Inc."

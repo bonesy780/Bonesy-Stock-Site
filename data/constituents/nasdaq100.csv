@@ -1,102 +1,102 @@
 symbol,name
-NVDA,NVIDIA
-AAPL,Apple
-MSFT,Microsoft
-MU,Micron Technology
-AMZN,Amazon.com
-AMD,Advanced Micro Devices
-META,Meta Platforms
-GOOGL,Alphabet (Class A)
-TSLA,Tesla
-GOOG,Alphabet (Class C)
-SPCX,Space Exploration Technologies
-WMT,Walmart
-AVGO,Broadcom
-INTC,Intel
-COST,Costco Wholesale
-PLTR,Palantir Technologies
-CSCO,Cisco Systems
-LRCX,Lam Research
-AMAT,Applied Materials
-NFLX,Netflix
-PANW,Palo Alto Networks
-TXN,Texas Instruments
-AMGN,Amgen
-CRWD,CrowdStrike
-LIN,Linde
-KLAC,KLA
-SHOP,Shopify
-MRVL,Marvell Technology
-ADI,Analog Devices
-SNDK,Sandisk
-GILD,Gilead Sciences
-QCOM,Qualcomm
-PEP,PepsiCo
-TMUS,T-Mobile US
-ASML,ASML Holding
-ISRG,Intuitive Surgical
-STX,Seagate Technology
-VRTX,Vertex Pharmaceuticals
-BKNG,Booking Holdings
-FTNT,Fortinet
-WDC,Western Digital
-ADP,Automatic Data Processing
-SBUX,Starbucks
-ARM,Arm Holdings
-MAR,Marriott International
-ADBE,Adobe
-CEG,Constellation Energy
-MELI,MercadoLibre
-MNST,Monster Beverage
-CSX,CSX
-INTU,Intuit
-CDNS,Cadence Design Systems
-SNPS,Synopsys
-CTAS,Cintas
-MRNA,Moderna
-DDOG,Datadog
-APP,AppLovin
-MDLZ,Mondelez International
-REGN,Regeneron Pharmaceuticals
-CMCSA,Comcast
-DASH,DoorDash
-ROST,Ross Stores
-LITE,Lumentum Holdings
-ABNB,Airbnb
-ORLY,O'Reilly Automotive
-AEP,American Electric Power
-HON,Honeywell International
-MPWR,Monolithic Power Systems
-NXPI,NXP Semiconductors
-PCAR,PACCAR
-FAST,Fastenal
-FANG,Diamondback Energy
-BKR,Baker Hughes
-PDD,PDD Holdings
-HONA,Honeywell Aerospace
-TER,Teradyne
-MSTR,Strategy
-ADSK,Autodesk
-ALAB,Astera Labs
-PYPL,PayPal Holdings
-CCEP,Coca-Cola Europacific Partners
-XEL,Xcel Energy
-KDP,Keurig Dr Pepper
-EXC,Exelon
-IDXX,IDEXX Laboratories
-NBIS,Nebius Group
-MCHP,Microchip Technology
-TRI,Thomson Reuters
-PAYX,Paychex
-ODFL,Old Dominion Freight Line
-TTWO,Take-Two Interactive
-ROP,Roper Technologies
-WDAY,Workday
-FER,Ferrovial
-DXCM,DexCom
-AXON,Axon Enterprise
-GEHC,GE HealthCare Technologies
-ALNY,Alnylam Pharmaceuticals
-RKLB,Rocket Lab
-CRWV,CoreWeave
-CPRT,Copart
+NVDA,NVIDIA Corporation
+AAPL,Apple Inc.
+MSFT,Microsoft Corporation
+MU,"Micron Technology, Inc."
+AMZN,"Amazon.com, Inc."
+AMD,"Advanced Micro Devices, Inc."
+META,"Meta Platforms, Inc."
+GOOGL,Alphabet Inc.
+TSLA,"Tesla, Inc."
+GOOG,Alphabet Inc.
+SPCX,Space Exploration Technologies Corp.
+WMT,Walmart Inc.
+AVGO,Broadcom Inc.
+INTC,Intel Corporation
+COST,Costco Wholesale Corporation
+PLTR,Palantir Technologies Inc.
+CSCO,"Cisco Systems, Inc."
+LRCX,Lam Research Corporation
+AMAT,"Applied Materials, Inc."
+NFLX,"Netflix, Inc."
+PANW,"Palo Alto Networks, Inc."
+TXN,Texas Instruments Incorporated
+AMGN,Amgen Inc.
+CRWD,"CrowdStrike Holdings, Inc."
+LIN,Linde plc
+KLAC,KLA Corporation
+SHOP,Shopify Inc.
+MRVL,"Marvell Technology, Inc."
+GILD,"Gilead Sciences, Inc."
+ADI,"Analog Devices, Inc."
+SNDK,Sandisk Corporation
+QCOM,QUALCOMM Incorporated
+PEP,"PepsiCo, Inc."
+TMUS,"T-Mobile US, Inc."
+ASML,ASML Holding N.V.
+ISRG,"Intuitive Surgical, Inc."
+STX,Seagate Technology Holdings plc
+VRTX,Vertex Pharmaceuticals Incorporated
+FTNT,"Fortinet, Inc."
+BKNG,Booking Holdings Inc.
+WDC,Western Digital Corporation
+ADP,"Automatic Data Processing, Inc."
+SBUX,Starbucks Corporation
+MAR,"Marriott International, Inc."
+ARM,Arm Holdings plc
+ADBE,Adobe Inc.
+CEG,Constellation Energy Corporation
+MELI,"MercadoLibre, Inc."
+CSX,CSX Corporation
+MNST,Monster Beverage Corporation
+INTU,Intuit Inc.
+CDNS,"Cadence Design Systems, Inc."
+SNPS,"Synopsys, Inc."
+MRNA,"Moderna, Inc."
+CTAS,Cintas Corporation
+DDOG,"Datadog, Inc."
+MDLZ,"Mondelez International, Inc."
+APP,AppLovin Corporation
+REGN,"Regeneron Pharmaceuticals, Inc."
+CMCSA,Comcast Corporation
+DASH,"DoorDash, Inc."
+ROST,"Ross Stores, Inc."
+LITE,Lumentum Holdings Inc.
+ABNB,"Airbnb, Inc."
+ORLY,"O'Reilly Automotive, Inc."
+AEP,"American Electric Power Company, Inc."
+HON,Honeywell International Inc.
+MPWR,"Monolithic Power Systems, Inc."
+FAST,Fastenal Company
+PCAR,PACCAR Inc
+NXPI,NXP Semiconductors N.V.
+FANG,"Diamondback Energy, Inc."
+BKR,Baker Hughes Company
+PDD,PDD Holdings Inc.
+HONA,Honeywell Aerospace Inc.
+TER,"Teradyne, Inc."
+ADSK,"Autodesk, Inc."
+MSTR,Strategy Inc
+ALAB,"Astera Labs, Inc."
+CCEP,Coca-Cola Europacific Partners PLC
+PYPL,"PayPal Holdings, Inc."
+XEL,Xcel Energy Inc.
+KDP,Keurig Dr Pepper Inc.
+EXC,Exelon Corporation
+IDXX,"IDEXX Laboratories, Inc."
+TRI,Thomson Reuters Corporation
+MCHP,Microchip Technology Incorporated
+PAYX,"Paychex, Inc."
+NBIS,Nebius Group N.V.
+ODFL,"Old Dominion Freight Line, Inc."
+TTWO,"Take-Two Interactive Software, Inc."
+ROP,"Roper Technologies, Inc."
+WDAY,"Workday, Inc."
+FER,Ferrovial N.V.
+DXCM,"DexCom, Inc."
+AXON,"Axon Enterprise, Inc."
+GEHC,GE HealthCare Technologies Inc.
+ALNY,"Alnylam Pharmaceuticals, Inc."
+RKLB,Rocket Lab Corporation
+CRWV,"CoreWeave, Inc."
+CPRT,"Copart, Inc."
