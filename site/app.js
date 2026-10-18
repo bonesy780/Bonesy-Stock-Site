@@ -44,7 +44,7 @@
   if (!data.indexes.some((i) => i.id === current)) current = data.indexes[0].id;
   function renderTabs() {
     $("tabs").innerHTML = data.indexes.map((i) =>
-      `<button class="tab" role="tab" aria-selected="${i.id === current}" data-id="${i.id}">${esc(i.name)}</button>`).join("");
+      `<button class="tab" role="tab" aria-selected="${i.id === current}" data-id="${i.id}">${i.region === "Canada" ? '<svg class="flag" aria-hidden="true"><use href="#flag-ca"/></svg>' : ""}${esc(i.name)}</button>`).join("");
   }
   $("tabs").addEventListener("click", (e) => {
     const b = e.target.closest(".tab");
@@ -118,6 +118,31 @@
     `Buy ideas need an analyst consensus of Buy or better from at least 5 analysts, 10% or more upside to the average price target, a positive 3-month return and a price above the 50-day average.`,
     `Taiwan 50 is approximated by the 50 largest companies on the Taiwan Stock Exchange. Member lists are refreshed from public sources when available.`,
   ].map((t) => `<li>${esc(t)}</li>`).join("");
+
+  // Newsroom ticker: index moves, then each index's leaders
+  const tick = [];
+  for (const ix of data.indexes) {
+    tick.push(`<span><b>${esc(ix.name)}</b>${ix.level ? ix.level.toLocaleString(undefined, { maximumFractionDigits: 0 }) : ""} ${pct(ix.chg1d)}</span>`);
+  }
+  for (const ix of data.indexes) {
+    for (const s of ix.top.slice(0, 3)) tick.push(`<span><b>${esc(s.symbol)}</b>${esc(s.name)} ${pct(s.chg1d)}</span>`);
+  }
+  $("ticker").innerHTML = tick.join("");
+
+  // Control-room wall: one screen per index, drawn from its 3-month trend
+  $("monitors").innerHTML = [...data.indexes, ...data.indexes.slice(0, 5)].map((ix) =>
+    `<div class="monitor"><span class="lbl">${esc(ix.name.split(" (")[0])}</span>${spark(ix.spark, 200, 80)}</div>`).join("");
+  document.querySelectorAll(".monitor svg").forEach((svg) => { svg.setAttribute("preserveAspectRatio", "none"); svg.removeAttribute("width"); svg.removeAttribute("height"); });
+
+  // World clocks
+  const zones = [["TOR", "America/Toronto"], ["NYC", "America/New_York"], ["TYO", "Asia/Tokyo"], ["SEL", "Asia/Seoul"], ["TPE", "Asia/Taipei"]];
+  const tickClocks = () => {
+    const now = new Date();
+    $("clocks").innerHTML = zones.map(([k, tz]) =>
+      `<span>${k}<b>${now.toLocaleTimeString("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit" })}</b></span>`).join("");
+  };
+  tickClocks();
+  setInterval(tickClocks, 30000);
 
   renderTabs();
   renderIndex();
