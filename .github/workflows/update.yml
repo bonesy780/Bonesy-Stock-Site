@@ -31,8 +31,10 @@ jobs:
       - run: python scripts/build_data.py
       - name: Gather market news
         run: python scripts/build_news.py || echo "::warning::news step failed, deploying without fresh news"
+      - name: Save price history for the stock lookup page
+        run: python scripts/build_history.py || echo "::warning::history step failed, stock lookup may be stale"
       - name: Bust browser cache for CSS and JS
-        run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/index.html
+        run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html
       - name: Save refreshed member lists
         run: |
           git config user.name "github-actions[bot]"

@@ -22,6 +22,7 @@
   };
   const divYield = (s) => s.divYield != null ? `<span class="num">${s.divYield.toFixed(2)}%</span>` : s.divFreq === "None" ? '<span class="num muted">0%</span>' : '<span class="num">–</span>';
   const divFreq = (s) => `<span class="${s.divFreq === "None" ? "muted" : ""}">${esc(s.divFreq || "–")}</span>`;
+  const link = (s) => `<a href="stock.html?t=${encodeURIComponent(s.ticker)}">${esc(s.name)}</a>`;
   const pillClass = (r) => /buy/i.test(r) ? "buy" : /sell|under/i.test(r) ? "sell" : "";
   const spark = (pts, w = 96, h = 28) => {
     if (!pts || pts.length < 2) return "";
@@ -62,7 +63,7 @@
     const rows = ix.top.map((s, n) => `
       <tr>
         <td class="rank num">${n + 1}</td>
-        <td><div class="co"><span class="nm" title="${esc(s.name)}">${esc(s.name)}</span><span class="tk">${esc(s.symbol)}${s.sector ? " · " + esc(s.sector) : ""}</span></div></td>
+        <td><div class="co"><span class="nm" title="${esc(s.name)}">${link(s)}</span><span class="tk">${esc(s.symbol)}${s.sector ? " · " + esc(s.sector) : ""}</span></div></td>
         <td class="num">${money(s.price, ix.currency)}</td>
         <td>${pct(s.chg1w)}</td>
         <td>${pct(s.chg1m)}</td>
@@ -81,7 +82,7 @@
     const bigRows = largest.map((s, n) => `
       <tr>
         <td class="rank num">${n + 1}</td>
-        <td><div class="co"><span class="nm" title="${esc(s.name)}">${esc(s.name)}</span><span class="tk">${esc(s.symbol)}</span></div></td>
+        <td><div class="co"><span class="nm" title="${esc(s.name)}">${link(s)}</span><span class="tk">${esc(s.symbol)}</span></div></td>
         <td><span class="score"><span class="bar"><i style="width:${(s.mcapUsd || 0) / maxCap * 100}%"></i></span><span class="num">${big(s.mcapUsd)}</span></span></td>
         <td class="num">${money(s.price, ix.currency)}</td>
         <td>${pct(s.chg1d)}</td>
@@ -124,7 +125,7 @@
     $("ideas").innerHTML = data.buyIdeas.length ? data.buyIdeas.map((s) => `
       <article class="panel card">
         <div class="card-top">
-          <div><div class="nm">${esc(s.name)}</div><div class="tk">${esc(s.ticker)} · ${esc((s.indexes || []).join(", "))}</div></div>
+          <div><div class="nm">${link(s)}</div><div class="tk">${esc(s.ticker)} · ${esc((s.indexes || []).join(", "))}</div></div>
           <span class="pill buy">${esc(s.rating)}</span>
         </div>
         <ul>${s.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>
@@ -138,7 +139,7 @@
     $("sells").innerHTML = list.length ? list.map((s) => `
       <article class="panel card">
         <div class="card-top">
-          <div><div class="nm">${esc(s.name)}</div><div class="tk">${esc(s.ticker)} · ${esc((s.indexes || []).join(", "))}</div></div>
+          <div><div class="nm">${link(s)}</div><div class="tk">${esc(s.ticker)} · ${esc((s.indexes || []).join(", "))}</div></div>
           <span class="pill sell">${esc(s.rating)}</span>
         </div>
         <ul>${s.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>
@@ -150,7 +151,7 @@
   function renderWatch() {
     $("watch").innerHTML = data.watchlist.length ? data.watchlist.map((s) => `
       <div class="panel watch-row">
-        <div class="co"><span class="nm">${esc(s.name)}</span><span class="tk">${esc(s.ticker)} · ${esc((s.indexes || []).join(", "))}</span></div>
+        <div class="co"><span class="nm">${link(s)}</span><span class="tk">${esc(s.ticker)} · ${esc((s.indexes || []).join(", "))}</span></div>
         <div class="tags">${s.why.map((w) => `<span class="tag ${/earnings/.test(w) ? "earn" : ""}">${esc(w)}</span>`).join("")}</div>
         <div>${pct(s.chg1w)} <span class="tk">1W</span></div>
       </div>`).join("") : `<div class="panel empty">Nothing stands out for the coming week.</div>`;

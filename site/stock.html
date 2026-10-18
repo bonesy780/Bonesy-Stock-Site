@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stock Lookup · Market Leaders</title>
+<meta name="description" content="Look up any stock in the S&P 500, Nasdaq-100, Dow, TSX, Nikkei 225, KOSPI 200 or Taiwan 50 and chart its price from one day to all time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <nav class="menu" aria-label="Pages"><a href="./">Stocks</a><a href="stock.html" aria-current="page">Stock Lookup</a><a href="news.html">Market News</a></nav>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Stock lookup</h1>
+    <p>Search any of the 1,200 or so stocks in the seven markets by name or ticker, then chart its price over any range.</p>
+  </section>
+
+  <div class="lookup">
+    <input id="q" type="search" placeholder="Search a company or ticker, e.g. Shopify or RY" autocomplete="off" spellcheck="false" aria-label="Search stocks" role="combobox" aria-expanded="false" aria-controls="results">
+    <ul id="results" class="panel results" role="listbox" hidden></ul>
+  </div>
+
+  <section id="quote" aria-live="polite"></section>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Prices come from Yahoo Finance and are refreshed with the rest of the site each weekday after the US close, so they are not live. Data can be delayed or wrong.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="rain.js?v=__V__"></script>
+<script src="stock.js?v=__V__"></script>
+</body>
+</html>
