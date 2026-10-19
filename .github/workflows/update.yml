@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["site/**", "scripts/**", ".github/workflows/**"]
+    paths: ["site/**", "scripts/**", "worker/**", ".github/workflows/**"]
 
 permissions:
   contents: write
@@ -21,6 +21,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,6 +36,33 @@ jobs:
         run: python scripts/build_news.py || echo "::warning::news step failed, deploying without fresh news"
       - name: Save price history for the stock lookup page
         run: python scripts/build_history.py || echo "::warning::history step failed, stock lookup may be stale"
+      - name: Deploy the live price service
+        id: worker
+        if: env.CF_TOKEN != '' && env.CF_ACCOUNT != ''
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+      - name: Point the site at the live price service
+        env:
+          LIVE_API_URL: ${{ vars.LIVE_API_URL }}
+          DEPLOYED_URL: ${{ steps.worker.outputs.deployment-url }}
+        run: |
+          url="${LIVE_API_URL:-$DEPLOYED_URL}"
+          if [ -z "$url" ] && [ -n "$CF_TOKEN" ] && [ -n "$CF_ACCOUNT" ]; then
+            sub=$(curl -sf -H "Authorization: Bearer $CF_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/subdomain" | jq -r '.result.subdomain // empty') || true
+            [ -n "$sub" ] && url="https://market-leaders-live.$sub.workers.dev"
+          fi
+          url="${url%/}"
+          if [ -n "$url" ]; then
+            sed -i "s#__LIVE_API__#$url#" site/live.js
+            echo "Live prices from $url"
+          else
+            echo "::notice::No live price service set up yet, so the site shows the saved prices. See README."
+          fi
       - name: Bust browser cache for CSS and JS
         run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html
       - name: Save refreshed member lists

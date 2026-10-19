@@ -22,7 +22,7 @@
   }
   // Extra facts (market cap, analysts, dividends) for stocks the main page covers
   fetch("data.json", { cache: "no-store" }).then((r) => r.json()).then((d) => {
-    $("updated").textContent = "Updated " + new Date(d.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    if (!$("updated").querySelector(".live-dot")) $("updated").textContent = "Updated " + new Date(d.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
     const all = d.indexes.flatMap((i) => i.top.concat(i.largest || [])).concat(d.buyIdeas, d.sellIdeas || [], d.watchlist);
     for (const s of all) details[s.ticker] = { ...details[s.ticker], ...s };
     if (window.startRain) window.startRain(d.rainTickers || []);
@@ -95,6 +95,31 @@
       hist = { d: [], i: [] };
     }
     if (current === s) renderQuote();
+    if (current === s) await goLive(s);
+  }
+
+  // Swap in today's live prices from the price service, keeping the saved history for longer ranges
+  async function goLive(s) {
+    if (!(window.Live && Live.on) || !hist) return;
+    let live;
+    try { live = await Live.chart(s.t, "5d"); } catch (e) { return; }
+    if (current !== s || !live.i || !live.i.length) return;
+    hist.i = live.i;
+    // The last 5-minute bar can lag the latest trade, so end the line on the live price
+    if (live.price != null) live.i[live.i.length - 1] = [live.i[live.i.length - 1][0], live.price];
+    const [ts, price] = live.i[live.i.length - 1];
+    const day = (t) => new Date(t * 1000).toISOString().slice(0, 10);
+    const d = hist.d;
+    if (!d.length || day(d[d.length - 1][0]) < day(ts)) d.push([ts, price]);
+    else d[d.length - 1] = [d[d.length - 1][0], price];
+    const open = Date.now() / 1000 - ts < 30 * 60;
+    $("updated").innerHTML = `<span class="live-dot ${open ? "on" : ""}" aria-hidden="true"></span>${open ? "Live" : "Market closed"} · ${Live.stamp(new Date())}`;
+    // Keep the hover tooltip steady: only redraw when no one is pointing at the chart
+    if (!document.querySelector("#chart .tip:not([hidden])")) renderQuote();
+  }
+  if (window.Live && Live.on) {
+    let first = true;
+    Live.every(60000, () => { if (first) { first = false; return; } return current && hist && goLive(current); });
   }
 
   function series() {
