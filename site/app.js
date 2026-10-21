@@ -213,4 +213,31 @@
   renderIdeas();
   renderSells();
   renderWatch();
+
+  // Live prices: refresh the visible prices every 30 seconds while the page is open
+  if (window.Live && Live.on) {
+    $("hero-note").textContent = "Prices update live while markets are open. Rankings and ideas refresh every weekday after the US close.";
+    const patch = (q) => (s) => {
+      const x = q[s.ticker];
+      if (x && x.price != null) { s.price = x.price; if (x.chg1d != null) s.chg1d = x.chg1d; }
+    };
+    const refresh = async () => {
+      const ix = data.indexes.find((i) => i.id === current);
+      const items = ix.top.concat(ix.largest || [], data.buyIdeas, data.sellIdeas || [], data.watchlist, (data.snapshots || {})[period] || []);
+      const q = await Live.quotes(data.indexes.map((i) => i.benchmark).concat(items.map((s) => s.ticker)));
+      if (!Object.keys(q).length) return;
+      for (const i of data.indexes) {
+        const x = q[i.benchmark];
+        if (x && x.price != null) { i.level = x.price; if (x.chg1d != null) i.chg1d = x.chg1d; }
+      }
+      items.forEach(patch(q));
+      const open = Object.values(q).some((x) => x.state === "open");
+      $("updated").innerHTML = `<span class="live-dot ${open ? "on" : ""}" aria-hidden="true"></span>${open ? "Live" : "Markets closed"} · ${Live.stamp(new Date())}`;
+      renderMarkets(); renderSnaps(); renderIndex(); renderIdeas(); renderSells();
+    };
+    Live.every(30000, refresh);
+    // Fetch the newly picked market right away instead of waiting for the next tick
+    for (const id of ["tabs", "markets"]) $(id).addEventListener("click", () => setTimeout(refresh, 0));
+    document.querySelector(".seg").addEventListener("click", () => setTimeout(refresh, 0));
+  }
 })();

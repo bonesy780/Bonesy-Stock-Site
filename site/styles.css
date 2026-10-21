@@ -50,6 +50,10 @@ body {
 .brand { font-weight: 700; font-size: 17px; display: flex; align-items: center; gap: 8px; }
 .logo { color: var(--accent); }
 .updated { color: var(--muted); font-size: 13px; text-align: right; }
+.live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 6px; vertical-align: 1px; }
+.live-dot.on { background: var(--up); box-shadow: 0 0 0 0 var(--up); animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--up) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 6px transparent; } }
+@media (prefers-reduced-motion: reduce) { .live-dot.on { animation: none; } }
 
 .hero { padding: 36px 0 20px; }
 .hero h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0 0 10px; letter-spacing: -.02em; }

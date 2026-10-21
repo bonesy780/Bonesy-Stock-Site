@@ -341,7 +341,7 @@ def build():
         div_rows += cands + largest + losers
         indexes_out.append({
             "id": ix["id"], "name": ix["name"], "region": ix["region"], "currency": ix["currency"],
-            "members": len(names), "priced": len(rows),
+            "benchmark": ix["benchmark"], "members": len(names), "priced": len(rows),
             "level": bstats.get("price"), "chg1d": bstats.get("chg1d"), "chg1w": bstats.get("chg1w"),
             "chg1m": bstats.get("chg1m"), "ytd": bstats.get("ytd"), "spark": bstats.get("spark", []),
             "top": cands[:10],
