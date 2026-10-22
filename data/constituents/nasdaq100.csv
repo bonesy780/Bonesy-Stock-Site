@@ -2,101 +2,101 @@ symbol,name
 NVDA,NVIDIA Corporation
 AAPL,Apple Inc.
 MSFT,Microsoft Corporation
-MU,"Micron Technology, Inc."
 AMZN,"Amazon.com, Inc."
+MU,"Micron Technology, Inc."
 AMD,"Advanced Micro Devices, Inc."
-META,"Meta Platforms, Inc."
 TSLA,"Tesla, Inc."
+META,"Meta Platforms, Inc."
 GOOGL,Alphabet Inc.
-SPCX,Space Exploration Technologies Corp.
 GOOG,Alphabet Inc.
-AVGO,Broadcom Inc.
+SPCX,Space Exploration Technologies Corp.
 WMT,Walmart Inc.
-INTC,Intel Corporation
+AVGO,Broadcom Inc.
 PLTR,Palantir Technologies Inc.
+INTC,Intel Corporation
 COST,Costco Wholesale Corporation
 CSCO,"Cisco Systems, Inc."
-LRCX,Lam Research Corporation
 AMAT,"Applied Materials, Inc."
 PANW,"Palo Alto Networks, Inc."
+LRCX,Lam Research Corporation
 NFLX,"Netflix, Inc."
 TXN,Texas Instruments Incorporated
 CRWD,"CrowdStrike Holdings, Inc."
 AMGN,Amgen Inc.
 LIN,Linde plc
+SHOP,Shopify Inc.
 MRVL,"Marvell Technology, Inc."
 KLAC,KLA Corporation
-SHOP,Shopify Inc.
-SNDK,Sandisk Corporation
-ADI,"Analog Devices, Inc."
 GILD,"Gilead Sciences, Inc."
-QCOM,QUALCOMM Incorporated
+ADI,"Analog Devices, Inc."
 PEP,"PepsiCo, Inc."
+SNDK,Sandisk Corporation
+QCOM,QUALCOMM Incorporated
 TMUS,"T-Mobile US, Inc."
-STX,Seagate Technology Holdings plc
-ASML,ASML Holding N.V.
 ISRG,"Intuitive Surgical, Inc."
-WDC,Western Digital Corporation
+ASML,ASML Holding N.V.
+STX,Seagate Technology Holdings plc
 VRTX,Vertex Pharmaceuticals Incorporated
+WDC,Western Digital Corporation
 FTNT,"Fortinet, Inc."
 BKNG,Booking Holdings Inc.
 ADP,"Automatic Data Processing, Inc."
 SBUX,Starbucks Corporation
-MAR,"Marriott International, Inc."
 ADBE,Adobe Inc.
-ARM,Arm Holdings plc
-MRNA,"Moderna, Inc."
-CEG,Constellation Energy Corporation
-MELI,"MercadoLibre, Inc."
-DDOG,"Datadog, Inc."
-MNST,Monster Beverage Corporation
+MAR,"Marriott International, Inc."
 INTU,Intuit Inc.
-CDNS,"Cadence Design Systems, Inc."
 CSX,CSX Corporation
+MNST,Monster Beverage Corporation
+ARM,Arm Holdings plc
+MELI,"MercadoLibre, Inc."
+CEG,Constellation Energy Corporation
 CTAS,Cintas Corporation
+DDOG,"Datadog, Inc."
+CDNS,"Cadence Design Systems, Inc."
 SNPS,"Synopsys, Inc."
-APP,AppLovin Corporation
 REGN,"Regeneron Pharmaceuticals, Inc."
 MDLZ,"Mondelez International, Inc."
 CMCSA,Comcast Corporation
-LITE,Lumentum Holdings Inc.
-DASH,"DoorDash, Inc."
+APP,AppLovin Corporation
 ROST,"Ross Stores, Inc."
+DASH,"DoorDash, Inc."
 ABNB,"Airbnb, Inc."
 ORLY,"O'Reilly Automotive, Inc."
+MRNA,"Moderna, Inc."
 AEP,"American Electric Power Company, Inc."
+LITE,Lumentum Holdings Inc.
 HON,Honeywell International Inc.
-MPWR,"Monolithic Power Systems, Inc."
 NXPI,NXP Semiconductors N.V.
 FAST,Fastenal Company
+MPWR,"Monolithic Power Systems, Inc."
 PCAR,PACCAR Inc
-MSTR,Strategy Inc
 FANG,"Diamondback Energy, Inc."
-BKR,Baker Hughes Company
-TER,"Teradyne, Inc."
 PDD,PDD Holdings Inc.
-HONA,Honeywell Aerospace Inc.
+MSTR,Strategy Inc
+BKR,Baker Hughes Company
 ADSK,"Autodesk, Inc."
-ALAB,"Astera Labs, Inc."
-PYPL,"PayPal Holdings, Inc."
+HONA,Honeywell Aerospace Inc.
 CCEP,Coca-Cola Europacific Partners PLC
 XEL,Xcel Energy Inc.
+TER,"Teradyne, Inc."
+PYPL,"PayPal Holdings, Inc."
 KDP,Keurig Dr Pepper Inc.
-EXC,Exelon Corporation
-IDXX,"IDEXX Laboratories, Inc."
 TRI,Thomson Reuters Corporation
-MCHP,Microchip Technology Incorporated
-NBIS,Nebius Group N.V.
+EXC,Exelon Corporation
+ALAB,"Astera Labs, Inc."
+IDXX,"IDEXX Laboratories, Inc."
+ROP,"Roper Technologies, Inc."
 PAYX,"Paychex, Inc."
 WDAY,"Workday, Inc."
+MCHP,Microchip Technology Incorporated
 ODFL,"Old Dominion Freight Line, Inc."
-ROP,"Roper Technologies, Inc."
 TTWO,"Take-Two Interactive Software, Inc."
+NBIS,Nebius Group N.V.
 FER,Ferrovial N.V.
 AXON,"Axon Enterprise, Inc."
-RKLB,Rocket Lab Corporation
 GEHC,GE HealthCare Technologies Inc.
-DXCM,"DexCom, Inc."
 ALNY,"Alnylam Pharmaceuticals, Inc."
-CRWV,"CoreWeave, Inc."
+RKLB,Rocket Lab Corporation
+DXCM,"DexCom, Inc."
 CPRT,"Copart, Inc."
+CRWV,"CoreWeave, Inc."
