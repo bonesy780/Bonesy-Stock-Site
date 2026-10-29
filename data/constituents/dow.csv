@@ -3,19 +3,19 @@ GS,"The Goldman Sachs Group, Inc."
 CAT,Caterpillar Inc.
 MSFT,Microsoft Corporation
 AMGN,Amgen Inc.
-UNH,UnitedHealth Group Incorporated
 V,Visa Inc.
+UNH,UnitedHealth Group Incorporated
 TRV,"The Travelers Companies, Inc."
 AAPL,Apple Inc.
 JPM,JPMorgan Chase & Co.
-GOOGL,Alphabet Inc.
 SHW,The Sherwin-Williams Company
 HD,"The Home Depot, Inc."
 AXP,American Express Company
+GOOGL,Alphabet Inc.
 JNJ,Johnson & Johnson
-AMZN,"Amazon.com, Inc."
-IBM,International Business Machines Corporation
 MCD,McDonald's Corporation
+IBM,International Business Machines Corporation
+AMZN,"Amazon.com, Inc."
 CRM,"Salesforce, Inc."
 CVX,Chevron Corporation
 HON,Honeywell International Inc.
@@ -25,7 +25,7 @@ BA,The Boeing Company
 PG,The Procter & Gamble Company
 MRK,"Merck & Co., Inc."
 WMT,Walmart Inc.
-CSCO,"Cisco Systems, Inc."
 DIS,The Walt Disney Company
+CSCO,"Cisco Systems, Inc."
 KO,The Coca-Cola Company
 NKE,"NIKE, Inc."
