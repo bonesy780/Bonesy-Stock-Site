@@ -6,9 +6,9 @@ AMGN,Amgen Inc.
 V,Visa Inc.
 TRV,"The Travelers Companies, Inc."
 UNH,UnitedHealth Group Incorporated
-SHW,The Sherwin-Williams Company
 HD,"The Home Depot, Inc."
 AAPL,Apple Inc.
+SHW,The Sherwin-Williams Company
 JPM,JPMorgan Chase & Co.
 AXP,American Express Company
 GOOGL,Alphabet Inc.
@@ -16,9 +16,9 @@ MCD,McDonald's Corporation
 JNJ,Johnson & Johnson
 AMZN,"Amazon.com, Inc."
 IBM,International Business Machines Corporation
+HON,Honeywell International Inc.
 CRM,"Salesforce, Inc."
 CVX,Chevron Corporation
-HON,Honeywell International Inc.
 MMM,3M Company
 NVDA,NVIDIA Corporation
 BA,The Boeing Company
@@ -26,6 +26,6 @@ PG,The Procter & Gamble Company
 MRK,"Merck & Co., Inc."
 WMT,Walmart Inc.
 DIS,The Walt Disney Company
-CSCO,"Cisco Systems, Inc."
 KO,The Coca-Cola Company
+CSCO,"Cisco Systems, Inc."
 NKE,"NIKE, Inc."
