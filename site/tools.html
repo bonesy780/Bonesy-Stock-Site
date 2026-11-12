@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculators · Market Leaders</title>
+<meta name="description" content="Trading calculators: position size, profit and loss, average cost, dividend income, compound growth, options payoff and currency conversion.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Calculators</h1>
+    <p>Quick tools for planning trades: how many shares to buy for the risk you want, what a trade made or lost, your new average cost, dividend income, long-term growth and option payoffs. Pick a stock in any calculator to fill in its latest price.</p>
+  </section>
+
+  <nav class="tabs" id="calc-tabs" aria-label="Calculators"></nav>
+  <div class="calc-grid" id="calcs"></div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> These calculators do simple math on the numbers you enter. They leave out taxes, and returns are never guaranteed. Options can lose their whole cost, and selling options can lose more than you receive.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="tools.js?v=__V__"></script>
+</body>
+</html>

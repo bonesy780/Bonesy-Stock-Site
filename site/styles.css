@@ -436,8 +436,8 @@ section { margin-bottom: 40px; }
 .toolbar .seg button { flex: none; white-space: nowrap; }
 .toolbar label { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 1299px) {
-  .toolbar, p.hint, .list-tabs { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; }
-  p.hint:empty { display: none; }
+  main > .toolbar, main > p.hint, .list-tabs { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; }
+  main > p.hint:empty { display: none; }
 }
 
 /* stock screener */
@@ -526,3 +526,26 @@ section { margin-bottom: 40px; }
   .pf-grid, .pf-two { grid-template-columns: 1fr; }
   .ticket { position: static; }
 }
+
+/* calculators */
+.calc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.calc { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.calc h2 { margin: 0; font-size: 18px; }
+.calc > .hint { margin: 0; }
+.calc-stock { margin: 0; max-width: none; }
+.calc-stock input { font-size: 14px; padding: 8px 12px; }
+.calc-in { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.calc-in label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.calc-in label.check { flex-direction: row; align-items: center; gap: 8px; color: var(--text); font-size: 14px; }
+.calc-in .field { width: 100%; }
+.calc-res { border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.calc-out { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted); }
+.calc-out strong { color: var(--text); font-size: 14px; }
+.calc-out strong.up { color: var(--up); } .calc-out strong.down { color: var(--down); }
+.calc-out.lead { font-size: 15px; color: var(--text); padding-bottom: 4px; }
+.calc-out.lead strong { font-size: 20px; }
+.calc-chart { width: 100%; height: auto; margin-top: 8px; }
+.calc-chart .axis { fill: var(--muted); font: 11px "JetBrains Mono", ui-monospace, monospace; }
+.calc-chart .base { stroke: var(--muted); stroke-dasharray: 3 4; }
+.calc .hint { margin: 4px 0 0; }
+@media (max-width: 640px) { .calc-grid { grid-template-columns: 1fr; } }
