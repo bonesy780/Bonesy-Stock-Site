@@ -35,12 +35,24 @@
     <span class="spacer"></span>
     <button class="btn" id="new">New list</button>
     <button class="btn" id="rename">Rename</button>
+    <button class="btn" id="csv">Download CSV</button>
     <button class="btn danger" id="delete">Delete list</button>
   </div>
 
   <div class="panel wl-summary" id="summary" hidden></div>
   <div class="panel table-wrap" id="table"></div>
   <p class="hint" id="note"></p>
+
+  <dialog class="panel wl-dlg" id="note-dlg">
+    <form method="dialog" id="note-form">
+      <h2 id="note-title"></h2>
+      <p class="hint" id="note-price"></p>
+      <label>Your notes <textarea class="field" id="note-text" rows="4" maxlength="500" placeholder="Why you're watching it, what would make you buy or sell…"></textarea></label>
+      <label>Target price <input class="field" id="note-target" type="number" min="0" step="any" inputmode="decimal" placeholder="Optional"></label>
+      <p class="hint">Saved in this browser and shown on every list with this stock. Set a <a href="alerts.html">price alert</a> to be told when it gets there.</p>
+      <div class="wl-dlg-btns"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="save">Save</button></div>
+    </form>
+  </dialog>
 
   <p class="disclaimer"><strong>Not financial advice.</strong> Prices come from Yahoo Finance and can be delayed up to 20 minutes. Valuations, analyst views and earnings dates refresh each weekday after the US close.</p>
 </main>

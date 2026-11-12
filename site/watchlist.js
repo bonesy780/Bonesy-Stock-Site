@@ -18,10 +18,15 @@
   const live = {};
   const sort = store.get("watchSort", { key: "pos", dir: 1 });
 
+  // Your own note and target price per stock, shared by all lists
+  const NKEY = "watchNotes";
+  const notes = () => store.get(NKEY, {});
   const row = (t, pos) => {
     const m = M.byTicker[t] || {}, q = live[t] || {}, info = names[t] || {};
     const price = q.price ?? m.p, d1 = q.chg1d ?? m.d1;
-    return { ...m, t, pos, s: m.s || info.s || t, name: m.n || info.n || t, cur: m.cur || info.cur || "USD", price, d1 };
+    const n = notes()[t] || {};
+    const toTarget = n.target && price ? (n.target / price - 1) * 100 : null;
+    return { ...m, t, pos, s: m.s || info.s || t, name: m.n || info.n || t, cur: m.cur || info.cur || "USD", price, d1, note: n.note || "", target: n.target || null, toTarget };
   };
   const earnSoon = (d) => {
     if (!d) return "–";
@@ -56,6 +61,9 @@
     { key: "recMean", label: "Analysts", title: "Average analyst rating", val: (r) => r.recMean, html: rating },
     { key: "earnings", label: "Earnings", title: "Next earnings report date", val: (r) => r.earnings, html: (r) => earnSoon(r.earnings) },
     { key: "trend", label: "1M trend", html: (r) => spark(r.spark, 80, 24) },
+    { key: "toTarget", label: "My target", title: "Your own target price, and how far the price is from it", val: (r) => r.toTarget,
+      html: (r) => r.target ? `<span class="num">${money(r.target, r.cur)}</span><div class="${Math.abs(r.toTarget) < 2 ? "pill buy" : "tk"}">${Math.abs(r.toTarget) < 2 ? "Near target" : (r.toTarget > 0 ? "+" : "") + r.toTarget.toFixed(1) + "%"}</div>` : "–" },
+    { key: "note", label: "Notes", sm: true, html: (r) => `<button class="wl-note ${r.note || r.target ? "has" : ""}" data-note="${esc(r.t)}" title="${r.note ? esc(r.note) : "Add a note or target price"}" aria-label="Notes for ${esc(r.s)}">${r.note ? esc(r.note.length > 16 ? r.note.slice(0, 15) + "…" : r.note) : "✎"}</button>` },
     { key: "rm", label: "", sm: true, html: (r) => `<button class="x" data-rm="${esc(r.t)}" title="Remove ${esc(r.s)} from this list" aria-label="Remove ${esc(r.s)}">✕</button>` },
   ];
   let confirmDelete = false;
@@ -174,4 +182,40 @@
     render();
   }
   if (window.Live && Live.on) Live.every(30000, refresh);
+
+  // ---- notes dialog
+  const dlg = $("note-dlg");
+  let editing = null;
+  $("table").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-note]");
+    if (!b) return;
+    editing = b.dataset.note;
+    const r = row(editing, 0), n = notes()[editing] || {};
+    $("note-title").textContent = `${r.s} · ${r.name}`;
+    $("note-price").textContent = r.price != null ? `Price now ${money(r.price, r.cur)}` : "";
+    $("note-text").value = n.note || "";
+    $("note-target").value = n.target || "";
+    dlg.showModal();
+    $("note-text").focus();
+  });
+  $("note-form").addEventListener("submit", (e) => {
+    if (e.submitter && e.submitter.value === "cancel") return;
+    const all = notes(), note = $("note-text").value.trim(), target = +$("note-target").value || null;
+    if (note || target) all[editing] = { note, target }; else delete all[editing];
+    store.set(NKEY, all);
+    render();
+  });
+
+  // ---- download the list as CSV
+  $("csv").addEventListener("click", () => {
+    const v = Watch.all(), list = v.lists[v.active] || v.lists[0];
+    const q = (x) => `"${String(x ?? "").replace(/"/g, '""')}"`;
+    const lines = [["Ticker", "Name", "Currency", "Price", "Day %", "YTD %", "P/E", "Yield %", "My target", "Notes"].join(",")]
+      .concat(list.tickers.map((t) => { const r = row(t, 0); return [r.t, q(r.name), r.cur, r.price ?? "", r.d1 ?? "", r.ytd ?? "", r.pe ?? "", r.divYield ?? "", r.target ?? "", q(r.note)].join(","); }));
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
+    a.download = `${list.name.replace(/[^\w-]+/g, "-")}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
 })();
