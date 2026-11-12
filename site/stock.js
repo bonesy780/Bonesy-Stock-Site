@@ -156,6 +156,50 @@
     return ["vol"];
   })().filter((id) => INDICATORS.some((m) => m.id === id)));
 
+  // ---- compare with the seven market indexes from the main page
+  const COMPARE = [
+    ["^GSPTSE", "TSX"], ["^GSPC", "S&P 500"], ["^NDX", "Nasdaq-100"], ["^DJI", "Dow"],
+    ["^N225", "Nikkei 225"], ["^KS200", "KOSPI 200"], ["^TWII", "Taiwan 50"],
+  ].map(([t, label], k) => ({ t, label, color: `--cmp-${k + 1}` }));
+  const compare = new Set((() => {
+    try { const v = JSON.parse(localStorage.getItem("lookupCmp")); if (Array.isArray(v)) return v; } catch {}
+    return [];
+  })().filter((t) => COMPARE.some((c) => c.t === t)));
+  const cmpHist = {};
+  async function loadCmp(t) {
+    if (cmpHist[t]) return;
+    cmpHist[t] = "loading";
+    let h;
+    try {
+      h = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })).json();
+    } catch (e) {
+      h = { d: [], i: [] };
+    }
+    if (window.Live && Live.on) {
+      try { const live = await Live.chart(t, "5d"); if (live.i && live.i.length) h.i = live.i; } catch (e) { /* keep saved prices */ }
+    }
+    cmpHist[t] = h;
+    if (!current || !hist || document.querySelector("#chart .tip:not([hidden])")) return;
+    // Redraw without losing keyboard focus on the toggle that was pressed
+    const f = document.activeElement && document.activeElement.closest && document.activeElement.closest(".chip");
+    const sel = f ? (f.dataset.c ? `.chip[data-c="${CSS.escape(f.dataset.c)}"]` : `.chip[data-i="${f.dataset.i}"]`) : null;
+    renderQuote();
+    if (sel) { const again = $("quote").querySelector(sel); if (again) again.focus(); }
+  }
+  // Indexes ready to draw against the stock on screen
+  const comparing = () => COMPARE.filter((c) => compare.has(c.t) && c.t !== current.t
+    && cmpHist[c.t] && cmpHist[c.t] !== "loading" && cmpHist[c.t].d && cmpHist[c.t].d.length);
+  // For each time, the index's latest close at or before it (markets close at different hours)
+  function align(src, times) {
+    const out = [];
+    let k = -1;
+    for (const t of times) {
+      while (k + 1 < src.length && src[k + 1][0] <= t) k++;
+      out.push(k >= 0 ? src[k][1] : null);
+    }
+    return out;
+  }
+
   async function pick(t, push = true) {
     const s = stocks.find((x) => x.t === t);
     if (!s) return;
@@ -312,13 +356,17 @@
         ${head}
         <div class="ranges" role="tablist" aria-label="Chart range">${RANGES.map(([r]) =>
           `<button class="tab" role="tab" aria-selected="${r === range}" data-r="${r}">${r}</button>`).join("")}</div>
+        <div class="ind-bar cmp-bar" role="group" aria-label="Compare with a market index">
+          <span class="ind-group">Compare</span>
+          ${COMPARE.filter((c) => c.t !== s.t).map((c) => `<button class="chip" aria-pressed="${compare.has(c.t)}" data-c="${esc(c.t)}" title="Overlay the ${esc(c.label)} as % change from the start of the chart"><i class="sw" style="--c:var(${c.color})"></i>${esc(c.label)}</button>`).join("")}
+        </div>
         <div class="ind-bar" role="group" aria-label="Technical indicators">
           ${INDICATORS.map((m, k) => `${k === 0 || m.panel !== INDICATORS[k - 1].panel ? `<span class="ind-group">${m.panel ? "Panels" : "Overlays"}</span>` : ""}
             <button class="chip" aria-pressed="${shown.has(m.id)}" data-i="${m.id}" title="${esc(m.help)}"><i class="sw ${m.dash ? "dash" : ""}" style="--c:var(${m.color})"></i>${esc(m.label)}</button>`).join("")}
         </div>
         <div class="legend" id="legend"></div>
         <div class="chart" id="chart"></div>
-        <div class="ind-note">Indicator periods count ${S.unit} bars.</div>
+        <div class="ind-note">${comparing().length ? "Showing % change from the start of the chart so the stock and indexes line up. " : ""}Indicator periods count ${S.unit} bars.</div>
         <div class="stats quote-stats">${stats.map(([l, v]) => `<div class="stat"><div class="label">${l}</div><div class="value num">${v}</div></div>`).join("")}</div>
       </div>`;
     $("qp").innerHTML = `<div class="value num big">${s.index ? plain(last, s.cur) : money(last, s.cur)}</div><div>${pct(chg)} <span class="tk">${range === "All" ? "all time" : range}</span></div>`;
@@ -329,7 +377,17 @@
       try { localStorage.setItem("lookupRange", range); } catch {}
       renderQuote();
     });
-    $("quote").querySelector(".ind-bar").addEventListener("click", (e) => {
+    $("quote").querySelector(".cmp-bar").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const t = b.dataset.c;
+      if (compare.has(t)) compare.delete(t); else { compare.add(t); loadCmp(t); }
+      try { localStorage.setItem("lookupCmp", JSON.stringify([...compare])); } catch {}
+      renderQuote();
+      $("quote").querySelector(`.chip[data-c="${CSS.escape(t)}"]`).focus();
+    });
+    for (const t of compare) loadCmp(t);
+    $("quote").querySelector(".ind-bar:not(.cmp-bar)").addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b) return;
       const id = b.dataset.i;
@@ -361,6 +419,18 @@
     const rs = on("rsi") ? cut(rsi(closes)) : null;
     const md = on("macd") ? (() => { const m = macd(closes); return { line: cut(m.line), signal: cut(m.signal), hist: cut(m.hist) }; })() : null;
 
+    // Comparing with indexes switches the price area to % change from the first bar
+    const b0 = pts[0][1];
+    const cmps = comparing().map((c) => {
+      const h = cmpHist[c.t];
+      const src = intraday && h.i && h.i.length ? h.i : h.d;
+      const raw = align(src, pts.map((p) => p[0]));
+      const first = raw.find((v) => v != null);
+      return { ...c, v: raw.map((v) => (v == null || !first ? null : (v / first - 1) * 100)) };
+    });
+    const pctMode = cmps.length > 0;
+    const P = (v) => (v == null ? null : pctMode ? (v / b0 - 1) * 100 : v);
+
     const PH = narrow ? 64 : 80, LBL = 22;
     const panels = [];
     let y0 = mainB;
@@ -374,13 +444,16 @@
     const ys = pts.flatMap((p) => [p[1], ...(p[3] || []).map((e) => e[1])]);
     for (const l of lines) ys.push(...l.v);
     if (bb) ys.push(...bb.up, ...bb.lo);
-    const fin = ys.filter((v) => v != null && isFinite(v));
-    let lo = Math.min(...fin, intraday ? base : Infinity), hi = Math.max(...fin, intraday ? base : -Infinity);
+    const fin = ys.map(P).concat(...cmps.map((c) => c.v)).filter((v) => v != null && isFinite(v));
+    const ref = pctMode ? 0 : intraday ? base : null;
+    let lo = Math.min(...fin, ref ?? Infinity), hi = Math.max(...fin, ref ?? -Infinity);
     if (hi === lo) { hi += 1; lo -= 1; }
     const span = hi - lo; lo -= span * 0.06; hi += span * 0.06;
     // Even spacing by point index, so nights and weekends don't leave gaps
     const X = (n) => pad.l + (n / Math.max(1, pts.length - 1)) * (W - pad.l - pad.r);
     const Y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (mainB - pad.t);
+    const Yp = (v) => Y(P(v)); // a price, placed on the chart's scale
+    const fmtPct = (v) => (v == null ? "–" : `${v >= 0 ? "+" : ""}${v.toFixed(Math.abs(v) >= 100 ? 0 : Math.abs(v) >= 10 ? 1 : 2)}%`);
     const color = chg == null || chg >= 0 ? "var(--up)" : "var(--down)";
     // Weekly and monthly bars also pass through their highest and lowest closes,
     // placed between the bar and the one before it by date
@@ -391,9 +464,9 @@
       for (const [t, v] of p[3] || []) {
         if (t0 == null && n === 0) continue; // nothing to the left of the first bar
         const f = Math.min(1, Math.max(0, (t - t0) / Math.max(1, p[0] - t0)));
-        out.push(`${X(n - 1 + f).toFixed(1)},${Y(v).toFixed(1)}`);
+        out.push(`${X(n - 1 + f).toFixed(1)},${Yp(v).toFixed(1)}`);
       }
-      out.push(`${X(n).toFixed(1)},${Y(p[1]).toFixed(1)}`);
+      out.push(`${X(n).toFixed(1)},${Yp(p[1]).toFixed(1)}`);
       return out;
     }).join(" ");
     // A path that breaks wherever the values have a gap (indicators still warming up)
@@ -431,7 +504,7 @@
     let band = "";
     if (bb) {
       const idx = bb.up.map((v, n) => (v == null ? null : n)).filter((n) => n != null);
-      if (idx.length > 1) band = `<polygon class="bb-fill" points="${idx.map((n) => `${X(n).toFixed(1)},${Y(bb.up[n]).toFixed(1)}`).join(" ")} ${idx.slice().reverse().map((n) => `${X(n).toFixed(1)},${Y(bb.lo[n]).toFixed(1)}`).join(" ")}"/>`;
+      if (idx.length > 1) band = `<polygon class="bb-fill" points="${idx.map((n) => `${X(n).toFixed(1)},${Yp(bb.up[n]).toFixed(1)}`).join(" ")} ${idx.slice().reverse().map((n) => `${X(n).toFixed(1)},${Yp(bb.lo[n]).toFixed(1)}`).join(" ")}"/>`;
     }
 
     const panelSvg = panels.map((P) => {
@@ -468,18 +541,19 @@
     }).join("");
 
     el.innerHTML = `
-      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price chart, ${range}${shown.size ? ", with " + INDICATORS.filter((m) => on(m.id)).map((m) => m.label).join(", ") : ""}">
+      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price chart, ${range}${cmps.length ? ", compared with " + cmps.map((c) => c.label).join(", ") : ""}${shown.size ? ", with " + INDICATORS.filter((m) => on(m.id)).map((m) => m.label).join(", ") : ""}">
         <defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="${color}" stop-opacity=".18"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
         </linearGradient></defs>
         ${grid.map((v) => `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v)}" y2="${Y(v)}"/>
-          <text class="axis" x="${W - pad.r + 8}" y="${Y(v) + 4}">${plain(v, cur)}</text>`).join("")}
-        ${intraday ? `<line class="base" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(base)}" y2="${Y(base)}"/>` : ""}
+          <text class="axis" x="${W - pad.r + 8}" y="${Y(v) + 4}">${pctMode ? fmtPct(v) : plain(v, cur)}</text>`).join("")}
+        ${ref != null ? `<line class="base" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(ref)}" y2="${Y(ref)}"/>` : ""}
         ${band}
         <polygon fill="url(#fill)" points="${X(0)},${mainB} ${line} ${X(pts.length - 1)},${mainB}"/>
         <polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" points="${line}"/>
-        ${bb ? ["up", "mid", "lo"].map((k) => `<path class="ind bb ${k}" d="${path(bb[k], Y)}"/>`).join("") : ""}
-        ${lines.map((l) => `<path class="ind ${l.dash ? "dash" : ""}" style="--c:var(${l.color})" d="${path(l.v, Y)}"/>`).join("")}
+        ${bb ? ["up", "mid", "lo"].map((k) => `<path class="ind bb ${k}" d="${path(bb[k], Yp)}"/>`).join("") : ""}
+        ${lines.map((l) => `<path class="ind ${l.dash ? "dash" : ""}" style="--c:var(${l.color})" d="${path(l.v, Yp)}"/>`).join("")}
+        ${cmps.map((c) => `<path class="ind cmp" style="--c:var(${c.color})" d="${path(c.v, Y)}"/>`).join("")}
         ${panelSvg}
         ${xl.map((n, k) => `<text class="axis" x="${X(n)}" y="${H - 8}" text-anchor="${k === 0 ? "start" : k === xl.length - 1 ? "end" : "middle"}">${fmtX(pts[n][0])}</text>`).join("")}
         <g class="hover" visibility="hidden">
@@ -490,9 +564,11 @@
       <div class="tip" hidden></div>`;
 
     // Legend over the chart and labels on each panel show the values at the hovered bar, or the latest one
-    const fmtP = (v) => (v == null ? "–" : plain(v, cur));
+    const fmtP = (v) => (v == null ? "–" : pctMode ? fmtPct(P(v)) : plain(v, cur));
     const legend = $("legend");
     const items = [
+      ...(pctMode ? [{ html: `<i class="sw" style="--c:${color}"></i>${esc(current.s)}`, val: (n) => fmtPct(P(pts[n][1])) },
+        ...cmps.map((c) => ({ html: `<i class="sw" style="--c:var(${c.color})"></i>${esc(c.label)}`, val: (n) => fmtPct(c.v[n]) }))] : []),
       ...lines.map((l) => ({ html: `<i class="sw ${l.dash ? "dash" : ""}" style="--c:var(${l.color})"></i>${l.label}`, val: (n) => fmtP(l.v[n]) })),
       ...(bb ? [{ html: `<i class="sw" style="--c:var(--ind-band)"></i>Bollinger 20, 2`, val: (n) => `${fmtP(bb.lo[n])} – ${fmtP(bb.up[n])}` }] : []),
     ];
@@ -515,7 +591,7 @@
       const r = svg.getBoundingClientRect();
       const n = Math.round(((e.clientX - r.left - pad.l) / (W - pad.l - pad.r)) * (pts.length - 1));
       if (n < 0 || n >= pts.length) return hide();
-      const [ts, v] = pts[n], x = X(n), y = Y(v);
+      const [ts, v] = pts[n], x = X(n), y = Yp(v);
       g.setAttribute("visibility", "visible");
       g.querySelector("line").setAttribute("x1", x); g.querySelector("line").setAttribute("x2", x);
       g.querySelector("circle").setAttribute("cx", x); g.querySelector("circle").setAttribute("cy", y);

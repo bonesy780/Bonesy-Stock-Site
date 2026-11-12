@@ -16,6 +16,13 @@
   --ind-b: #7c3aed;
   --ind-c: #0e7490;
   --ind-band: #5b7cc4;
+  --cmp-1: #d6336c;
+  --cmp-2: #2456d6;
+  --cmp-3: #0e7490;
+  --cmp-4: #b45309;
+  --cmp-5: #7c3aed;
+  --cmp-6: #5f6b7a;
+  --cmp-7: #9c6644;
   --radius: 12px;
   --shadow: 0 1px 2px rgba(16, 24, 40, .05);
 }
@@ -38,6 +45,13 @@
     --ind-b: #b197fc;
     --ind-c: #3fc6dd;
     --ind-band: #8ea8e8;
+    --cmp-1: #f06595;
+    --cmp-2: #7ea2ff;
+    --cmp-3: #3fc6dd;
+    --cmp-4: #f5a524;
+    --cmp-5: #b197fc;
+    --cmp-6: #aab4c3;
+    --cmp-7: #d4a373;
     --shadow: none;
   }
 }
@@ -241,6 +255,7 @@ section { margin-bottom: 40px; }
 .leg { display: inline-flex; align-items: center; gap: 6px; }
 .leg b { color: var(--text); font-weight: 500; font-size: 12px; }
 .chart .ind { fill: none; stroke: var(--c); stroke-width: 1.5; stroke-linejoin: round; }
+.chart .ind.cmp { stroke-width: 1.75; }
 .chart .ind.dash { stroke-dasharray: 5 3; }
 .chart .ind.bb { --c: var(--ind-band); stroke-width: 1; }
 .chart .ind.bb.mid { stroke-dasharray: 2 3; }
