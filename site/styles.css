@@ -427,3 +427,15 @@ section { margin-bottom: 40px; }
   .grid-table .sort { padding: 10px 6px; }
   .grid-table .co { max-width: 40vw; }
 }
+
+/* market movers */
+.breadth { padding: 14px 18px; margin-bottom: 16px; }
+.breadth-bar { height: 8px; border-radius: 4px; background: var(--down); overflow: hidden; margin-bottom: 12px; opacity: .85; }
+.breadth-bar .up-part { display: block; height: 100%; background: var(--up); }
+.toolbar .seg { overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.toolbar .seg button { flex: none; white-space: nowrap; }
+.toolbar label { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 1299px) {
+  .toolbar, p.hint, .list-tabs { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; }
+  p.hint:empty { display: none; }
+}

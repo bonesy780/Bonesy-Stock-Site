@@ -5,6 +5,7 @@
     ["./", "Markets", ["index.html", ""]],
     ["stock.html", "Stock Lookup"],
     ["watchlist.html", "Watchlists"],
+    ["movers.html", "Movers"],
     ["news.html", "News"],
   ];
 

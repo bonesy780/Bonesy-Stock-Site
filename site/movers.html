@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market Movers · Market Leaders</title>
+<meta name="description" content="Today's biggest gainers and losers, most active stocks, unusual volume and new 52-week highs and lows across seven markets.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Market movers</h1>
+    <p>The stocks moving most across the seven markets: biggest gainers and losers, the most traded, unusual volume, and new 52-week highs and lows. <span id="asof"></span></p>
+  </section>
+
+  <div class="panel breadth" id="breadth"></div>
+
+  <nav class="tabs" id="markets" aria-label="Market"></nav>
+
+  <div class="toolbar">
+    <div class="seg" id="views" role="tablist" aria-label="List"></div>
+    <span class="spacer"></span>
+    <label class="hint" id="period-wrap">Period <select class="field" id="period"><option value="d1">Day</option><option value="w1">Week</option><option value="m1">Month</option><option value="m3">3 months</option><option value="ytd">Year to date</option></select></label>
+    <label class="hint">Size <select class="field" id="size"><option value="0.3">Over $300M</option><option value="2">Over $2B</option><option value="10">Over $10B</option><option value="100">Over $100B</option></select></label>
+  </div>
+  <p class="hint" id="explain"></p>
+  <div class="panel table-wrap" id="table"></div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Lists are built from each market's last close and refresh every weekday after the US close. Prices come from Yahoo Finance and can be wrong. A big move alone is not a reason to buy or sell.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="movers.js?v=__V__"></script>
+</body>
+</html>
