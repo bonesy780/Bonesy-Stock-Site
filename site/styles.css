@@ -637,3 +637,9 @@ label.check { display: inline-flex; gap: 6px; align-items: center; }
 .sig-names .num { font-weight: 400; font-size: 12px; }
 .sig-card .btn { align-self: flex-start; }
 .tag.sig-up { background: var(--up-soft); color: var(--up); } .tag.sig-down { background: var(--down-soft); color: var(--down); } .tag.sig-flat { background: var(--surface-2); color: var(--warn); }
+
+/* Markets page: your stocks */
+.mine { margin-bottom: 24px; }
+.mine .snap-head { margin-top: 0; }
+.pf-card { border-color: var(--accent); }
+.pf-card .nm { font-size: 18px; }

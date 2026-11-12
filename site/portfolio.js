@@ -188,6 +188,7 @@
       <div class="stat"><div class="label">Cash</div><div class="value num">${usd(b.cash)}</div></div>
       <div class="stat"><div class="label">Invested</div><div class="value num">${usd(b.invested)}</div></div>
       <div class="stat"><div class="label">Realized gains</div><div class="value">${signUsd(b.realized)}</div></div>
+      <div class="stat" title="Yearly dividends at each company's current rate, before tax"><div class="label">Dividends / year</div><div class="value num">${usd(b.held.reduce((s, p) => s + (M.byTicker[p.t]?.divRate ? p.qty * M.byTicker[p.t].divRate / fxOf(p.cur) : 0), 0))}</div></div>
       <div class="stat"><div class="label">Started</div><div class="value num">${new Date(a.created).toLocaleDateString(undefined, { dateStyle: "medium" })} · ${usd(a.start)}</div></div>`;
 
     UI.table($("positions"), [
