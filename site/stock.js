@@ -382,6 +382,20 @@
       $("quote").innerHTML = `<div class="panel quote">${head}<div class="empty">No price history for this stock yet.</div></div>`;
       return;
     }
+    // Price change over standard periods, with the yearly rate for 3 years and longer
+    const returnsRow = (d) => {
+      const end = d[d.length - 1], at = (ts) => { let i = d.length - 1; while (i > 0 && d[i][0] > ts) i--; return d[i][0] <= ts ? d[i] : null; };
+      const yStart = Date.UTC(new Date(end[0] * 1000).getUTCFullYear(), 0, 1) / 1000;
+      const P = [["1M", 30], ["3M", 91], ["6M", 182], ["YTD", null], ["1Y", 365], ["3Y", 1096], ["5Y", 1826], ["10Y", 3652]];
+      const cells = P.map(([l, days]) => {
+        const from = at(days == null ? yStart - 1 : end[0] - days * 86400);
+        if (!from || from[0] < d[0][0] || (days && end[0] - from[0] < days * 86400 * 0.9)) return null;
+        const r = (end[1] / from[1] - 1) * 100;
+        const yrs = days && days >= 1000 ? days / 365.25 : null;
+        return `<div class="stat"${yrs ? ` title="${((Math.pow(end[1] / from[1], 1 / yrs) - 1) * 100).toFixed(1)}% a year"` : ""}><div class="label">${l}</div><div class="value">${pct(r)}${yrs ? `<span class="tk"> ${((Math.pow(end[1] / from[1], 1 / yrs) - 1) * 100).toFixed(1)}%/yr</span>` : ""}</div></div>`;
+      }).filter(Boolean);
+      return cells.length ? `<div class="stats quote-stats returns-row"><div class="stat ret-head"><div class="label">Returns</div><div class="value tk">price only</div></div>${cells.join("")}</div>` : "";
+    };
     const S = series(), { pts, base } = S;
     lastS = S;
     const last = pts[pts.length - 1][1];
@@ -420,6 +434,7 @@
         <div class="chart" id="chart"></div>
         <div class="ind-note">${comparing().length ? "Showing % change from the start of the chart so the stock and indexes line up. " : ""}Indicator periods count ${S.unit} bars.</div>
         <div class="stats quote-stats">${stats.map(([l, v]) => `<div class="stat"><div class="label">${l}</div><div class="value num">${v}</div></div>`).join("")}</div>
+        ${returnsRow(hist.d)}
       </div>
       <details class="panel explain" ${explainOpen ? "open" : ""}>
         <summary>What the chart tools mean</summary>

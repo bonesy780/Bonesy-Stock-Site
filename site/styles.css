@@ -812,3 +812,4 @@ table.op-table { min-width: 0; }
 .op-table select.field { min-width: 76px; }
 .op-table input.field { min-width: 64px; }
 @media (max-width: 640px) { table.op-table { min-width: 400px; } }
+.returns-row { border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 10px; } .returns-row .tk { font-size: 11px; color: var(--muted); font-weight: 400; }
