@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analyst Ratings · Market Leaders</title>
+<meta name="description" content="What Wall Street analysts think: top-rated stocks, the biggest gaps to price targets, the most and least liked, and consensus by sector across seven markets.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Analyst ratings</h1>
+    <p>What the analysts who cover each company think, averaged together: their buy, hold or sell rating and where they expect the price to be in a year. Useful as a second opinion, but analysts are often wrong and tend to be too upbeat.</p>
+  </section>
+
+  <nav class="tabs" id="markets" aria-label="Market"></nav>
+
+  <div class="an-top">
+    <section class="panel an-dist" id="dist"></section>
+    <section class="panel an-sectors" id="sectors"></section>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg" id="views" role="tablist" aria-label="List"></div>
+    <span class="spacer"></span>
+    <label class="hint">Size <select class="field" id="size"><option value="0.3">Over $300M</option><option value="2">Over $2B</option><option value="10">Over $10B</option><option value="100">Over $100B</option></select></label>
+  </div>
+  <p class="hint" id="explain"></p>
+  <div class="panel table-wrap" id="table"></div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Ratings and price targets are the average of the analysts Yahoo Finance tracks for each company and refresh every weekday after the US close. Analysts can have conflicts of interest, and targets are often revised after the price moves.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="analysts.js?v=__V__"></script>
+</body>
+</html>

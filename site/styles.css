@@ -670,3 +670,28 @@ label.check { display: inline-flex; gap: 6px; align-items: center; }
 .div-basket a:hover { border-color: var(--accent); }
 .div-basket a b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .div-basket a span:last-child { grid-column: 1 / -1; font-size: 12px; }
+
+/* ---- Analyst ratings */
+.an-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px; margin: 16px 0; }
+@media (max-width: 860px) { .an-top { grid-template-columns: minmax(0, 1fr); } }
+.an-top .panel { padding: 18px 20px; }
+.an-top h2 { margin: 0 0 4px; font-size: 18px; }
+.an-top .hint { margin: 0 0 12px; }
+.an-bars { display: flex; flex-direction: column; gap: 8px; }
+.an-bar { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 10px; font-size: 13px; }
+.an-bar div { height: 14px; background: var(--surface-2); border-radius: 7px; overflow: hidden; }
+.an-bar i { display: block; height: 100%; border-radius: 7px; background: var(--muted); }
+.an-bar.sb i { background: var(--up); } .an-bar.b i { background: color-mix(in srgb, var(--up) 60%, var(--surface-2)); }
+.an-bar.u i { background: color-mix(in srgb, var(--down) 60%, var(--surface-2)); } .an-bar.s i { background: var(--down); }
+.an-bar b { text-align: right; }
+.an-rate { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.an-scale { position: relative; width: 84px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--up), var(--surface-2) 50%, var(--down)); }
+.an-scale i { position: absolute; top: -3px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--text); border: 2px solid var(--surface); }
+.an-sec { width: 100%; font-size: 13px; }
+.an-sec td, .an-sec th { padding: 6px 8px; }
+.an-sec .muted { font-size: 12px; }
+table.an-sec { min-width: 0; }
+.an-sec th, .an-sec td { text-align: right; }
+.an-sec th:first-child, .an-sec td:first-child { text-align: left; white-space: normal; }
+.an-sec .an-rate { flex-direction: row; align-items: center; gap: 8px; }
+@media (max-width: 560px) { .an-sec .an-scale { display: none; } }
