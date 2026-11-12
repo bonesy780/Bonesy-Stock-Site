@@ -227,12 +227,27 @@
     return out;
   }
 
+  // ---- drawings: lines, zones and notes the reader adds to the chart, kept per stock in this browser.
+  // Each point is [unix time, price], so drawings stay put when the range or overlays change.
+  const DRAW_TOOLS = [
+    ["hline", "Level", "Click to draw a horizontal line at a price, e.g. a high, low, support or resistance"],
+    ["trend", "Trend line", "Drag from one point to another to draw a line; it shows the % move between the two ends"],
+    ["rect", "Zone", "Drag to shade a box over a stretch of time and prices"],
+    ["text", "Note", "Click where you want a text note, type it and press Enter"],
+    ["erase", "Erase", "Click a drawing to remove it"],
+  ];
+  let tool = null, drawings = [], lastS = null, dragging = false;
+  const drawKey = (t) => "lookupDraw:" + t;
+  const loadDraw = (t) => { try { const v = JSON.parse(localStorage.getItem(drawKey(t))); return Array.isArray(v) ? v : []; } catch { return []; } };
+  const saveDraw = () => { try { localStorage.setItem(drawKey(current.t), JSON.stringify(drawings)); } catch {} };
+
   async function pick(t, push = true) {
     const s = stocks.find((x) => x.t === t);
     if (!s) return;
     matches = []; showResults();
     q.value = ""; q.blur();
     current = s; hist = null;
+    drawings = loadDraw(t);
     if (push) history.replaceState(null, "", "?t=" + encodeURIComponent(t));
     document.title = `${s.s} · Stock Lookup · Market Leaders`;
     renderQuote();
@@ -267,7 +282,7 @@
     const open = Date.now() / 1000 - ts < 30 * 60;
     $("updated").innerHTML = `<span class="live-dot ${open ? "on" : ""}" aria-hidden="true"></span>${open ? "Live" : "Market closed"} · ${Live.stamp(new Date())}`;
     // Keep the hover tooltip steady: only redraw when no one is pointing at the chart
-    if (!document.querySelector("#chart .tip:not([hidden])")) renderQuote();
+    if (!dragging && !document.querySelector("#chart .tip:not([hidden])") && !document.querySelector("#chart .draw-note")) renderQuote();
   }
   if (window.Live && Live.on) {
     let first = true;
@@ -367,6 +382,7 @@
       return;
     }
     const S = series(), { pts, base } = S;
+    lastS = S;
     const last = pts[pts.length - 1][1];
     const chg = base ? (last / base - 1) * 100 : null;
     const year = hist.d.filter((p) => p[0] >= hist.d[hist.d.length - 1][0] - 365 * 86400).map((p) => p[1]);
@@ -391,6 +407,13 @@
         <div class="ind-bar" role="group" aria-label="Technical indicators">
           ${INDICATORS.map((m, k) => `${k === 0 || m.panel !== INDICATORS[k - 1].panel ? `<span class="ind-group">${m.panel ? "Panels" : "Overlays"}</span>` : ""}
             <button class="chip" aria-pressed="${shown.has(m.id)}" data-i="${m.id}" title="${esc(m.help)}"><i class="sw ${m.dash ? "dash" : ""}" style="--c:var(${m.color})"></i>${esc(m.label)}</button>`).join("")}
+        </div>
+        <div class="ind-bar draw-bar" role="group" aria-label="Drawing tools">
+          <span class="ind-group">Draw</span>
+          ${DRAW_TOOLS.map(([id, label, help]) => `<button class="chip" aria-pressed="${tool === id}" data-d="${id}" title="${esc(help)}">${esc(label)}</button>`).join("")}
+          <button class="chip" data-a="hilo" title="Add level lines at the highest and lowest prices in this range">High / low</button>
+          <button class="chip" data-a="undo" title="Remove the last drawing" ${drawings.length ? "" : "disabled"}>Undo</button>
+          <button class="chip" data-a="clear" title="Remove every drawing on this stock" ${drawings.length ? "" : "disabled"}>Clear</button>
         </div>
         <div class="legend" id="legend"></div>
         <div class="chart" id="chart"></div>
@@ -435,6 +458,27 @@
       try { localStorage.setItem("lookupInd", JSON.stringify([...shown])); } catch {}
       renderQuote();
       $("quote").querySelector(`.chip[data-i="${id}"]`).focus();
+    });
+    $("quote").querySelector(".draw-bar").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.d) tool = tool === b.dataset.d ? null : b.dataset.d;
+      else if (b.dataset.a === "undo") drawings.pop();
+      else if (b.dataset.a === "clear") drawings = [];
+      else if (b.dataset.a === "hilo") {
+        // Highest and lowest prices on screen, counting the peaks inside weekly and monthly bars
+        const all = lastS.pts.flatMap((p) => [[p[0], p[1]], ...(p[3] || [])]);
+        const hi = all.reduce((a, p) => (p[1] > a[1] ? p : a)), lo = all.reduce((a, p) => (p[1] < a[1] ? p : a));
+        drawings = drawings.filter((d) => !d.auto).concat([
+          { type: "hline", a: hi, auto: "hi" },
+          { type: "hline", a: lo, auto: "lo" },
+        ]);
+      }
+      saveDraw();
+      const sel = b.dataset.d ? `[data-d="${b.dataset.d}"]` : `[data-a="${b.dataset.a}"]`;
+      renderQuote();
+      const again = $("quote").querySelector(`.draw-bar ${sel}`);
+      if (again && !again.disabled) again.focus();
     });
     drawChart($("chart"), S, chg, s.cur);
   }
@@ -604,6 +648,8 @@
         ${lines.map((l) => `<path class="ind ${l.dash ? "dash" : ""}" style="--c:var(${l.color})" d="${path(l.v, Yp)}"/>`).join("")}
         ${cmps.map((c) => `<path class="ind cmp" style="--c:var(${c.color})" d="${path(c.v, Y)}"/>`).join("")}
         ${panelSvg}
+        <clipPath id="draw-clip"><rect x="${pad.l}" y="${pad.t}" width="${W - pad.l - pad.r}" height="${mainB - pad.t}"/></clipPath>
+        <g class="drawings"></g>
         ${xl.map((n, k) => `<text class="axis" x="${X(n)}" y="${H - 8}" text-anchor="${k === 0 ? "start" : k === xl.length - 1 ? "end" : "middle"}">${fmtX(pts[n][0])}</text>`).join("")}
         <g class="hover" visibility="hidden">
           <line class="cross" y1="${pad.t}" y2="${H - pad.b}"/>
@@ -660,6 +706,130 @@
     svg.addEventListener("pointermove", move);
     svg.addEventListener("pointerdown", move);
     svg.addEventListener("pointerleave", hide);
+
+    // ---- drawings
+    const n1 = Math.max(1, pts.length - 1), plotW = W - pad.l - pad.r;
+    const avgStep = pts.length > 1 ? (pts[pts.length - 1][0] - pts[0][0]) / n1 : DAY;
+    // A time as a fractional bar position (beyond the ends, at the average bar spacing)
+    const tPos = (t) => {
+      if (pts.length < 2 || t <= pts[0][0]) return (t - pts[0][0]) / (avgStep || DAY);
+      if (t >= pts[pts.length - 1][0]) return n1 + (t - pts[pts.length - 1][0]) / (avgStep || DAY);
+      let a = 0, b = pts.length - 1;
+      while (b - a > 1) { const m = (a + b) >> 1; if (pts[m][0] <= t) a = m; else b = m; }
+      return a + (t - pts[a][0]) / Math.max(1, pts[b][0] - pts[a][0]);
+    };
+    const posT = (f) => {
+      if (pts.length < 2 || f <= 0) return pts[0][0] + f * (avgStep || DAY);
+      if (f >= n1) return pts[pts.length - 1][0] + (f - n1) * (avgStep || DAY);
+      const a = Math.floor(f);
+      return pts[a][0] + (f - a) * (pts[a + 1][0] - pts[a][0]);
+    };
+    const px = (t) => pad.l + (tPos(t) / n1) * plotW;
+    const yPrice = (y) => {
+      const v = lo + (1 - (y - pad.t) / (mainB - pad.t)) * (hi - lo);
+      return pctMode ? b0 * (1 + v / 100) : v;
+    };
+    const fmtD = (v) => (current.index ? plain(v, cur) : money(v, cur));
+    const chgTxt = (a, b) => (a ? `${b >= a ? "+" : ""}${((b / a - 1) * 100).toFixed(2)}%` : "");
+    const tag = (x, y, text, cls, anchor = "start") => {
+      const w = text.length * 6.6 + 10;
+      const left = Math.max(pad.l, Math.min(W - w - 2, anchor === "end" ? x - w : x));
+      return `<rect class="dtag-bg ${cls}" x="${left.toFixed(1)}" y="${(y - 9).toFixed(1)}" width="${w.toFixed(1)}" height="18" rx="4"/>
+        <text class="dtag ${cls}" x="${(left + 5).toFixed(1)}" y="${(y + 4).toFixed(1)}">${esc(text)}</text>`;
+    };
+    const shape = (d, k) => {
+      const cls = d.auto === "hi" ? "hi" : d.auto === "lo" ? "lo" : "";
+      const key = k == null ? "" : `data-k="${k}"`;
+      if (d.type === "hline") {
+        const y = Yp(d.a[1]);
+        if (y < pad.t - 1 || y > mainB + 1) return "";
+        const name = d.auto === "hi" ? "High " : d.auto === "lo" ? "Low " : "";
+        return `<g class="dr ${cls}" ${key}><line class="hit" x1="${pad.l}" x2="${W - pad.r}" y1="${y}" y2="${y}"/>
+          <line class="dl" x1="${pad.l}" x2="${W - pad.r}" y1="${y}" y2="${y}"/>
+          ${tag(W - pad.r - 4, y, name + fmtD(d.a[1]), cls, "end")}</g>`;
+      }
+      if (d.type === "text") {
+        const x = px(d.a[0]), y = Yp(d.a[1]);
+        return `<g class="dr" ${key}>${tag(x, y, d.text || "", "note")}<circle class="dot" cx="${x}" cy="${y}" r="3"/></g>`;
+      }
+      const x1 = px(d.a[0]), y1 = Yp(d.a[1]), x2 = px(d.b[0]), y2 = Yp(d.b[1]);
+      if (d.type === "trend") {
+        return `<g class="dr" ${key}><g clip-path="url(#draw-clip)"><line class="hit" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>
+          <line class="dl" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>
+          <circle class="dot" cx="${x1}" cy="${y1}" r="3"/><circle class="dot" cx="${x2}" cy="${y2}" r="3"/></g>
+          ${tag(x2 + (x2 >= x1 ? 6 : -6), y2, chgTxt(d.a[1], d.b[1]), "", x2 >= x1 ? "start" : "end")}</g>`;
+      }
+      const [lx, rx] = [Math.min(x1, x2), Math.max(x1, x2)], [ty, by] = [Math.min(y1, y2), Math.max(y1, y2)];
+      const [pl, ph] = [Math.min(d.a[1], d.b[1]), Math.max(d.a[1], d.b[1])];
+      return `<g class="dr" ${key}><rect class="dz" clip-path="url(#draw-clip)" x="${lx}" y="${ty}" width="${rx - lx}" height="${by - ty}"/>
+        ${tag(lx + 4, ty + 12, `${fmtD(pl)} – ${fmtD(ph)} (${chgTxt(pl, ph)})`, "")}</g>`;
+    };
+    const layer = svg.querySelector(".drawings");
+    let draft = null;
+    const paint = () => { layer.innerHTML = drawings.map((d, k) => shape(d, k)).join("") + (draft ? shape(draft) : ""); };
+    paint();
+    el.classList.toggle("drawing", !!tool);
+    el.classList.toggle("erasing", tool === "erase");
+    if (!tool) return;
+
+    const at = (e) => {
+      const r = svg.getBoundingClientRect();
+      const x = (e.clientX - r.left) * (W / r.width), y = (e.clientY - r.top) * (H / r.height);
+      return { x, y, p: [Math.round(posT(((x - pad.l) / plotW) * n1)), yPrice(y)] };
+    };
+    const commit = () => { saveDraw(); renderQuote(); };
+    svg.addEventListener("pointerdown", (e) => {
+      const q = at(e);
+      if (tool === "erase") {
+        const g = e.target.closest("[data-k]");
+        if (g) { drawings.splice(+g.dataset.k, 1); commit(); }
+        return;
+      }
+      if (q.y < pad.t || q.y > mainB || q.x < pad.l || q.x > W - pad.r) return;
+      e.preventDefault();
+      if (tool === "hline") { drawings.push({ type: "hline", a: q.p }); commit(); return; }
+      if (tool === "text") {
+        const input = document.createElement("input");
+        input.className = "draw-note";
+        input.placeholder = "Type a note, then Enter";
+        input.maxLength = 80;
+        input.style.left = Math.min(q.x, W - 200) + "px";
+        input.style.top = Math.max(0, q.y - 14) + "px";
+        el.appendChild(input);
+        let done = false;
+        const finish = (keep) => {
+          if (done) return;
+          done = true;
+          const text = input.value.trim();
+          input.remove();
+          if (keep && text) { drawings.push({ type: "text", a: q.p, text }); commit(); }
+        };
+        input.addEventListener("keydown", (k) => { if (k.key === "Enter") finish(true); else if (k.key === "Escape") finish(false); });
+        input.addEventListener("blur", () => finish(true));
+        input.focus();
+        setTimeout(() => input.focus(), 0);
+        return;
+      }
+      // trend line or zone: drag from the first corner to the second
+      dragging = true;
+      draft = { type: tool, a: q.p, b: q.p };
+      const start = q;
+      svg.setPointerCapture(e.pointerId);
+      const onMove = (m) => { draft.b = at(m).p; paint(); };
+      const onUp = (u) => {
+        svg.removeEventListener("pointermove", onMove);
+        svg.removeEventListener("pointerup", onUp);
+        svg.removeEventListener("pointercancel", onUp);
+        dragging = false;
+        const end = at(u);
+        const moved = Math.hypot(end.x - start.x, end.y - start.y) > 6;
+        if (moved && u.type === "pointerup") { draft.b = end.p; drawings.push(draft); draft = null; commit(); }
+        else { draft = null; paint(); }
+      };
+      svg.addEventListener("pointermove", onMove);
+      svg.addEventListener("pointerup", onUp);
+      svg.addEventListener("pointercancel", onUp);
+    });
   }
 
   let resizeTimer;

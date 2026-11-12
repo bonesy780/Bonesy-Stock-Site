@@ -264,6 +264,25 @@ section { margin-bottom: 40px; }
 .chart .vbar.up { fill: var(--up); fill-opacity: .45; }
 .chart .vbar.down { fill: var(--down); fill-opacity: .45; }
 .chart .rsi-zone { fill: var(--ind-b); fill-opacity: .07; }
+.chart.drawing { touch-action: none; cursor: crosshair; }
+.chart.drawing .tip { display: none; }
+.chart.erasing { cursor: default; }
+.chart.erasing .dr { cursor: pointer; }
+.chart.erasing .dr:hover { opacity: .45; }
+.chart .dr { --c: var(--accent); }
+.chart .dr.hi { --c: var(--up); }
+.chart .dr.lo { --c: var(--down); }
+.chart .dl { stroke: var(--c); stroke-width: 1.5; }
+.chart .dr.hi .dl, .chart .dr.lo .dl { stroke-dasharray: 6 4; }
+.chart .hit { stroke: transparent; stroke-width: 12; }
+.chart:not(.erasing) .dr { pointer-events: none; }
+.chart .dot { fill: var(--c); }
+.chart .dz { fill: var(--c); fill-opacity: .12; stroke: var(--c); stroke-width: 1; }
+.chart .dtag-bg { fill: var(--surface); stroke: var(--c); stroke-width: 1; }
+.chart .dtag { fill: var(--c); font: 11px "JetBrains Mono", ui-monospace, monospace; }
+.chart .dtag.note { fill: var(--text); font-family: Inter, system-ui, sans-serif; }
+.draw-note { position: absolute; width: 190px; padding: 4px 8px; font: 13px Inter, system-ui, sans-serif; border: 1px solid var(--accent); border-radius: 6px; background: var(--surface); color: var(--text); }
+.chip:disabled { opacity: .45; cursor: default; }
 .chart .plabel { fill: var(--muted); font: 11px "JetBrains Mono", ui-monospace, monospace; white-space: pre; }
 .ind-note { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .explain { padding: 0; margin: -8px 0 24px; }
