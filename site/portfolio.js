@@ -170,6 +170,59 @@
     save();
   }
 
+  // ---- check-up: weighted figures, spread by region and currency, and plain-language notes
+  function checkup(b) {
+    const el = $("check");
+    if (!b.held.length) { el.innerHTML = `<div class="empty">Buy a few stocks to see a check-up of your portfolio.</div>`; return; }
+    const rows = b.held.map((p) => ({ p, m: M.byTicker[p.t] || {} }));
+    const inv = b.invested || 1;
+    // Weighted average over holdings that have the figure
+    const wavg = (f) => {
+      const have = rows.filter((r) => f(r.m) != null);
+      const w = have.reduce((s, r) => s + r.p.value, 0);
+      return w ? { v: have.reduce((s, r) => s + f(r.m) * r.p.value, 0) / w, cover: w / inv } : null;
+    };
+    // P/E is averaged as earnings yield so one huge P/E doesn't swamp the rest
+    const ey = wavg((m) => (m.fpe > 0 ? 1 / m.fpe : null));
+    const beta = wavg((m) => m.beta), y1 = wavg((m) => m.y1), vol = wavg((m) => m.volat);
+    const yieldAll = rows.reduce((s, r) => s + (r.m.divYield ? r.m.divYield * r.p.value : 0), 0) / inv;
+    const sorted = rows.slice().sort((x, y) => y.p.value - x.p.value);
+    const top1 = sorted[0].p.value / inv * 100, top3 = sorted.slice(0, 3).reduce((s, r) => s + r.p.value, 0) / inv * 100;
+    const group = (f) => {
+      const g = {};
+      for (const r of rows) { const k = f(r) || "Other"; g[k] = (g[k] || 0) + r.p.value; }
+      return Object.entries(g).sort((x, y) => y[1] - x[1]).map(([k, v]) => [k, v / inv * 100]);
+    };
+    const regions = group((r) => r.m.region), curs = group((r) => r.p.cur), secs = group((r) => r.m.sector);
+    // Effective number of holdings (inverse Herfindahl)
+    const eff = 1 / rows.reduce((s, r) => s + (r.p.value / inv) ** 2, 0);
+
+    const notes = [];
+    if (top1 > 25) notes.push(["warn", `${esc(nameOf(sorted[0].p.t))} is ${top1.toFixed(0)}% of your stocks. One bad report could hurt the whole portfolio.`]);
+    if (secs[0] && secs[0][1] > 40 && rows.length > 1) notes.push(["warn", `${esc(secs[0][0])} makes up ${secs[0][1].toFixed(0)}%. Stocks in one sector tend to fall together.`]);
+    if (regions.length === 1) notes.push(["info", `Everything is in ${esc(regions[0][0])}. Adding other markets spreads the risk.`]);
+    if (beta && beta.v > 1.3) notes.push(["info", `With a beta of ${beta.v.toFixed(2)}, expect bigger swings than the market, both up and down.`]);
+    if (beta && beta.v < 0.7) notes.push(["good", `A beta of ${beta.v.toFixed(2)} means calmer moves than the market.`]);
+    if (eff >= 8 && top1 <= 20) notes.push(["good", "Well spread: no single stock dominates."]);
+    if (b.cash / (b.total || 1) > 0.5) notes.push(["info", `${(b.cash / b.total * 100).toFixed(0)}% of the account is cash, which doesn't grow.`]);
+    if (!notes.length) notes.push(["good", "No obvious concentration problems."]);
+
+    const bars = (title, list) => `<div class="pf-bars"><h4>${title}</h4>${list.slice(0, 6).map(([k, v]) =>
+      `<div class="pf-bar"><span>${esc(k)}</span><div><i style="width:${v.toFixed(1)}%"></i></div><b class="num">${v > 0 && v < 0.5 ? "<1" : v.toFixed(0)}%</b></div>`).join("")}</div>`;
+    const stat = (label, value, help) => `<div class="stat"${help ? ` title="${esc(help)}"` : ""}><div class="label">${label}</div><div class="value num">${value}</div></div>`;
+    el.innerHTML = `<div class="stats">
+        ${stat("Beta", beta ? beta.v.toFixed(2) : "–", "How much the portfolio moves with its home markets. 1 = in step, above 1 = bigger swings")}
+        ${stat("Forward P/E", ey && ey.v > 0 ? (1 / ey.v).toFixed(1) : "–", "Price ÷ next year's expected earnings, across your holdings")}
+        ${stat("Dividend yield", yieldAll.toFixed(2) + "%", "Yearly dividends ÷ value of your stocks")}
+        ${stat("Volatility", vol ? vol.v.toFixed(0) + "%" : "–", "Typical yearly price swing of your holdings, weighted (ignores how they offset each other)")}
+        ${stat("1Y of holdings", y1 ? (y1.v >= 0 ? "+" : "") + y1.v.toFixed(1) + "%" : "–", "How your current holdings did over the past year, weighted by today's values")}
+        ${stat("Largest / top 3", `${top1.toFixed(0)}% / ${top3.toFixed(0)}%`, "Share of your stocks in the biggest one and the biggest three")}
+        ${stat("Effective holdings", eff.toFixed(1), "How many equal-sized stocks your spread is worth. 10 stocks with one at 80% counts as about 1.5")}
+      </div>
+      <div class="pf-check-grid">${bars("By region", regions)}${bars("By currency", curs)}${bars("By sector", secs)}</div>
+      <ul class="pf-notes">${notes.map(([k, t]) => `<li class="${k}">${t}</li>`).join("")}</ul>`;
+  }
+
   // ---- drawing
   function render() {
     const a = acct(), b = book(a);
@@ -218,6 +271,8 @@
     }).join("");
     $("alloc").innerHTML = `<svg width="140" height="140" viewBox="0 0 140 140" aria-hidden="true">${arcs}</svg>
       <ul class="alloc-list">${parts.map(([n, v], i) => `<li><i class="sw" style="--c:var(${n === "Cash" ? "--border" : `--cmp-${(i % 7) + 1}`})"></i>${esc(n)}<span class="num">${(v / tot * 100).toFixed(1)}%</span></li>`).join("")}</ul>`;
+
+    checkup(b);
 
     // Value over time
     const days = Object.entries(a.snaps).sort((x, y) => x[0].localeCompare(y[0]));
