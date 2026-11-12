@@ -11,6 +11,7 @@
     ["heatmap.html", "Heatmap"],
     ["compare.html", "Compare"],
     ["calendar.html", "Calendar"],
+    ["alerts.html", "Alerts"],
     ["tools.html", "Calculators"],
     ["news.html", "News"],
   ];
@@ -225,5 +226,66 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", header); else header();
 
-  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, star, Watch, table, PAGES };
+  // ---- price alerts, kept in this browser and checked on every page while it's open
+  const AKEY = "alerts";
+  const KINDS = {
+    above: { label: "Price rises to", unit: "price", hit: (q, v) => q.price >= v },
+    below: { label: "Price falls to", unit: "price", hit: (q, v) => q.price <= v },
+    up: { label: "Up today by", unit: "%", hit: (q, v) => q.chg1d != null && q.chg1d >= v },
+    down: { label: "Down today by", unit: "%", hit: (q, v) => q.chg1d != null && q.chg1d <= -v },
+  };
+  const Alerts = {
+    KINDS,
+    all() { const v = store.get(AKEY, null); return v && Array.isArray(v.active) ? v : { active: [], fired: [] }; },
+    save(v) { v.fired = v.fired.slice(-100); store.set(AKEY, v); window.dispatchEvent(new CustomEvent("alerts")); },
+    add(a) { const v = this.all(); v.active.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), created: new Date().toISOString(), ...a }); this.save(v); },
+    describe(a, cur = "USD") { const k = KINDS[a.kind]; return `${k.label} ${k.unit === "%" ? a.value + "%" : money(a.value, cur)}`; },
+    // quotes: { ticker: { price, chg1d } }. Fires matching alerts and returns the ones that fired
+    check(quotes) {
+      const v = this.all(), fired = [];
+      v.active = v.active.filter((a) => {
+        const q = quotes[a.t];
+        if (!q || q.price == null || !KINDS[a.kind] || !KINDS[a.kind].hit(q, a.value)) return true;
+        fired.push({ ...a, firedAt: new Date().toISOString(), firedPrice: q.price, firedChg: q.chg1d });
+        return false;
+      });
+      if (fired.length) { v.fired.push(...fired); this.save(v); fired.forEach(notify); }
+      return fired;
+    },
+  };
+  function toast(html) {
+    let box = document.getElementById("toasts");
+    if (!box) { box = document.createElement("div"); box.id = "toasts"; box.setAttribute("role", "status"); document.body.appendChild(box); }
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.innerHTML = html + `<button class="x" aria-label="Dismiss">✕</button>`;
+    t.querySelector(".x").onclick = () => t.remove();
+    box.appendChild(t);
+    setTimeout(() => t.remove(), 20000);
+  }
+  function notify(a) {
+    const text = `${a.s || a.t}: ${Alerts.describe(a, a.cur)}. Now ${money(a.firedPrice, a.cur || "USD")}${a.firedChg != null ? ` (${a.firedChg >= 0 ? "+" : ""}${a.firedChg.toFixed(2)}% today)` : ""}.`;
+    toast(`<strong>🔔 Price alert</strong><br><a href="${stockUrl(a.t)}">${esc(text)}</a>${a.note ? `<br><span class="tk">${esc(a.note)}</span>` : ""}`);
+    try { if ("Notification" in window && Notification.permission === "granted") new Notification("Price alert", { body: text + (a.note ? " " + a.note : ""), tag: a.id }); } catch {}
+  }
+  async function watchAlerts() {
+    if (!Alerts.all().active.length) return;
+    const ts = [...new Set(Alerts.all().active.map((a) => a.t))];
+    let q = {};
+    if (window.Live && Live.on) q = await Live.quotes(ts);
+    // Without the live price service, fall back to the last close
+    if (!Object.keys(q).length) {
+      try {
+        const m = await market();
+        for (const t of ts) if (m.byTicker[t]) q[t] = { price: m.byTicker[t].p, chg1d: m.byTicker[t].d1 };
+      } catch {}
+    }
+    Alerts.check(q);
+  }
+  window.addEventListener("load", () => {
+    setTimeout(watchAlerts, 2500);
+    setInterval(() => { if (!document.hidden && window.Live && Live.on) watchAlerts(); }, 60000);
+  });
+
+  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, star, Watch, table, Alerts, toast, PAGES };
 })();

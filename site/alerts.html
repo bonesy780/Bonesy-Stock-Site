@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Price Alerts · Market Leaders</title>
+<meta name="description" content="Set price alerts on any stock: get told when it rises or falls to your price, or moves a lot in a day.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Price alerts</h1>
+    <p>Get told when a stock reaches your price or moves a lot in a day. Alerts are checked every minute on any page of this site while it's open in your browser, and can pop up as a notification. Saved in this browser only.</p>
+  </section>
+
+  <form class="panel alert-form" id="form" autocomplete="off">
+    <div class="lookup"><input id="sym" class="field" type="search" placeholder="Search a stock…" aria-label="Stock" spellcheck="false"></div>
+    <select class="field" id="kind" aria-label="Alert when"></select>
+    <input class="field" id="value" type="number" step="any" min="0" inputmode="decimal" placeholder="Price" aria-label="Alert value">
+    <input class="field" id="note" type="text" maxlength="80" placeholder="Note (optional), e.g. buy zone" aria-label="Note">
+    <button class="btn primary" id="add" type="submit">Add alert</button>
+    <div class="alert-stock" id="now"></div>
+  </form>
+
+  <div class="toolbar">
+    <span class="hint" id="perm"></span>
+    <span class="spacer"></span>
+    <button class="btn" id="notify" hidden>Turn on pop-up notifications</button>
+  </div>
+
+  <div class="subhead"><h3>Active alerts</h3></div>
+  <div class="panel table-wrap" id="active"></div>
+
+  <div class="subhead"><h3>Triggered</h3><p>Alerts that have gone off. Each fires once, so add it again to keep watching.</p></div>
+  <div class="panel table-wrap" id="fired"></div>
+  <div class="more"><button class="btn" id="clear" hidden>Clear triggered alerts</button></div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Alerts only run while a page of this site is open and use the site's prices, which can be delayed up to 20 minutes or, without the live price service, only update after each close. Don't rely on them for time-critical trades. Your broker's own alerts are more dependable.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="alerts.js?v=__V__"></script>
+</body>
+</html>
