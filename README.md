@@ -4,7 +4,7 @@ A static website showing the top 10 stocks in the S&P 500, Nasdaq-100, Dow Jones
 
 - `scripts/build_data.py` pulls prices, analyst ratings and market caps from Yahoo Finance (via yfinance) and writes `site/data.json`.
 - `scripts/build_news.py` gathers the top news stories for each market into `site/news.json`.
-- `scripts/build_history.py` saves price history for every stock (5-minute prices for 5 days, daily back to listing) into `site/hist/` and the search list into `site/stocks.json`.
+- `scripts/build_history.py` saves price history for every stock (5-minute prices for 5 days, daily back to listing, thinned to weekly and monthly further back while keeping each stretch's highest and lowest close) into `site/hist/`. Prices are the actual traded closes, adjusted for splits but not dividends and the search list into `site/stocks.json`.
 - `site/` is the website (plain HTML, CSS and JS): `index.html` for stocks, `stock.html` for the stock lookup and `news.html` for market news. The lookup chart can add technical indicators (SMA 20/50/200, EMA 20/50, Bollinger Bands, volume, RSI and MACD), which the browser works out from the saved closing prices and volumes.
 - `.github/workflows/update.yml` rebuilds the data every weekday after the US close and on Sundays, then deploys to GitHub Pages.
 

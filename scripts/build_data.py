@@ -124,7 +124,8 @@ def download_prices(tickers: list[str]) -> dict[str, pd.Series]:
     closes: dict[str, pd.Series] = {}
     for i in range(0, len(tickers), 200):
         batch = tickers[i:i + 200]
-        df = yf.download(batch, period="13mo", interval="1d", auto_adjust=True, group_by="ticker",
+        # Traded closes (split adjusted only), so the 52-week high and low match real prices
+        df = yf.download(batch, period="13mo", interval="1d", auto_adjust=False, group_by="ticker",
                          threads=True, progress=False)
         for t in batch:
             try:
