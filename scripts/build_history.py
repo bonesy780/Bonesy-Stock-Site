@@ -3,6 +3,9 @@
 Writes site/stocks.json (the searchable list) and one site/hist/<ticker>.json per
 stock with 5 days of 5-minute prices and daily prices back to the listing date,
 each as [time, close, volume], for the chart and its technical indicators.
+
+Prices are the actual closes people saw (adjusted for splits only, not for
+dividends), so old highs and lows match what the stock really traded at.
 Run after build_data.py:
     python scripts/build_history.py
 """
@@ -36,7 +39,10 @@ def bars(tickers: list[str], **kw) -> dict[str, pd.DataFrame]:
     for i in range(0, len(tickers), BATCH):
         batch = tickers[i:i + BATCH]
         try:
-            df = yf.download(batch, auto_adjust=True, group_by="ticker", threads=True, progress=False, **kw)
+            # auto_adjust=False keeps "Close" as the traded close (split adjusted only).
+            # Dividend-adjusted closes pull every past price down, by a lot for
+            # high-dividend stocks, so old peaks never showed at their real level.
+            df = yf.download(batch, auto_adjust=False, group_by="ticker", threads=True, progress=False, **kw)
         except Exception as e:
             log(f"download failed for batch {i} ({e})")
             continue
@@ -53,26 +59,37 @@ def bars(tickers: list[str], **kw) -> dict[str, pd.DataFrame]:
 
 
 def every(f: pd.DataFrame, n: int) -> pd.DataFrame:
-    """One row per n trading days: the last close and the total volume of each group."""
+    """Thin to groups of n trading days, keeping each group's highest close,
+    lowest close and last close (in date order) so peaks and troughs survive.
+
+    The group's total volume goes on its last day; the other kept days get none.
+    """
     if not len(f):
         return f
     g = np.arange(len(f)) // n
-    out = f.groupby(g).agg(c=("c", "last"), v=("v", lambda v: v.sum(min_count=1)))
-    out.index = pd.DatetimeIndex(f.index.to_series().groupby(g).last().tolist())
-    return out
+    rows = []
+    for _, grp in f.groupby(g):
+        last = len(grp) - 1
+        keep = sorted({int(np.nanargmax(grp["c"].values)), int(np.nanargmin(grp["c"].values)), last})
+        vol = grp["v"].sum(min_count=1)
+        for k in keep:
+            rows.append((grp.index[k], grp["c"].iloc[k], vol if k == last else float("nan")))
+    return pd.DataFrame([(c, v) for _, c, v in rows], columns=["c", "v"],
+                        index=pd.DatetimeIndex([ts for ts, _, _ in rows]))
 
 
-def thin(f: pd.DataFrame) -> pd.DataFrame:
+def thin(f: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     """Every day for the last DAILY_DAYS, weekly back to 6 years, then monthly.
 
     The daily stretch is long enough that a 200-day average is already warmed
-    up at the start of the 1-year chart.
+    up at the start of the 1-year chart. Also returns how many rows at the end
+    are the unthinned daily stretch.
     """
     end = f.index[-1]
     recent = f[f.index >= end - pd.Timedelta(days=DAILY_DAYS)]
     mid = f[(f.index < recent.index[0]) & (f.index >= end - pd.Timedelta(days=6 * 365))]
     old = f[f.index < (mid.index[0] if len(mid) else recent.index[0])]
-    return pd.concat([every(old, 21), every(mid, 5), recent])
+    return pd.concat([every(old, 21), every(mid, 5), recent]), len(recent)
 
 
 def points(f: pd.DataFrame) -> list:
@@ -110,7 +127,9 @@ def build():
         if d is None or len(d) < 2:
             continue
         i = intraday.get(t)
-        body = {"t": t, "d": points(thin(d)), "i": points(i) if i is not None else []}
+        rows, daily_n = thin(d)
+        # "df": index in "d" where the every-day stretch begins
+        body = {"t": t, "d": points(rows), "df": len(rows) - daily_n, "i": points(i) if i is not None else []}
         (HIST / f"{t.replace('^', '_')}.json").write_text(json.dumps(body, separators=(",", ":")))
         listed.append(stocks[t])
     (SITE / "stocks.json").write_text(json.dumps(listed, separators=(",", ":"), ensure_ascii=False))

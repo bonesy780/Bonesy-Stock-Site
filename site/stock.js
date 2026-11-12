@@ -209,25 +209,38 @@
   const DAY = 86400;
   const dayOf = (ts) => new Date(ts * 1000).toISOString().slice(0, 10);
   // The saved history is daily for the last couple of years and thinner before that
+  // (newer builds say where the daily stretch starts; older ones are worked out from the gaps)
   function dailyFrom(d) {
+    if (Number.isInteger(hist.df) && hist.df >= 0 && hist.df < d.length) return hist.df;
     let k = d.length - 1;
     while (k > 0 && d[k][0] - d[k - 1][0] < 6.5 * DAY) k--;
     return k;
   }
   const addVol = (a, b) => (a == null && b == null ? null : (a || 0) + (b || 0));
+  // One bar per week or month: [time, last close, volume, extremes], where extremes
+  // holds the highest and lowest closes inside the bar as [time, close] (in date
+  // order, leaving out the last close itself) so the line still reaches the real peaks.
   function bucket(d, key) {
     const out = [];
-    let last;
+    let last, hi, lo;
+    const finish = () => {
+      const b = out[out.length - 1];
+      if (b) b[3] = [hi, lo].filter((p, n, a) => p[0] !== b[0] && a.indexOf(p) === n).sort((x, y) => x[0] - y[0]);
+    };
     for (const p of d) {
       const k = key(p[0]);
       if (out.length && k === last) {
         const prev = out[out.length - 1];
         out[out.length - 1] = [p[0], p[1], addVol(prev[2], p[2])];
+        if (p[1] > hi[1]) hi = [p[0], p[1]];
+        if (p[1] < lo[1]) lo = [p[0], p[1]];
       } else {
+        finish();
         out.push([p[0], p[1], p[2] ?? null]);
-        last = k;
+        last = k; hi = lo = [p[0], p[1]];
       }
     }
+    finish();
     return out;
   }
   const weekOf = (ts) => Math.floor((ts / DAY + 3) / 7);
@@ -358,7 +371,7 @@
     }
     const H = y0 + pad.b;
 
-    const ys = pts.map((p) => p[1]);
+    const ys = pts.flatMap((p) => [p[1], ...(p[3] || []).map((e) => e[1])]);
     for (const l of lines) ys.push(...l.v);
     if (bb) ys.push(...bb.up, ...bb.lo);
     const fin = ys.filter((v) => v != null && isFinite(v));
@@ -369,7 +382,20 @@
     const X = (n) => pad.l + (n / Math.max(1, pts.length - 1)) * (W - pad.l - pad.r);
     const Y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (mainB - pad.t);
     const color = chg == null || chg >= 0 ? "var(--up)" : "var(--down)";
-    const line = pts.map((p, n) => `${X(n).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+    // Weekly and monthly bars also pass through their highest and lowest closes,
+    // placed between the bar and the one before it by date
+    const prevT = (n) => (n > 0 ? pts[n - 1][0] : S.start > 0 ? S.all[S.start - 1][0] : null);
+    const line = pts.flatMap((p, n) => {
+      const out = [];
+      const t0 = prevT(n);
+      for (const [t, v] of p[3] || []) {
+        if (t0 == null && n === 0) continue; // nothing to the left of the first bar
+        const f = Math.min(1, Math.max(0, (t - t0) / Math.max(1, p[0] - t0)));
+        out.push(`${X(n - 1 + f).toFixed(1)},${Y(v).toFixed(1)}`);
+      }
+      out.push(`${X(n).toFixed(1)},${Y(p[1]).toFixed(1)}`);
+      return out;
+    }).join(" ");
     // A path that breaks wherever the values have a gap (indicators still warming up)
     const path = (vals, yf) => {
       let dd = "", pen = false;
@@ -496,7 +522,9 @@
       const dt = new Date(ts * 1000);
       const when = intraday ? dt.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })
         : dt.toLocaleDateString(undefined, { dateStyle: "medium" });
-      tip.innerHTML = `<div class="tk">${when}</div><div class="num">${current.index ? plain(v, current.cur) : money(v, current.cur)}</div><div>${pct(base ? (v / base - 1) * 100 : null)}</div>`;
+      const fmtV = (x) => (current.index ? plain(x, current.cur) : money(x, current.cur));
+      const ex = pts[n][3] && pts[n][3].length ? [v, ...pts[n][3].map((e) => e[1])] : null;
+      tip.innerHTML = `<div class="tk">${when}</div><div class="num">${fmtV(v)}</div><div>${pct(base ? (v / base - 1) * 100 : null)}</div>${ex ? `<div class="tk">Range ${fmtV(Math.min(...ex))} – ${fmtV(Math.max(...ex))}</div>` : ""}`;
       tip.hidden = false;
       const tw = tip.offsetWidth;
       tip.style.left = Math.min(Math.max(0, x - tw / 2), W - tw) + "px";
