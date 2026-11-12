@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Technical Signals · Market Leaders</title>
+<meta name="description" content="Stocks that just triggered common chart signals: golden and death crosses, MACD crossovers, breakouts, volume surges, oversold and overbought RSI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Technical signals</h1>
+    <p>Stocks that just triggered a chart signal traders watch, found by scanning every stock after each close. Each card says what the signal means. Signals are clues about momentum, not predictions, and they often fail on their own.</p>
+  </section>
+
+  <div class="toolbar">
+    <nav class="tabs" id="markets" aria-label="Market"></nav>
+    <span class="spacer"></span>
+    <label class="hint">Size <select class="field" id="size"><option value="0.3">Over $300M</option><option value="2">Over $2B</option><option value="10">Over $10B</option><option value="100">Over $100B</option></select></label>
+  </div>
+
+  <div class="sig-grid" id="cards"></div>
+
+  <div class="subhead" id="detail-head"></div>
+  <div class="panel table-wrap" id="table" hidden></div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Signals are worked out from daily closing prices after each market's close, and refresh every weekday after the US close. They describe what the price has done and can't tell you what it will do.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="signals.js?v=__V__"></script>
+</body>
+</html>

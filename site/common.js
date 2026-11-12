@@ -9,6 +9,7 @@
     ["movers.html", "Movers"],
     ["screener.html", "Screener"],
     ["heatmap.html", "Heatmap"],
+    ["signals.html", "Signals"],
     ["compare.html", "Compare"],
     ["calendar.html", "Calendar"],
     ["alerts.html", "Alerts"],
