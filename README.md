@@ -10,6 +10,7 @@ A static website showing the top 10 stocks in the S&P 500, Nasdaq-100, Dow Jones
 - `portfolio.html` is paper trading: pretend cash (several portfolios), market, limit and stop orders at the site's latest prices, or recorded past trades to track real holdings. Positions, gains, sector allocation, value over time and trade history are kept in the browser.
 - The stock lookup page has a Company and financials section (`fund.js`): a plain-language summary of the numbers, company profile, valuation, profit, financial health, dividends, trading figures, and the analyst rating with price-target range.
 - `alerts.html` sets price alerts (rises to, falls to, or moves a set % in a day). `common.js` checks them every minute on any page of the site while it is open and shows an on-page and optional browser notification.
+- `signals.html` lists stocks that just triggered chart signals (golden and death crosses, crossing the 50- and 200-day averages, MACD crossovers, 20-day breakouts and breakdowns, volume surges, RSI extremes, Bollinger squeezes), worked out by `build_market.py`.
 - `calendar.html` shows upcoming earnings reports and ex-dividend dates by week, filterable by market or your watchlists.
 - `tools.html` holds calculators: position size from risk, profit and loss, average cost, dividend income with reinvesting, compound growth, options payoff and currency conversion.
 - `.github/workflows/update.yml` rebuilds the data every weekday after the US close and on Sundays, then deploys to GitHub Pages.

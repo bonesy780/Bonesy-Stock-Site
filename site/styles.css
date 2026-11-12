@@ -620,3 +620,20 @@ label.check { display: inline-flex; gap: 6px; align-items: center; }
 .toast .tk { color: var(--muted); font-size: 12px; }
 @media (max-width: 900px) { .alert-form { grid-template-columns: 1fr 1fr; } .alert-form .lookup, .alert-form #note { grid-column: 1 / -1; } }
 [hidden] { display: none !important; }
+
+/* technical signals */
+.toolbar .tabs { padding: 0; flex: 1 1 auto; min-width: 0; }
+.sig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; margin-bottom: 8px; }
+.sig-card { padding: 14px; display: flex; flex-direction: column; gap: 8px; border-top: 3px solid var(--muted); }
+.sig-card.up { border-top-color: var(--up); } .sig-card.down { border-top-color: var(--down); } .sig-card.flat { border-top-color: var(--warn); }
+.sig-card.on { box-shadow: 0 0 0 2px var(--accent); }
+.sig-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.sig-top h3 { margin: 0; font-size: 16px; }
+.sig-count { font: 600 18px "JetBrains Mono", ui-monospace, monospace; }
+.sig-card .hint { margin: 0; flex: 1; }
+.sig-names { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px; }
+.sig-names a { color: var(--text); text-decoration: none; font-weight: 600; white-space: nowrap; }
+.sig-names a:hover { color: var(--accent); }
+.sig-names .num { font-weight: 400; font-size: 12px; }
+.sig-card .btn { align-self: flex-start; }
+.tag.sig-up { background: var(--up-soft); color: var(--up); } .tag.sig-down { background: var(--down-soft); color: var(--down); } .tag.sig-flat { background: var(--surface-2); color: var(--warn); }
