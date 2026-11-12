@@ -64,7 +64,7 @@
     const rows = ix.top.map((s, n) => `
       <tr>
         <td class="rank num">${n + 1}</td>
-        <td><div class="co"><span class="nm" title="${esc(s.name)}">${link(s)}</span><span class="tk">${esc(s.symbol)}${s.sector ? " · " + esc(s.sector) : ""}</span></div></td>
+        <td><div class="co-row">${UI.star(s.ticker)}<div class="co"><span class="nm" title="${esc(s.name)}">${link(s)}</span><span class="tk">${esc(s.symbol)}${s.sector ? " · " + esc(s.sector) : ""}</span></div></div></td>
         <td class="num">${money(s.price, ix.currency)}</td>
         <td>${pct(s.chg1w)}</td>
         <td>${pct(s.chg1m)}</td>
@@ -83,7 +83,7 @@
     const bigRows = largest.map((s, n) => `
       <tr>
         <td class="rank num">${n + 1}</td>
-        <td><div class="co"><span class="nm" title="${esc(s.name)}">${link(s)}</span><span class="tk">${esc(s.symbol)}</span></div></td>
+        <td><div class="co-row">${UI.star(s.ticker)}<div class="co"><span class="nm" title="${esc(s.name)}">${link(s)}</span><span class="tk">${esc(s.symbol)}</span></div></div></td>
         <td><span class="score"><span class="bar"><i style="width:${(s.mcapUsd || 0) / maxCap * 100}%"></i></span><span class="num">${big(s.mcapUsd)}</span></span></td>
         <td class="num">${money(s.price, ix.currency)}</td>
         <td>${pct(s.chg1d)}</td>
@@ -127,7 +127,7 @@
       <article class="panel card">
         <div class="card-top">
           <div><div class="nm">${link(s)}</div><div class="tk">${esc(s.ticker)} · ${esc((s.indexes || []).join(", "))}</div></div>
-          <span class="pill buy">${esc(s.rating)}</span>
+          <span class="card-tags">${UI.star(s.ticker)}<span class="pill buy">${esc(s.rating)}</span></span>
         </div>
         <ul>${s.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>
         <div class="meta"><span class="num">${money(s.price, curOf(s.ticker))}</span><span>Target <span class="num">${money(s.target, curOf(s.ticker))}</span></span></div>
@@ -141,7 +141,7 @@
       <article class="panel card">
         <div class="card-top">
           <div><div class="nm">${link(s)}</div><div class="tk">${esc(s.ticker)} · ${esc((s.indexes || []).join(", "))}</div></div>
-          <span class="pill sell">${esc(s.rating)}</span>
+          <span class="card-tags">${UI.star(s.ticker)}<span class="pill sell">${esc(s.rating)}</span></span>
         </div>
         <ul>${s.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>
         <div class="meta"><span class="num">${money(s.price, curOf(s.ticker))}</span><span>Target <span class="num">${money(s.target, curOf(s.ticker))}</span></span></div>

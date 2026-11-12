@@ -368,7 +368,7 @@
     const head = `
       <div class="quote-head">
         <div>
-          <h2>${esc(x.name || s.n)}</h2>
+          <h2>${esc(x.name || s.n)}${s.index ? "" : " " + UI.star(s.t, "Watch")}</h2>
           <div class="region">${esc(s.s)} · ${esc(s.index ? s.region + " market index" : s.ix.join(", "))} · ${esc(s.cur)}</div>
         </div>
         <div class="quote-price" id="qp"></div>

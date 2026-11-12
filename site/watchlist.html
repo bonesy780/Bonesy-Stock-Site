@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Watchlists · Market Leaders</title>
+<meta name="description" content="Keep your own lists of stocks to follow, with live prices, day moves, 52-week ranges, valuations and upcoming earnings.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Watchlists</h1>
+    <p>Keep lists of the stocks you follow. Tap the ☆ next to any stock on the site, or add one here. Your lists are saved in this browser only.</p>
+  </section>
+
+  <div class="list-tabs" id="lists" role="tablist" aria-label="Your watchlists"></div>
+
+  <div class="toolbar">
+    <div class="lookup"><input id="add" type="search" placeholder="Add a stock to this list…" aria-label="Add a stock to this list" spellcheck="false"></div>
+    <span class="spacer"></span>
+    <button class="btn" id="new">New list</button>
+    <button class="btn" id="rename">Rename</button>
+    <button class="btn danger" id="delete">Delete list</button>
+  </div>
+
+  <div class="panel wl-summary" id="summary" hidden></div>
+  <div class="panel table-wrap" id="table"></div>
+  <p class="hint" id="note"></p>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Prices come from Yahoo Finance and can be delayed up to 20 minutes. Valuations, analyst views and earnings dates refresh each weekday after the US close.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="watchlist.js?v=__V__"></script>
+</body>
+</html>

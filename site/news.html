@@ -16,9 +16,10 @@
 <header class="top">
   <div class="wrap top-inner">
     <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
-    <nav class="menu" aria-label="Pages"><a href="./">Stocks</a><a href="stock.html">Stock Lookup</a><a href="news.html" aria-current="page">Market News</a></nav>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
     <div class="updated" id="updated">Loading news…</div>
   </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
 </header>
 
 <main class="wrap">
@@ -36,6 +37,7 @@
 
 <footer class="wrap foot">News: Yahoo Finance via yfinance and Google News.</footer>
 
+<script src="common.js?v=__V__"></script>
 <script src="rain.js?v=__V__"></script>
 <script src="news.js?v=__V__"></script>
 </body>
