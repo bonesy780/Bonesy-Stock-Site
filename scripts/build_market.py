@@ -32,7 +32,7 @@ SITE = ROOT / "site"
 OUT = SITE / "market.json"
 FUND = SITE / "fund"
 BATCH = 200
-INFO_WORKERS = 6
+INFO_WORKERS = 4
 INFO_BUDGET = 40 * 60   # seconds; stop asking Yahoo for company facts after this
 
 # Company facts kept for the Financials tab (Yahoo's .info names)
@@ -158,14 +158,15 @@ def stats(f: pd.DataFrame) -> dict:
     }
 
 
-def info(t: str) -> dict:
-    for attempt in range(3):
+def info(t: str, tries: int = 3) -> dict:
+    for attempt in range(tries):
         try:
             return yf.Ticker(t).info or {}
         except Exception as e:
-            if attempt == 2:
+            if attempt == tries - 1:
                 log(f"info {t} failed ({e})")
-            time.sleep(2 * (attempt + 1))
+            # Yahoo rate limits bursts; back off much longer when it says so
+            time.sleep((15 if "Too Many" in str(e) else 2) * (attempt + 1))
     return {}
 
 
@@ -186,6 +187,14 @@ def build():
     with ThreadPoolExecutor(max_workers=INFO_WORKERS) as ex:
         infos = dict(ex.map(facts, sorted(bars)))
     log(f"company facts for {sum(1 for v in infos.values() if v)} stocks")
+    # Second, slower pass for the ones Yahoo turned away
+    missing = [t for t, v in infos.items() if not v]
+    if missing and time.monotonic() - start < INFO_BUDGET:
+        log(f"retrying {len(missing)} stocks more slowly")
+        time.sleep(30)
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            infos.update((t, v) for t, v in ex.map(facts, missing) if v)
+        log(f"company facts for {sum(1 for v in infos.values() if v)} stocks after retrying")
 
     FUND.mkdir(parents=True, exist_ok=True)
     rows = []
