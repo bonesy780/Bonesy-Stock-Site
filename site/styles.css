@@ -759,3 +759,21 @@ table.rot-table { min-width: 620px; font-size: 13px; }
 .pf-notes li { padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
 .pf-notes li.warn { background: var(--down-soft); }
 .pf-notes li.good { background: var(--up-soft); }
+
+/* ---- Grouped menu on wide screens, one scrolling row on narrow ones */
+.top .menu .menu-wide, .top .menu .menu-flat { display: flex; gap: 2px; align-items: center; }
+.top .menu .menu-flat { display: none; }
+@media (max-width: 900px) {
+  .top .menu .menu-wide { display: none; }
+  .top .menu .menu-flat { display: flex; }
+}
+@media (min-width: 901px) { .top .menu { overflow: visible; } }
+.menu-group { position: relative; }
+.menu-btn { all: unset; cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 8px; display: inline-flex; gap: 4px; align-items: center; }
+.menu-btn i { font-style: normal; font-size: 10px; }
+.menu-btn:hover, .menu-btn[aria-expanded="true"] { color: var(--text); background: var(--surface-2); }
+.menu-btn.on { color: var(--accent); background: var(--accent-soft); }
+.menu-btn:focus-visible { outline: 2px solid var(--accent); }
+.menu-pop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 50; min-width: 170px; padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+.menu-pop[hidden] { display: none !important; }
+.menu-pop a { display: block; }
