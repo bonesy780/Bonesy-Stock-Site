@@ -695,3 +695,30 @@ table.an-sec { min-width: 0; }
 .an-sec th:first-child, .an-sec td:first-child { text-align: left; white-space: normal; }
 .an-sec .an-rate { flex-direction: row; align-items: center; gap: 8px; }
 @media (max-width: 560px) { .an-sec .an-scale { display: none; } }
+
+/* ---- Backtest */
+.bt-form { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px 28px; padding: 18px 20px; margin-bottom: 16px; }
+@media (max-width: 760px) { .bt-form { grid-template-columns: minmax(0, 1fr); } }
+.bt-form h2 { margin: 0 0 10px; font-size: 18px; }
+.bt-row { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.bt-name { display: flex; flex-direction: column; min-width: 0; }
+.bt-name .tk { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-w { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.bt-w input { width: 72px; text-align: right; }
+.bt-add { margin: 12px 0 8px; max-width: none; }
+.bt-weights { display: flex; align-items: center; gap: 12px; }
+.bt-weights .hint { margin: 0; }
+.bt-weights .hint.warn { color: #a86f00; }
+.bt-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+.bt-opts label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.bt-opts .field { width: 100%; }
+#result { margin-bottom: 16px; }
+#result .pad, #result .pad-t { margin: 0 0 10px; }
+.stat .big-v { font-size: 22px; }
+.stat .value span.up, .stat .value span.down { font-size: 12px; font-weight: 500; }
+.bt-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+@media (max-width: 860px) { .bt-tables { grid-template-columns: minmax(0, 1fr); } }
+.pad-h { margin: 0; padding: 14px 16px 10px; font-size: 16px; }
+table.bt-table { min-width: 0; }
+.bt-table td:nth-child(2), .bt-table th:nth-child(2) { text-align: right; }
+.plain-link { color: var(--text); font-weight: 600; text-decoration: none; } .plain-link:hover { color: var(--accent); }
