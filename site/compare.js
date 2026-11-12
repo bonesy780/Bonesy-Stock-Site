@@ -83,9 +83,10 @@
     }
     const days = (last - x0) / 86400;
     const fmtX = (ts) => new Date(ts * 1000).toLocaleDateString(undefined, days > 400 ? { year: "numeric", month: "short" } : { month: "short", day: "numeric" });
-    for (let k = 0; k <= 4; k++) {
-      const ts = x0 + ((last - x0) * k) / 4;
-      grid += `<text class="axis" x="${X(ts)}" y="${H - 6}" text-anchor="${k === 0 ? "start" : k === 4 ? "end" : "middle"}">${fmtX(ts)}</text>`;
+    const ticks = W < 500 ? 2 : 4;
+    for (let k = 0; k <= ticks; k++) {
+      const ts = x0 + ((last - x0) * k) / ticks;
+      grid += `<text class="axis" x="${X(ts)}" y="${H - 6}" text-anchor="${k === 0 ? "start" : k === ticks ? "end" : "middle"}">${fmtX(ts)}</text>`;
     }
     const lines = series.map((s) => `<path class="ind cmp" style="--c:var(${s.color})" d="${s.pts.map((p, n) => `${n ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join("")}"/>`).join("");
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${grid}${lines}<line class="cross" id="cx" y1="${pad.t}" y2="${H - pad.b}" visibility="hidden"/></svg><div class="tip" hidden></div>`;
