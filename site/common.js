@@ -9,6 +9,7 @@
     ["portfolio.html", "Paper Trading"],
     ["screener.html", "Screener"],
     ["movers.html", "Movers"],
+    ["brief.html", "Daily Brief", null, "Research"],
     ["heatmap.html", "Heatmap", null, "Research"],
     ["signals.html", "Signals", null, "Research"],
     ["analysts.html", "Analysts", null, "Research"],

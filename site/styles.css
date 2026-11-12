@@ -813,3 +813,20 @@ table.op-table { min-width: 0; }
 .op-table input.field { min-width: 64px; }
 @media (max-width: 640px) { table.op-table { min-width: 400px; } }
 .returns-row { border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 10px; } .returns-row .tk { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+/* ---- Daily brief */
+.brief { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; margin-bottom: 16px; }
+.brief-sec { padding: 18px 20px; line-height: 1.6; }
+.brief-sec h2 { margin: 0 0 8px; font-size: 18px; }
+.brief-sec h3 { margin: 0 0 4px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.brief-sec p { margin: 0 0 8px; }
+.brief-lead { font-size: 15px; }
+.brief-list { margin: 0 0 8px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.brief-list .muted { font-size: 13px; }
+.brief-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+@media (max-width: 520px) { .brief-two { grid-template-columns: 1fr; } }
+.brief-movers { margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.brief-movers li { display: flex; gap: 6px; align-items: baseline; padding: 2px 0; }
+.brief-movers .muted { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.brief-more { font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; margin: 8px 0 0 !important; }
+.brief { align-items: start; } .brief-more a { color: var(--accent); text-decoration: none; } .brief-more a:hover { text-decoration: underline; }
