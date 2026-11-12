@@ -10,6 +10,7 @@
     ["screener.html", "Screener"],
     ["heatmap.html", "Heatmap"],
     ["compare.html", "Compare"],
+    ["tools.html", "Calculators"],
     ["news.html", "News"],
   ];
 
