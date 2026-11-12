@@ -8,6 +8,7 @@
     ["movers.html", "Movers"],
     ["screener.html", "Screener"],
     ["heatmap.html", "Heatmap"],
+    ["compare.html", "Compare"],
     ["news.html", "News"],
   ];
 

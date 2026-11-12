@@ -475,3 +475,17 @@ section { margin-bottom: 40px; }
 .heat-tip { position: fixed; z-index: 10; white-space: normal; max-width: 300px; line-height: 1.5; }
 .heat-legend { display: flex; border-radius: 6px; overflow: hidden; }
 .heat-legend span { font: 11px "JetBrains Mono", ui-monospace, monospace; color: #fff; padding: 3px 8px; text-shadow: 0 1px 1px rgba(0,0,0,.35); }
+
+/* compare stocks */
+#picked { gap: 6px; }
+#picked .chip { cursor: default; padding-right: 2px; }
+#picked .x { font-size: 13px; padding: 0 6px; }
+#chart-panel .ranges { margin-top: 0; }
+.compare-table { min-width: 560px; }
+.compare-table th[scope="row"] { text-align: left; font-weight: 500; color: var(--muted); background: none; text-transform: none; letter-spacing: 0; font-size: 14px; }
+.compare-table thead th { text-align: right; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--text); }
+.compare-table thead th .tk { font-weight: 400; color: var(--muted); font-size: 12px; }
+.compare-table thead .sw { display: inline-block; width: 12px; border-top-width: 3px; vertical-align: middle; }
+.compare-table td { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 13px; }
+.compare-table td.best { background: var(--accent-soft); font-weight: 700; }
+@media (max-width: 640px) { .compare-table { min-width: 0; } .compare-table td, .compare-table th { padding: 8px 6px; white-space: normal; } }
