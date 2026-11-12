@@ -489,3 +489,40 @@ section { margin-bottom: 40px; }
 .compare-table td { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 13px; }
 .compare-table td.best { background: var(--accent-soft); font-weight: 700; }
 @media (max-width: 640px) { .compare-table { min-width: 0; } .compare-table td, .compare-table th { padding: 8px 6px; white-space: normal; } }
+
+/* paper trading */
+.pf-summary { display: flex; flex-wrap: wrap; gap: 10px 28px; padding: 16px 20px; margin-bottom: 16px; align-items: flex-end; }
+.big-stat .value { font-size: 26px; }
+.pf-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 24px; }
+.ticket { padding: 16px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 112px; }
+.ticket h2 { margin: 0; font-size: 18px; }
+.ticket label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.ticket .field, .ticket .lookup input { width: 100%; }
+.ticket .lookup { margin: 0; }
+.ticket .lookup input { padding: 9px 12px; font-size: 15px; }
+.ticket-stock { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); min-height: 44px; }
+.ticket-stock .tk { color: var(--muted); font-size: 12px; }
+.ticket-px { font-size: 18px; font-weight: 600; }
+.ticket-px .num { font-size: 18px; }
+.ticket .side { display: grid; grid-template-columns: 1fr 1fr; }
+.ticket .side button[aria-checked="true"] { background: var(--up); color: #fff; font-weight: 600; }
+.ticket.selling .side button[aria-checked="true"] { background: var(--down); }
+.ticket.selling .btn.primary { background: var(--down); border-color: var(--down); }
+.ticket-est { display: flex; flex-direction: column; gap: 3px; font-size: 14px; }
+.ticket-est .tk { color: var(--muted); font-size: 12px; }
+.linkish { all: unset; color: var(--accent); cursor: pointer; text-decoration: underline; }
+.btn.small { padding: 3px 10px; font-size: 13px; }
+.x.armed { color: var(--down); font-size: 12px; }
+.pf-main .subhead:first-child { margin-top: 0; }
+.pf-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 16px; }
+.alloc { display: flex; gap: 16px; align-items: center; padding: 14px 16px; margin-top: 12px; }
+.alloc-list { list-style: none; margin: 0; padding: 0; font-size: 13px; flex: 1; min-width: 0; }
+.alloc-list li { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+.alloc-list .num { margin-left: auto; }
+#history { margin: 12px 0 0; }
+.pf-tools { margin-top: 16px; }
+.inline-ask { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 900px) {
+  .pf-grid, .pf-two { grid-template-columns: 1fr; }
+  .ticket { position: static; }
+}

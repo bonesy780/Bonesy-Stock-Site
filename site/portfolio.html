@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paper Trading · Market Leaders</title>
+<meta name="description" content="Practice trading with pretend money, or track the stocks you own: positions, gains and losses, allocation and trade history.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Paper trading</h1>
+    <p>Practice with pretend money at real market prices, or enter the trades you actually made to track your holdings. Everything is saved in this browser only.</p>
+  </section>
+
+  <div class="list-tabs" id="accounts" role="tablist" aria-label="Portfolios"></div>
+
+  <div class="panel pf-summary" id="summary"></div>
+
+  <div class="pf-grid">
+    <form class="panel ticket" id="ticket" autocomplete="off">
+      <h2>Place an order</h2>
+      <div class="lookup"><input id="sym" class="field" type="search" placeholder="Search a stock…" aria-label="Stock" spellcheck="false"></div>
+      <div class="ticket-stock" id="tstock"><span class="hint">Pick a stock to see its price.</span></div>
+      <div class="seg side" role="radiogroup" aria-label="Buy or sell">
+        <button type="button" role="radio" aria-checked="true" data-side="buy">Buy</button><button type="button" role="radio" aria-checked="false" data-side="sell">Sell</button>
+      </div>
+      <label>Order type
+        <select class="field" id="otype"><option value="market">Market (fill now)</option><option value="limit">Limit (fill at my price or better)</option><option value="stop">Stop (fill once price passes my price)</option><option value="record">Record a past trade</option></select>
+      </label>
+      <label>Shares <input class="field" id="qty" type="number" min="0" step="any" inputmode="decimal" placeholder="0"></label>
+      <label id="price-wrap" hidden><span id="price-label">Limit price</span> <input class="field" id="price" type="number" min="0" step="any" inputmode="decimal"></label>
+      <label id="date-wrap" hidden>Trade date <input class="field" id="date" type="date"></label>
+      <div class="ticket-est" id="est"></div>
+      <button class="btn primary" id="place" type="submit">Review order</button>
+      <p class="hint" id="msg" role="status"></p>
+    </form>
+
+    <div class="pf-main">
+      <div class="subhead"><h3>Positions</h3></div>
+      <div class="panel table-wrap" id="positions"></div>
+      <div class="pf-two">
+        <div>
+          <div class="subhead"><h3>Allocation</h3></div>
+          <div class="panel alloc" id="alloc"></div>
+        </div>
+        <div>
+          <div class="subhead"><h3>Value over time</h3></div>
+          <div class="panel quote" id="history"></div>
+        </div>
+      </div>
+      <div class="subhead"><h3>Open orders</h3><p>Limit and stop orders fill when the price reaches yours, checked whenever this page is open.</p></div>
+      <div class="panel table-wrap" id="orders"></div>
+      <div class="subhead"><h3>Activity</h3></div>
+      <div class="panel table-wrap" id="activity"></div>
+      <div class="toolbar pf-tools">
+        <button class="btn" id="csv">Download trades (CSV)</button>
+        <label class="hint">Commission per trade ($) <input class="field" id="fee" type="number" min="0" step="0.01" style="width:90px"></label>
+        <span class="spacer"></span>
+        <button class="btn" id="newacct">New portfolio</button>
+        <button class="btn danger" id="reset">Reset this portfolio</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="disclaimer"><strong>Not financial advice, and no real money.</strong> Paper trades fill at the latest price the site has (live while markets are open when the price service is on, otherwise the last close), with no slippage. Real orders can fill at different prices. Values are shown in US dollars, converted at the last daily exchange rate.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="portfolio.js?v=__V__"></script>
+</body>
+</html>
