@@ -29,6 +29,12 @@
       explain: () => "Within 1% of their highest price of the past year. Stocks making new highs often keep going for a while (momentum)." },
     { id: "lows", label: "52W lows", sort: () => [(s) => s.fromLo, 1], keep: (s) => s.fromLo != null && s.fromLo <= 1,
       explain: () => "Within 1% of their lowest price of the past year." },
+    { id: "shorted", label: "Most shorted", sort: () => [(s) => s.shortFloat, -1], keep: (s) => s.shortFloat >= 5,
+      explain: () => "The largest share of tradable stock sold short, meaning traders are betting the price will fall. Heavily shorted stocks can jump sharply if short sellers rush to buy back (a short squeeze). Mostly US stocks; short data is updated twice a month." },
+    { id: "oversold", label: "Oversold", sort: () => [(s) => s.rsi, 1], keep: (s) => s.rsi != null && s.rsi < 30,
+      explain: () => "RSI under 30: the stock fell fast enough that some traders expect a bounce. Falling stocks can keep falling, so this isn't a buy signal on its own." },
+    { id: "overbought", label: "Overbought", sort: () => [(s) => s.rsi, -1], keep: (s) => s.rsi != null && s.rsi > 70,
+      explain: () => "RSI over 70: the stock rose fast enough that some traders expect a pause or pullback. Strong stocks can stay overbought for a long time." },
   ];
   const gap = (s) => (s.o != null && s.pc ? (s.o / s.pc - 1) * 100 : null);
 
@@ -87,6 +93,7 @@
       { key: "chg", label: view.period ? label : "Day", sm: true, html: (r) => pct(r[k], view.period && k !== "d1" ? 1 : 2) },
     ];
     if (view.id === "gaps") cols.push({ key: "gap", label: "Gap", sm: true, html: (r) => pct(gap(r), 2) });
+    if (view.id === "shorted") cols.push({ key: "short", label: "Short % of float", sm: true, html: (r) => `<span class="num">${r.shortFloat.toFixed(1)}%</span>` });
     if (view.id === "highs" || view.id === "lows") cols.push({ key: "rng", label: view.id === "highs" ? "52W high" : "52W low", html: (r) => `<span class="num">${money(view.id === "highs" ? r.hi52 : r.lo52, r.cur)}</span>` });
     cols.push(
       { key: "vol", label: "Volume", sm: view.id === "volume", html: (r) => `<span class="num">${compact(r.vol)}</span>${r.relVol >= 1.5 ? ` <span class="num up">${r.relVol.toFixed(1)}×</span>` : ""}` },
