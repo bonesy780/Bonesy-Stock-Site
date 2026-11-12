@@ -258,7 +258,7 @@
     if (box) picker(box, (s) => { location.href = stockUrl(s.t); });
     // Press "/" anywhere to jump to the stock search
     if (box) {
-      box.placeholder = "Go to a stock… ( / )";
+      box.placeholder = "Go to a stock… (press /)";
       document.addEventListener("keydown", (e) => {
         if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
         const t = e.target;
@@ -368,5 +368,70 @@
     setInterval(() => { if (!document.hidden && window.Live && Live.on) watchAlerts(); }, 60000);
   });
 
-  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, star, Watch, table, Alerts, toast, session, PAGES };
+  // Seconds until the next open or close for a market id: { open, secs, next: "close" | "open" | "reopen" }
+  function countdown(id, now = new Date()) {
+    const h = HOURS[id];
+    if (!h) return null;
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: h.tz, weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })
+      .formatToParts(now).map((p) => [p.type, p.value]));
+    const secs = +parts.hour * 3600 + +parts.minute * 60 + +parts.second;
+    const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday);
+    const toS = (t) => +t.slice(0, 2) * 3600 + +t.slice(3) * 60;
+    if (day >= 1 && day <= 5) {
+      for (const [a, b] of h.s) if (secs >= toS(a) && secs < toS(b)) return { open: true, secs: toS(b) - secs, next: "close" };
+      const nx = h.s.find(([a]) => toS(a) > secs);
+      if (nx) return { open: false, secs: toS(nx[0]) - secs, next: h.s.length > 1 && secs >= toS(h.s[0][1]) ? "reopen" : "open" };
+    }
+    let add = 1;
+    while (![1, 2, 3, 4, 5].includes((day + add) % 7)) add++;
+    return { open: false, secs: add * 86400 - secs + toS(h.s[0][0]), next: "open" };
+  }
+
+  // ---- market clock strip under the menu on every page, one toggle per market
+  const CLOCKS = [["tsx", "TSX"], ["sp500", "S&P 500"], ["nasdaq100", "Nasdaq"], ["dow", "Dow"], ["nikkei225", "Nikkei"], ["kospi200", "KOSPI"], ["twse50", "Taiwan"]];
+  const dur = (t) => {
+    const d = Math.floor(t / 86400), hh = Math.floor(t % 86400 / 3600), mm = Math.floor(t % 3600 / 60), ss = t % 60;
+    const p2 = (n) => String(n).padStart(2, "0");
+    return d ? `${d}d ${hh}h ${p2(mm)}m` : `${hh}:${p2(mm)}:${p2(ss)}`;
+  };
+  function marketClock() {
+    const menu = document.getElementById("menu");
+    if (!menu || document.getElementById("mkt-clock")) return;
+    const bar = document.createElement("div");
+    bar.className = "mkt-clock wrap";
+    bar.id = "mkt-clock";
+    bar.setAttribute("role", "group");
+    bar.setAttribute("aria-label", "Market open and close timers");
+    menu.after(bar);
+    let on = new Set(store.get("clocks", ["tsx", "sp500"]));
+    const draw = () => {
+      const now = new Date();
+      bar.innerHTML = `<span class="mc-label" aria-hidden="true">Markets</span>` + CLOCKS.map(([id, name]) => {
+        const c = countdown(id, now), h = HOURS[id];
+        const shown = on.has(id);
+        const what = c.next === "close" ? "Closes in" : c.next === "reopen" ? "Reopens in" : "Opens in";
+        const tip = `${name}: ${c.open ? "open" : "closed"}. ${h.name} time ${now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" })}. Regular hours only; exchange holidays aren't included. Tap to ${shown ? "hide" : "show"} the timer.`;
+        return `<button type="button" class="mc ${c.open ? "open" : ""} ${shown ? "on" : ""}" data-mc="${id}" aria-pressed="${shown}" title="${esc(tip)}">
+          <i aria-hidden="true"></i><b>${esc(name)}</b>${shown ? `<span class="mc-t">${what} <span class="num">${dur(c.secs)}</span></span>` : ""}</button>`;
+      }).join("");
+    };
+    bar.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-mc]");
+      if (!b) return;
+      const id = b.dataset.mc;
+      if (on.has(id)) on.delete(id); else on.add(id);
+      store.set("clocks", [...on]);
+      draw();
+      const again = bar.querySelector(`[data-mc="${id}"]`);
+      if (again) again.focus();
+    });
+    window.addEventListener("storage", (e) => { if (e.key === "clocks") { on = new Set(store.get("clocks", [])); draw(); } });
+    draw();
+    // Tick once a second, lined up with the clock, and only while the tab is visible
+    const tick = () => { if (!document.hidden) draw(); setTimeout(tick, 1000 - (Date.now() % 1000) + 5); };
+    setTimeout(tick, 1000 - (Date.now() % 1000) + 5);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", marketClock); else marketClock();
+
+  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, star, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();
