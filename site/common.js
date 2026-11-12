@@ -5,6 +5,7 @@
     ["./", "Markets", ["index.html", ""]],
     ["stock.html", "Stock Lookup"],
     ["watchlist.html", "Watchlists"],
+    ["portfolio.html", "Paper Trading"],
     ["movers.html", "Movers"],
     ["screener.html", "Screener"],
     ["heatmap.html", "Heatmap"],
@@ -18,8 +19,11 @@
     style: "currency", currency: cur, maximumFractionDigits: digits(v, cur), minimumFractionDigits: digits(v, cur),
   }).format(v);
   const plain = (v, cur) => v == null ? "–" : v.toLocaleString(undefined, { maximumFractionDigits: digits(v, cur), minimumFractionDigits: digits(v, cur) });
-  const pct = (v, nd = 1) => v == null ? '<span class="num">–</span>' :
-    `<span class="num ${v >= 0 ? "up" : "down"}">${v >= 0 ? "+" : ""}${v.toFixed(nd)}%</span>`;
+  const pct = (v, nd = 1) => {
+    if (v == null) return '<span class="num">–</span>';
+    if (Math.abs(v) < 0.5 / 10 ** nd) v = 0; // no "-0.0%"
+    return `<span class="num ${v >= 0 ? "up" : "down"}">${v >= 0 ? "+" : ""}${v.toFixed(nd)}%</span>`;
+  };
   const big = (v, sym = "$") => {
     if (v == null) return "–";
     const a = Math.abs(v), s = v < 0 ? "-" : "";
@@ -100,13 +104,13 @@
   // ---- stock search (stocks.json), shared by the header box and the pages
   const norm = (s) => s.toLowerCase().normalize("NFKD").replace(/[^\w ]/g, "");
   async function search(text, n = 8) {
-    const t = norm(text.trim());
+    const t = norm(text.trim()), raw = text.trim().toLowerCase();
     if (!t) return [];
     const stocks = await load("stocks.json");
     const scored = [];
     for (const s of stocks) {
       const sym = s.s.toLowerCase(), tick = s.t.toLowerCase(), name = norm(s.n);
-      const score = sym === t || tick === t ? 0 : sym.startsWith(t) ? 1 : name.startsWith(t) ? 2
+      const score = sym === t || tick === t || tick === raw ? 0 : sym.startsWith(t) || tick.startsWith(raw) ? 1 : name.startsWith(t) ? 2
         : name.split(" ").some((w) => w.startsWith(t)) ? 3 : name.includes(t) || tick.includes(t) ? 4 : -1;
       if (score >= 0) scored.push([score, s.n.length, s]);
     }
