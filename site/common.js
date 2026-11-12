@@ -1,22 +1,23 @@
 // Shared by every page: the site menu, a quick ticker search in the header,
 // number formatting helpers, and the watchlists saved in this browser.
 (function () {
+  // [href, label, other file names that count as this page, menu group]
   const PAGES = [
     ["./", "Markets", ["index.html", ""]],
     ["stock.html", "Stock Lookup"],
     ["watchlist.html", "Watchlists"],
     ["portfolio.html", "Paper Trading"],
-    ["movers.html", "Movers"],
     ["screener.html", "Screener"],
-    ["heatmap.html", "Heatmap"],
-    ["signals.html", "Signals"],
-    ["compare.html", "Compare"],
-    ["backtest.html", "Backtest"],
-    ["analysts.html", "Analysts"],
-    ["dividends.html", "Dividends"],
-    ["calendar.html", "Calendar"],
-    ["alerts.html", "Alerts"],
-    ["tools.html", "Calculators"],
+    ["movers.html", "Movers"],
+    ["heatmap.html", "Heatmap", null, "Research"],
+    ["signals.html", "Signals", null, "Research"],
+    ["analysts.html", "Analysts", null, "Research"],
+    ["dividends.html", "Dividends", null, "Research"],
+    ["calendar.html", "Calendar", null, "Research"],
+    ["compare.html", "Compare", null, "Tools"],
+    ["backtest.html", "Backtest", null, "Tools"],
+    ["alerts.html", "Alerts", null, "Tools"],
+    ["tools.html", "Calculators", null, "Tools"],
     ["news.html", "News"],
   ];
 
@@ -218,12 +219,38 @@
     const here = location.pathname.split("/").pop();
     const menu = document.getElementById("menu");
     if (menu) {
-      menu.innerHTML = PAGES.map(([href, label, also]) => {
-        const cur = href === here || (also || []).includes(here);
-        return `<a href="${href}"${cur ? ' aria-current="page"' : ""}>${esc(label)}</a>`;
+      const isHere = ([href, , also]) => href === here || (also || []).includes(here);
+      const link = (p) => `<a href="${p[0]}"${isHere(p) ? ' aria-current="page"' : ""}>${esc(p[1])}</a>`;
+      // Wide screens: grouped, with Research and Tools as drop-downs. Narrow screens: one scrolling row.
+      const seen = new Set();
+      const grouped = PAGES.map((p) => {
+        const g = p[3];
+        if (!g) return link(p);
+        if (seen.has(g)) return "";
+        seen.add(g);
+        const items = PAGES.filter((x) => x[3] === g);
+        const on = items.some(isHere);
+        return `<div class="menu-group"><button type="button" class="menu-btn${on ? " on" : ""}" aria-expanded="false" aria-haspopup="true">${esc(g)}<i aria-hidden="true">▾</i></button>
+          <div class="panel menu-pop" hidden>${items.map(link).join("")}</div></div>`;
       }).join("");
-      const on = menu.querySelector("[aria-current]");
-      if (on) on.scrollIntoView({ block: "nearest", inline: "center" });
+      menu.innerHTML = `<div class="menu-wide">${grouped}</div><div class="menu-flat">${PAGES.map(link).join("")}</div>`;
+      const close = (except) => menu.querySelectorAll(".menu-group").forEach((g) => {
+        if (g === except) return;
+        g.querySelector(".menu-pop").hidden = true; g.querySelector(".menu-btn").setAttribute("aria-expanded", "false");
+      });
+      menu.addEventListener("click", (e) => {
+        const b = e.target.closest(".menu-btn");
+        if (!b) return;
+        const g = b.parentElement, pop = g.querySelector(".menu-pop");
+        close(g);
+        pop.hidden = !pop.hidden;
+        b.setAttribute("aria-expanded", String(!pop.hidden));
+        if (!pop.hidden) pop.querySelector("a").focus();
+      });
+      document.addEventListener("click", (e) => { if (!e.target.closest(".menu-group")) close(); });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+      const on = menu.querySelector(".menu-flat [aria-current]");
+      if (on && getComputedStyle(menu.querySelector(".menu-flat")).display !== "none") on.scrollIntoView({ block: "nearest", inline: "center" });
     }
     const box = document.getElementById("jump");
     if (box) picker(box, (s) => { location.href = stockUrl(s.t); });
