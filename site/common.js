@@ -7,6 +7,7 @@
     ["watchlist.html", "Watchlists"],
     ["movers.html", "Movers"],
     ["screener.html", "Screener"],
+    ["heatmap.html", "Heatmap"],
     ["news.html", "News"],
   ];
 
