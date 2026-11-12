@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backtest · Market Leaders</title>
+<meta name="description" content="See how a portfolio of up to five stocks would have done since any year, with monthly contributions and rebalancing, against a market index.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Backtest a portfolio</h1>
+    <p>Pick up to five stocks or indexes and how to split your money, choose a start year, and see what it would be worth today, year by year, next to a market index. Add a monthly amount to see the effect of investing regularly.</p>
+  </section>
+
+  <section class="panel bt-form">
+    <div class="bt-hold">
+      <h2>Holdings</h2>
+      <div id="holdings"></div>
+      <div class="lookup bt-add"><input id="add" type="search" placeholder="Add a stock or index…" aria-label="Add a stock or index" spellcheck="false"></div>
+      <div class="bt-weights"><button class="btn small" id="equal">Split evenly</button><span class="hint" id="wsum"></span></div>
+    </div>
+    <div class="bt-opts">
+      <label>Start year <select class="field" id="start"></select></label>
+      <label>Starting amount <input class="field num" id="amount" type="number" min="0" step="1000" inputmode="decimal"></label>
+      <label>Add each month <input class="field num" id="monthly" type="number" min="0" step="50" inputmode="decimal"></label>
+      <label>Rebalance <select class="field" id="rebal"><option value="none">Never</option><option value="year">Once a year</option><option value="quarter">Every quarter</option></select></label>
+      <label>Compare with <select class="field" id="bench"></select></label>
+    </div>
+  </section>
+
+  <div class="panel breadth" id="result"></div>
+
+  <div class="panel quote">
+    <div class="legend" id="legend"></div>
+    <div class="chart" id="chart"></div>
+  </div>
+
+  <div class="bt-tables">
+    <section class="panel table-wrap"><h2 class="pad-h">Year by year</h2><div id="years"></div></section>
+    <section class="panel table-wrap"><h2 class="pad-h">Each holding</h2><div id="each"></div></section>
+  </div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Uses actual traded closes from Yahoo Finance, so dividends are left out and stocks that pay them did better than shown. No fees, taxes or currency changes are included, and each holding is valued in its own currency. Older years use fewer price points. Past returns don't predict future ones.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="backtest.js?v=__V__"></script>
+</body>
+</html>
