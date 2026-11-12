@@ -737,3 +737,11 @@ table.peer-table { min-width: 0; font-size: 13px; }
 @media (max-width: 640px) { .peer-table .hide-sm { display: none; } .peer-table td.left a { max-width: 150px; } }
 .peers .table-wrap { overflow-x: auto; }
 @media (max-width: 640px) { .peer-table td.left .muted { display: none; } }
+
+/* ---- Sector rotation grid */
+#rotation { overflow-x: auto; }
+table.rot-table { min-width: 620px; font-size: 13px; }
+.rot-table td, .rot-table th { padding: 8px 10px; }
+.rot-table td.rot-cell { font-family: "JetBrains Mono", ui-monospace, monospace; text-align: center; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,.35); border-left: 2px solid var(--surface); }
+.rot-table th:not(.left) { text-align: center; }
+.rot-table tr.total td { font-weight: 600; border-top: 2px solid var(--border); }
