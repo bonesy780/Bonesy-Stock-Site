@@ -3,3 +3,5 @@ __pycache__/
 site/news.json
 site/stocks.json
 site/hist/
+site/market.json
+site/fund/

@@ -36,6 +36,8 @@ jobs:
         run: python scripts/build_news.py || echo "::warning::news step failed, deploying without fresh news"
       - name: Save price history for the stock lookup page
         run: python scripts/build_history.py || echo "::warning::history step failed, stock lookup may be stale"
+      - name: Gather facts on every stock for the screener, watchlists and other tools
+        run: python scripts/build_market.py || echo "::warning::market facts step failed, tool pages may be stale"
       - name: Deploy the live price service
         id: worker
         if: env.CF_TOKEN != '' && env.CF_ACCOUNT != ''
