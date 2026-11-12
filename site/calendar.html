@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Earnings and Dividend Calendar · Market Leaders</title>
+<meta name="description" content="Upcoming earnings reports and ex-dividend dates for about 1,200 stocks in seven markets, by week.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Earnings and dividend calendar</h1>
+    <p>Which companies report earnings, and which stocks go ex-dividend, day by day. Stock prices often move sharply on earnings day. To get a dividend you need to own the stock before its ex-dividend date.</p>
+  </section>
+
+  <div class="toolbar">
+    <div class="seg" id="kind" role="tablist" aria-label="Calendar"></div>
+    <div class="seg" id="weeknav"><button id="prev" aria-label="Previous week">‹</button><button id="this">This week</button><button id="next" aria-label="Next week">›</button></div>
+    <strong id="week-label"></strong>
+    <span class="spacer"></span>
+    <label class="hint">Market <select class="field" id="market"><option value="">All markets</option></select></label>
+    <label class="hint check"><input type="checkbox" id="mine"> My watchlists only</label>
+  </div>
+
+  <div class="cal-week" id="week"></div>
+
+  <div class="subhead"><h3 id="list-title">This week in detail</h3><p id="list-help"></p></div>
+  <div class="panel table-wrap" id="table"></div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Dates come from Yahoo Finance, refresh every weekday after the US close and are often estimates until the company confirms them. Check the company's investor relations page before trading around a date.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="calendar.js?v=__V__"></script>
+</body>
+</html>
