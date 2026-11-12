@@ -722,3 +722,18 @@ table.an-sec { min-width: 0; }
 table.bt-table { min-width: 0; }
 .bt-table td:nth-child(2), .bt-table th:nth-child(2) { text-align: right; }
 .plain-link { color: var(--text); font-weight: 600; text-decoration: none; } .plain-link:hover { color: var(--accent); }
+
+/* ---- Similar companies on the lookup */
+.peers { margin: 18px 0 8px; border-top: 1px solid var(--border); padding-top: 14px; }
+.peers-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.peers-head h3 { margin: 0; font-size: 16px; }
+.peers-head h3 .muted { font-weight: 400; font-size: 13px; margin-left: 6px; }
+table.peer-table { min-width: 0; font-size: 13px; }
+.peer-table td, .peer-table th { padding: 8px; }
+.peer-table td:nth-child(2), .peer-table th:nth-child(2) { text-align: right; }
+.peer-table td.left a { color: var(--text); text-decoration: none; display: block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+.peer-table td.left a:hover b { color: var(--accent); }
+.peer-table tr.me td { background: var(--surface-2); }
+@media (max-width: 640px) { .peer-table .hide-sm { display: none; } .peer-table td.left a { max-width: 150px; } }
+.peers .table-wrap { overflow-x: auto; }
+@media (max-width: 640px) { .peer-table td.left .muted { display: none; } }
