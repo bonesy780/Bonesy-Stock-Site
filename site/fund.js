@@ -69,6 +69,7 @@
           ${UI.star(t, "Watch")}
           <a class="btn small" href="portfolio.html?t=${encodeURIComponent(t)}">Paper trade</a>
           <a class="btn small" href="compare.html?t=${encodeURIComponent(t)},^GSPC">Compare</a>
+          <a class="btn small" href="alerts.html?t=${encodeURIComponent(t)}">Set alert</a>
         </div>
       </div>
       <p class="fund-summary">${summary(f, m, cur)}</p>
