@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stock Screener · Market Leaders</title>
+<meta name="description" content="Filter about 1,200 stocks in seven markets by valuation, growth, dividends, performance, technicals and analyst views.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Stock screener</h1>
+    <p>Filter about 1,200 stocks in the seven markets by size, valuation, growth, dividends, price moves, technicals and analyst views. Start from a ready-made screen or build your own.</p>
+  </section>
+
+  <div class="presets" id="presets" aria-label="Ready-made screens"></div>
+
+  <div class="panel screen">
+    <div class="screen-head">
+      <div class="chips" id="markets" role="group" aria-label="Markets"></div>
+      <label class="hint">Sector <select class="field" id="sector"><option value="">Any sector</option></select></label>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div class="toolbar screen-tools">
+      <select class="field" id="add" aria-label="Add a filter"><option value="">+ Add a filter…</option></select>
+      <button class="btn" id="reset">Clear filters</button>
+      <span class="spacer"></span>
+      <select class="field" id="saved" aria-label="Saved screens"><option value="">Saved screens…</option></select>
+      <button class="btn" id="save">Save screen</button>
+      <button class="btn" id="share" title="Copy a link to this screen">Copy link</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="seg" id="views" role="tablist" aria-label="Columns"></div>
+    <span class="spacer"></span>
+    <span class="hint" id="count"></span>
+    <button class="btn" id="csv">Download CSV</button>
+  </div>
+  <div class="panel table-wrap" id="table"></div>
+  <div class="more"><button class="btn" id="more" hidden>Show more</button></div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Figures come from Yahoo Finance and refresh every weekday after the US close. Some companies are missing figures, and those are left out when you filter on that figure. A screen is a starting point for research, not a list of stocks to buy.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="screener.js?v=__V__"></script>
+</body>
+</html>
