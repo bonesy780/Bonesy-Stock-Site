@@ -47,6 +47,30 @@
     </div>`;
   }
 
+  // Up to 5 companies in the same industry (or sector), closest in size first
+  function peers(t, m, all) {
+    if (!m.sector) return "";
+    const size = (x) => Math.log10(x.mcapUsd || 1);
+    const near = (k) => all.filter((x) => x.t !== m.t && x[k] && x[k] === m[k])
+      .sort((a, b) => Math.abs(size(a) - size(m)) - Math.abs(size(b) - size(m)));
+    let list = near("industry");
+    let by = m.industry;
+    if (list.length < 3) { list = near("sector"); by = m.sector; }
+    list = list.slice(0, 5);
+    if (!list.length) return "";
+    const rows = [m, ...list];
+    const cell = (v, f) => (v == null ? "–" : f(v));
+    const fx = (v) => v.toFixed(1);
+    return `<div class="peers">
+      <div class="peers-head"><h3>Similar companies <span class="muted">${esc(by)}</span></h3>
+        <a class="btn small" href="compare.html?t=${rows.slice(0, 5).map((x) => encodeURIComponent(x.t)).join(",")}">Compare these</a></div>
+      <div class="table-wrap"><table class="peer-table"><thead><tr><th class="left">Company</th><th>Price</th><th>Day</th><th class="hide-sm">YTD</th><th class="hide-sm">1Y</th><th class="hide-sm">Fwd P/E</th><th class="hide-sm">Yield</th><th>Mkt cap</th></tr></thead>
+      <tbody>${rows.map((x) => `<tr class="${x.t === t ? "me" : ""}"><td class="left"><a href="${UI.stockUrl(x.t)}"><b>${esc(x.s)}</b> <span class="muted">${esc(x.n)}</span></a></td>
+        <td class="num">${money(x.p, x.cur)}</td><td>${pct(x.d1)}</td><td class="hide-sm">${pct(x.ytd)}</td><td class="hide-sm">${pct(x.y1)}</td>
+        <td class="num hide-sm">${cell(x.fpe > 0 ? x.fpe : null, fx)}</td><td class="num hide-sm">${cell(x.divYield, (v) => v.toFixed(2) + "%")}</td><td class="num">${big(x.mcapUsd)}</td></tr>`).join("")}</tbody></table></div>
+    </div>`;
+  }
+
   async function render(t, s) {
     showing = t;
     const box = el();
@@ -55,7 +79,8 @@
     box.innerHTML = `<div class="panel fund"><div class="empty">Loading company facts…</div></div>`;
     let f = null, m = {};
     try { f = await (await fetch(`fund/${encodeURIComponent(t)}.json`, { cache: "no-store" })).json(); } catch {}
-    try { m = (await UI.market()).byTicker[t] || {}; } catch {}
+    let all = [];
+    try { const mk = await UI.market(); m = mk.byTicker[t] || {}; all = mk.stocks; } catch {}
     if (showing !== t) return;
     if (!f) { box.innerHTML = `<div class="panel fund"><div class="empty">No company facts for this stock yet. They're gathered every weekday after the US close.</div></div>`; return; }
     const cur = f.cur || s.cur, price = m.p ?? f.price;
@@ -118,6 +143,7 @@
           ${targetBar(f, price, cur)}
         </div>
       </div>
+      ${peers(t, m, all)}
       <p class="hint">Figures from Yahoo Finance as of ${new Date(f.asOf).toLocaleDateString(undefined, { dateStyle: "medium" })}. Amounts are in ${esc(cur)}. Hover a figure for what it means.</p>
     </div>`;
   }
