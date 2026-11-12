@@ -830,3 +830,19 @@ table.op-table { min-width: 0; }
 .brief-movers .muted { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .brief-more { font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; margin: 8px 0 0 !important; }
 .brief { align-items: start; } .brief-more a { color: var(--accent); text-decoration: none; } .brief-more a:hover { text-decoration: underline; }
+
+/* ---- Market clock strip (every page) */
+.mkt-clock { display: flex; gap: 6px; align-items: center; padding-top: 0; padding-bottom: 8px; overflow-x: auto; scrollbar-width: none; }
+.mkt-clock::-webkit-scrollbar { display: none; }
+.mc-label { flex: none; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-right: 2px; }
+.mc { all: unset; flex: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.mc:hover { color: var(--text); border-color: var(--muted); }
+.mc:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.mc i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .6; }
+.mc.open i { background: var(--up); opacity: 1; box-shadow: 0 0 0 3px var(--up-soft); }
+.mc b { font-weight: 600; }
+.mc.on { color: var(--text); background: var(--surface-2); }
+.mc.on.open { background: var(--up-soft); border-color: color-mix(in srgb, var(--up) 35%, transparent); }
+.mc-t { color: var(--muted); }
+.mc.open .mc-t { color: var(--up); }
+.mc-t .num { font-variant-numeric: tabular-nums; color: inherit; font-weight: 600; }
