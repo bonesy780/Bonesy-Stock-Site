@@ -112,6 +112,24 @@
       { key: "best", label: "Best", html: (r) => r.best ? `<a class="co-link" href="${stockUrl(r.best.t)}">${esc(r.best.s)}</a> ${pct(r.best[k])}` : "–" },
       { key: "worst", label: "Worst", html: (r) => r.worst ? `<a class="co-link" href="${stockUrl(r.worst.t)}">${esc(r.worst.s)}</a> ${pct(r.worst[k])}` : "–" },
     ], sectors, sectorSort, {});
+    rotation(sectors);
+  }
+
+  // Each sector's size-weighted move over every period, to spot which ones are gaining or losing favour
+  const SPANS = [["d1", "Day", 3], ["w1", "Week", 6], ["m1", "Month", 10], ["m3", "3M", 20], ["m6", "6M", 30], ["ytd", "YTD", 30], ["y1", "1Y", 40]];
+  function rotation(sectors) {
+    const avg = (stocks, k) => {
+      const moved = stocks.filter((s) => s[k] != null);
+      const w = moved.reduce((a, s) => a + s.mcapUsd, 0);
+      return w ? moved.reduce((a, s) => a + s[k] * s.mcapUsd, 0) / w : null;
+    };
+    const all = sectors.flatMap((x) => x.stocks);
+    const rows = sectors.map((x) => ({ name: x.name, v: SPANS.map(([k]) => avg(x.stocks, k)) }));
+    rows.sort((a, b) => (b.v[3] ?? -1e9) - (a.v[3] ?? -1e9));
+    rows.push({ name: "Whole market", v: SPANS.map(([k]) => avg(all, k)), total: true });
+    const cell = (v, cap) => `<td class="rot-cell" style="background:${color(v, cap)}">${v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(1) + "%"}</td>`;
+    $("rotation").innerHTML = `<table class="rot-table"><thead><tr><th class="left">Sector</th>${SPANS.map(([, l]) => `<th>${l}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map((r) => `<tr class="${r.total ? "total" : ""}"><td class="left">${esc(r.name)}</td>${r.v.map((v, i) => cell(v, SPANS[i][2])).join("")}</tr>`).join("")}</tbody></table>`;
   }
   const sectorSort = { key: "chg", dir: -1 };
 
