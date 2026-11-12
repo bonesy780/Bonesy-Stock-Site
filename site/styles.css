@@ -461,3 +461,17 @@ section { margin-bottom: 40px; }
   .filters { grid-template-columns: 1fr; }
   .screen-tools .field, .screen-tools .btn { flex: 1 1 auto; }
 }
+
+/* market heatmap */
+:root { --heat-up: #10a35a; --heat-down: #d6343f; --heat-flat: #3b4250; }
+.heat-wrap { padding: 6px; margin-bottom: 8px; }
+.heat { position: relative; width: 100%; overflow: hidden; border-radius: 8px; background: var(--heat-flat); }
+.heat-sec { position: absolute; box-sizing: border-box; border: 1px solid var(--surface); }
+.heat-sec-name { display: block; height: 18px; padding: 1px 6px; font-size: 11px; font-weight: 600; color: #fff; background: rgba(0,0,0,.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.heat-box { position: absolute; box-sizing: border-box; border: 1px solid rgba(0,0,0,.25); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-decoration: none; overflow: hidden; line-height: 1.1; text-shadow: 0 1px 1px rgba(0,0,0,.35); }
+.heat-box:hover, .heat-box:focus-visible { outline: 2px solid #fff; outline-offset: -2px; z-index: 1; }
+.hb-sym { font-weight: 700; white-space: nowrap; }
+.hb-chg { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .72em; margin-top: 2px; }
+.heat-tip { position: fixed; z-index: 10; white-space: normal; max-width: 300px; line-height: 1.5; }
+.heat-legend { display: flex; border-radius: 6px; overflow: hidden; }
+.heat-legend span { font: 11px "JetBrains Mono", ui-monospace, monospace; color: #fff; padding: 3px 8px; text-shadow: 0 1px 1px rgba(0,0,0,.35); }

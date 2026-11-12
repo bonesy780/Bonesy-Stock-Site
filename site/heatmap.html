@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market Heatmap · Market Leaders</title>
+<meta name="description" content="A heatmap of every stock in each market, grouped by sector and sized by company value, colored by how much it moved.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Market heatmap</h1>
+    <p>Every stock in a market at a glance. Boxes are grouped by sector and sized by company value. Green rose and red fell, and the stronger the color, the bigger the move. Tap a box for the stock's chart.</p>
+  </section>
+
+  <nav class="tabs" id="markets" aria-label="Market"></nav>
+
+  <div class="toolbar">
+    <div class="seg" id="periods" role="tablist" aria-label="Period"></div>
+    <span class="spacer"></span>
+    <div class="heat-legend" id="legend" aria-hidden="true"></div>
+  </div>
+
+  <div class="panel heat-wrap"><div class="heat" id="heat" role="img" aria-label="Heatmap of stocks by sector"></div></div>
+  <div class="tip heat-tip" id="tip" hidden></div>
+
+  <div class="subhead"><h3>Sectors</h3><p>Each sector's move, weighted by company size, and its best and worst stock.</p></div>
+  <div class="panel table-wrap" id="sectors"></div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Built from each market's last close, refreshed every weekday after the US close. Data from Yahoo Finance can be delayed or wrong.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="heatmap.js?v=__V__"></script>
+</body>
+</html>
