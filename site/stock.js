@@ -251,6 +251,7 @@
     if (push) history.replaceState(null, "", "?t=" + encodeURIComponent(t));
     document.title = `${s.s} · Stock Lookup · Market Leaders`;
     renderQuote();
+    if (window.renderFund) window.renderFund(t, s);
     try {
       hist = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })).json();
     } catch (e) {
