@@ -227,6 +227,42 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", header); else header();
 
+  // ---- trading hours of the seven markets (regular sessions; exchange holidays aren't known here)
+  const HOURS = {
+    tsx: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto" },
+    sp500: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
+    nasdaq100: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
+    dow: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
+    nikkei225: { tz: "Asia/Tokyo", s: [["09:00", "11:30"], ["12:30", "15:30"]], name: "Tokyo" },
+    kospi200: { tz: "Asia/Seoul", s: [["09:00", "15:30"]], name: "Seoul" },
+    twse50: { tz: "Asia/Taipei", s: [["09:00", "13:30"]], name: "Taipei" },
+  };
+  // { open, label, local } for a market id, e.g. { open: true, label: "Closes in 2h 10m", local: "11:20 AM" }
+  function session(id, now = new Date()) {
+    const h = HOURS[id];
+    if (!h) return null;
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: h.tz, weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(now).map((p) => [p.type, p.value]));
+    const mins = +parts.hour * 60 + +parts.minute;
+    const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday);
+    const toMin = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
+    const fmt = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`);
+    const local = now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" });
+    const weekday = day >= 1 && day <= 5;
+    if (weekday) {
+      for (const [a, b] of h.s) {
+        if (mins >= toMin(a) && mins < toMin(b)) return { open: true, label: `Closes in ${fmt(toMin(b) - mins)}`, local, city: h.name };
+      }
+      const next = h.s.find(([a]) => toMin(a) > mins);
+      if (next) return { open: false, label: h.s.length > 1 && mins >= toMin(h.s[0][1]) ? `Lunch break, reopens in ${fmt(toMin(next[0]) - mins)}` : `Opens in ${fmt(toMin(next[0]) - mins)}`, local, city: h.name };
+    }
+    // Next weekday's open
+    let add = 1;
+    while (![1, 2, 3, 4, 5].includes((day + add) % 7)) add++;
+    const wait = add * 1440 - mins + toMin(h.s[0][0]);
+    return { open: false, label: wait < 1440 ? `Opens in ${fmt(wait)}` : `Opens ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][(day + add) % 7]} ${h.s[0][0]}`, local, city: h.name };
+  }
+
   // ---- price alerts, kept in this browser and checked on every page while it's open
   const AKEY = "alerts";
   const KINDS = {
@@ -288,5 +324,5 @@
     setInterval(() => { if (!document.hidden && window.Live && Live.on) watchAlerts(); }, 60000);
   });
 
-  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, star, Watch, table, Alerts, toast, PAGES };
+  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, star, Watch, table, Alerts, toast, session, PAGES };
 })();

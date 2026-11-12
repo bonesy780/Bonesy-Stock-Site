@@ -163,6 +163,7 @@
     $("markets").innerHTML = data.indexes.map((i) => `
       <button class="mkt ${i.id === current ? "on" : ""}" data-id="${i.id}">
         <span class="mkt-name">${esc(i.name.replace(/ \(.*\)/, ""))}</span>
+        ${(() => { const h = window.UI && UI.session(i.id); return h ? `<span class="mkt-hours ${h.open ? "open" : ""}" title="${esc(h.city)} time ${esc(h.local)}. Regular hours only; holidays not shown."><i></i>${h.open ? "Open" : "Closed"} · ${esc(h.label.replace(/ in /, " ").replace(/^./, (c) => c.toLowerCase()))}</span>` : ""; })()}
         <span class="num">${i.level ? i.level.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "–"}</span>
         ${pct(i.chg1d)}
       </button>`).join("");
@@ -207,6 +208,7 @@
   if (window.startRain) window.startRain(data.rainTickers || data.indexes.flatMap((i) => i.top.map((t) => t.symbol)));
 
   renderMarkets();
+  setInterval(() => { if (!document.hidden) renderMarkets(); }, 60000);
   renderSnaps();
   renderTabs();
   renderIndex();

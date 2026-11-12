@@ -643,3 +643,7 @@ label.check { display: inline-flex; gap: 6px; align-items: center; }
 .mine .snap-head { margin-top: 0; }
 .pf-card { border-color: var(--accent); }
 .pf-card .nm { font-size: 18px; }
+.mkt-hours { font-size: 11px; color: var(--muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.mkt-hours i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.mkt-hours.open { color: var(--up); }
+.mkt-hours.open i { background: var(--up); }
