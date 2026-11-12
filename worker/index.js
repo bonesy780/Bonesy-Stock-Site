@@ -3,7 +3,7 @@
 // Worker fetches quotes for the page and caches them for a few seconds.
 //
 //   GET /quote?symbols=AAPL,SHOP.TO,^GSPC   -> { "AAPL": { price, prevClose, chg1d, time }, ... }
-//   GET /chart?symbol=AAPL&range=1d          -> { t, i: [[unixSeconds, close], ...], prevClose }
+//   GET /chart?symbol=AAPL&range=1d          -> { t, i: [[unixSeconds, close, volume], ...], prevClose }
 
 const YAHOO = "https://query1.finance.yahoo.com/v8/finance/chart/";
 const MAX_SYMBOLS = 40;          // free Workers allow 50 outbound fetches per request
@@ -53,10 +53,11 @@ async function quote(symbol) {
 
 async function chart(symbol, range) {
   const r = await yahoo(symbol, range, "5m", CHART_TTL);
-  const ts = r.timestamp || [], close = r.indicators?.quote?.[0]?.close || [];
+  const q = r.indicators?.quote?.[0] || {};
+  const ts = r.timestamp || [], close = q.close || [], volume = q.volume || [];
   const nd = Math.abs(r.meta.regularMarketPrice || 0) >= 100 ? 2 : 4;
   const i = [];
-  ts.forEach((t, n) => { if (close[n] != null) i.push([t, +close[n].toFixed(nd)]); });
+  ts.forEach((t, n) => { if (close[n] != null) i.push([t, +close[n].toFixed(nd), volume[n] ?? null]); });
   return { t: symbol, i, prevClose: r.meta.chartPreviousClose ?? r.meta.previousClose, price: r.meta.regularMarketPrice };
 }
 
