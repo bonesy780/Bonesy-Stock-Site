@@ -1,7 +1,8 @@
 """Build price history for the stock lookup page.
 
 Writes site/stocks.json (the searchable list) and one site/hist/<ticker>.json per
-stock with 5 days of 5-minute prices and daily prices back to the listing date.
+stock with 5 days of 5-minute prices and daily prices back to the listing date,
+each as [time, close, volume], for the chart and its technical indicators.
 Run after build_data.py:
     python scripts/build_history.py
 """
@@ -11,6 +12,7 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import yfinance as yf
 
@@ -21,13 +23,15 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 HIST = SITE / "hist"
 BATCH = 100
+DAILY_DAYS = 800
 
 
 def log(*a):
     print(*a, file=sys.stderr, flush=True)
 
 
-def closes(tickers: list[str], **kw) -> dict[str, pd.Series]:
+def bars(tickers: list[str], **kw) -> dict[str, pd.DataFrame]:
+    """Closing price ("c") and volume ("v") for each ticker."""
     out = {}
     for i in range(0, len(tickers), BATCH):
         batch = tickers[i:i + BATCH]
@@ -38,27 +42,44 @@ def closes(tickers: list[str], **kw) -> dict[str, pd.Series]:
             continue
         for t in batch:
             try:
-                s = df[t]["Close"] if isinstance(df.columns, pd.MultiIndex) else df["Close"]
+                sub = df[t] if isinstance(df.columns, pd.MultiIndex) else df
+                f = pd.DataFrame({"c": sub["Close"], "v": sub["Volume"] if "Volume" in sub else float("nan")})
             except KeyError:
                 continue
-            s = s.dropna()
-            if len(s):
-                out[t] = s
+            f = f.dropna(subset=["c"])
+            if len(f):
+                out[t] = f
     return out
 
 
-def thin(s: pd.Series) -> pd.Series:
-    """Every day for the last 13 months, weekly back to 6 years, then monthly."""
-    end = s.index[-1]
-    recent = s[s.index >= end - pd.Timedelta(days=400)]
-    mid = s[(s.index < recent.index[0]) & (s.index >= end - pd.Timedelta(days=6 * 365))]
-    old = s[s.index < (mid.index[0] if len(mid) else recent.index[0])]
-    return pd.concat([old.iloc[::21], mid.iloc[::5], recent])
+def every(f: pd.DataFrame, n: int) -> pd.DataFrame:
+    """One row per n trading days: the last close and the total volume of each group."""
+    if not len(f):
+        return f
+    g = np.arange(len(f)) // n
+    out = f.groupby(g).agg(c=("c", "last"), v=("v", lambda v: v.sum(min_count=1)))
+    out.index = pd.DatetimeIndex(f.index.to_series().groupby(g).last().tolist())
+    return out
 
 
-def points(s: pd.Series) -> list:
-    nd = 2 if s.abs().max() >= 100 else 4
-    return [[int(ts.timestamp()), round(float(v), nd)] for ts, v in s.items()]
+def thin(f: pd.DataFrame) -> pd.DataFrame:
+    """Every day for the last DAILY_DAYS, weekly back to 6 years, then monthly.
+
+    The daily stretch is long enough that a 200-day average is already warmed
+    up at the start of the 1-year chart.
+    """
+    end = f.index[-1]
+    recent = f[f.index >= end - pd.Timedelta(days=DAILY_DAYS)]
+    mid = f[(f.index < recent.index[0]) & (f.index >= end - pd.Timedelta(days=6 * 365))]
+    old = f[f.index < (mid.index[0] if len(mid) else recent.index[0])]
+    return pd.concat([every(old, 21), every(mid, 5), recent])
+
+
+def points(f: pd.DataFrame) -> list:
+    """[unixSeconds, close, volume] rows; volume is null when Yahoo has none."""
+    nd = 2 if f["c"].abs().max() >= 100 else 4
+    return [[int(pd.Timestamp(ts).timestamp()), round(float(c), nd), None if pd.isna(v) else int(v)]
+            for ts, c, v in zip(f.index, f["c"], f["v"])]
 
 
 def build():
@@ -78,8 +99,8 @@ def build():
 
     tickers = sorted(stocks)
     log(f"downloading history for {len(tickers)} tickers")
-    daily = closes(tickers, period="max", interval="1d")
-    intraday = closes(tickers, period="5d", interval="5m")
+    daily = bars(tickers, period="max", interval="1d")
+    intraday = bars(tickers, period="5d", interval="5m")
     log(f"daily: {len(daily)}, intraday: {len(intraday)}")
 
     HIST.mkdir(parents=True, exist_ok=True)
