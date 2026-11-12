@@ -256,6 +256,18 @@
     }
     const box = document.getElementById("jump");
     if (box) picker(box, (s) => { location.href = stockUrl(s.t); });
+    // Press "/" anywhere to jump to the stock search
+    if (box) {
+      box.placeholder = "Go to a stock… ( / )";
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+        const t = e.target;
+        if (t.closest && t.closest("input, textarea, select, [contenteditable=true]")) return;
+        e.preventDefault();
+        box.focus();
+        box.select();
+      });
+    }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", header); else header();
 
