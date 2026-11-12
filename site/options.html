@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Options Strategies · Market Leaders</title>
+<meta name="description" content="Build an options strategy from calls, puts and shares, see its profit and loss at expiry and today, break-even prices, chance of profit and Greeks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Options strategy builder</h1>
+    <p>Combine calls, puts and shares into a strategy and see what it pays at expiry and today, where it breaks even, how likely it is to make money, and how it reacts to price, time and volatility. Premiums are estimated with the Black-Scholes model; replace them with real quotes from your broker.</p>
+  </section>
+
+  <section class="panel op-setup">
+    <div class="lookup op-stock"><input id="stock" type="search" placeholder="Fill from a stock (optional)…" aria-label="Fill from a stock" spellcheck="false"></div>
+    <label>Stock price <input class="field num" id="spot" type="number" min="0" step="any" inputmode="decimal"></label>
+    <label>Days to expiry <input class="field num" id="days" type="number" min="1" step="1" inputmode="numeric"></label>
+    <label title="How much the stock is expected to swing in a year. Uses the stock's recent volatility when you pick one.">Volatility (% a year) <input class="field num" id="vol" type="number" min="1" step="1" inputmode="decimal"></label>
+    <label>Interest rate (%) <input class="field num" id="rate" type="number" min="0" step="0.25" inputmode="decimal"></label>
+  </section>
+
+  <div class="toolbar">
+    <div class="chips" id="presets" aria-label="Ready-made strategies"></div>
+  </div>
+  <p class="hint" id="preset-help"></p>
+
+  <section class="panel table-wrap op-legs">
+    <table class="op-table">
+      <thead><tr><th class="left">Buy / sell</th><th class="left">Type</th><th>Strike</th><th>Qty</th><th>Premium</th><th class="hide-sm">Est.</th><th class="hide-sm">Delta</th><th></th></tr></thead>
+      <tbody id="legs"></tbody>
+    </table>
+    <div class="op-leg-tools"><button class="btn small" id="add-call">+ Call</button><button class="btn small" id="add-put">+ Put</button><button class="btn small" id="add-stock">+ Shares</button><button class="btn small" id="reprice">Use estimated premiums</button><span class="hint">Qty is contracts (100 shares each) for options and lots of 100 for shares.</span></div>
+  </section>
+
+  <div class="panel breadth" id="result"></div>
+
+  <div class="panel quote">
+    <div class="legend" id="legend"></div>
+    <div class="chart" id="chart"></div>
+  </div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Options can lose their whole value quickly, and selling options can lose more than you receive. Estimates assume European-style options, no dividends and a constant volatility; real prices differ, especially around earnings. Chance of profit uses the same assumptions.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="options.js?v=__V__"></script>
+</body>
+</html>

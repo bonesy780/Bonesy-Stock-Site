@@ -790,3 +790,25 @@ table.rot-table { min-width: 620px; font-size: 13px; }
 .wl-dlg textarea { resize: vertical; font: inherit; }
 .wl-dlg .hint { margin: 0; }
 .wl-dlg-btns { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ---- Options strategy builder */
+.op-setup { display: grid; grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr)); gap: 12px; padding: 16px 18px; align-items: end; margin-bottom: 12px; }
+@media (max-width: 860px) { .op-setup { grid-template-columns: 1fr 1fr; } .op-setup .op-stock { grid-column: 1 / -1; } }
+.op-setup label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.op-setup .field { width: 100%; }
+.op-stock { margin: 0; max-width: none; }
+.op-legs { margin: 12px 0 16px; }
+table.op-table { min-width: 0; }
+.op-table td, .op-table th { padding: 6px 8px; }
+.op-table .field { width: 100%; min-width: 0; padding: 6px 8px; font-size: 14px; }
+.op-table input.field { max-width: 100px; text-align: right; }
+.op-leg-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; }
+.op-leg-tools .hint { margin: 0 0 0 auto; }
+.chart .op-spot { stroke: var(--muted); stroke-dasharray: 2 3; }
+.chart .op-be { fill: var(--surface); stroke: var(--text); stroke-width: 1.5; }
+#result { margin-bottom: 16px; }
+@media (max-width: 640px) { .op-table .hide-sm { display: none; } }
+.op-legs { overflow-x: auto; }
+.op-table select.field { min-width: 76px; }
+.op-table input.field { min-width: 64px; }
+@media (max-width: 640px) { table.op-table { min-width: 400px; } }

@@ -16,6 +16,7 @@
     ["calendar.html", "Calendar", null, "Research"],
     ["compare.html", "Compare", null, "Tools"],
     ["backtest.html", "Backtest", null, "Tools"],
+    ["options.html", "Options", null, "Tools"],
     ["alerts.html", "Alerts", null, "Tools"],
     ["tools.html", "Calculators", null, "Tools"],
     ["news.html", "News"],
