@@ -6,6 +6,7 @@
     ["stock.html", "Stock Lookup"],
     ["watchlist.html", "Watchlists"],
     ["movers.html", "Movers"],
+    ["screener.html", "Screener"],
     ["news.html", "News"],
   ];
 
@@ -191,8 +192,8 @@
       const c = cols.find((x) => x.key === b.dataset.k);
       if (state.key === c.key) state.dir = -state.dir;
       else { state.key = c.key; state.dir = typeof c.val(rows[0] || {}) === "string" ? 1 : -1; }
-      if (opts.onSort) opts.onSort(state);
-      table(el, cols, rows, state, opts);
+      // onSort can return true when it redraws the table itself (e.g. to sort more rows than are shown)
+      if (!(opts.onSort && opts.onSort(state) === true)) table(el, cols, rows, state, opts);
       const again = el.querySelector(`button.sort[data-k="${c.key}"]`);
       if (again) again.focus();
     };
