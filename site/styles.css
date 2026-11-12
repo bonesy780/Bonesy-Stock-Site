@@ -227,6 +227,7 @@ section { margin-bottom: 40px; }
 .quote-price { text-align: right; }
 .quote-price .big { font-size: 26px; font-weight: 600; }
 .quote-price .tk { color: var(--muted); font-size: 12px; }
+.quote-price .after-hours { margin-top: 4px; font-size: 13px; }
 .ranges { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0 8px; }
 .ranges .tab { padding: 5px 12px; font-size: 13px; }
 .chart { position: relative; touch-action: pan-y; }

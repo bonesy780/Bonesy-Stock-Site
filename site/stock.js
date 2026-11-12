@@ -252,6 +252,7 @@
     try { live = await Live.chart(s.t, "5d"); } catch (e) { return; }
     if (current !== s || !live.i || !live.i.length) return;
     hist.i = live.i;
+    hist.post = live.post || null;
     // The last 5-minute bar can lag the latest trade, so end the line on the live price
     const lastBar = live.i[live.i.length - 1];
     if (live.price != null) live.i[live.i.length - 1] = [lastBar[0], live.price, lastBar[2]];
@@ -408,7 +409,7 @@
       explainOpen = e.target.open;
       try { localStorage.setItem("lookupExplain", explainOpen ? "1" : "0"); } catch {}
     });
-    $("qp").innerHTML = `<div class="value num big">${s.index ? plain(last, s.cur) : money(last, s.cur)}</div><div>${pct(chg)} <span class="tk">${range === "All" ? "all time" : range}</span></div>`;
+    $("qp").innerHTML = `<div class="value num big">${s.index ? plain(last, s.cur) : money(last, s.cur)}</div><div>${pct(chg)} <span class="tk">${range === "All" ? "all time" : range}</span></div>${afterHours(s)}`;
     $("quote").querySelector(".ranges").addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b) return;
@@ -436,6 +437,15 @@
       $("quote").querySelector(`.chip[data-i="${id}"]`).focus();
     });
     drawChart($("chart"), S, chg, s.cur);
+  }
+
+  // After-hours trade since the close, from the price service (US listings only;
+  // other exchanges have no after-hours session, so nothing shows)
+  function afterHours(s) {
+    const p = hist && hist.post;
+    if (s.index || !p || p.price == null) return "";
+    const at = new Date(p.time * 1000).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    return `<div class="after-hours"><span class="tk">After hours</span> <span class="num">${money(p.price, s.cur)}</span> ${pct(p.chg)} <span class="tk">${at}</span></div>`;
   }
 
   const compact = (v) => v == null ? "–" : new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(v);
