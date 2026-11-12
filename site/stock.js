@@ -156,6 +156,77 @@
     return ["vol"];
   })().filter((id) => INDICATORS.some((m) => m.id === id)));
 
+  // Plain-language notes shown under the chart: what each tool is and why traders use it.
+  // `ids` are the toggles each note covers, so the notes for what's switched on stand out.
+  const EXPLAIN = [
+    { ids: ["cmp"], title: "Compare with an index",
+      what: "Draws one of the seven market indexes on the same chart. Every line then shows its % change from the start of the chart, so a $20 stock and a 40,000-point index can sit side by side.",
+      why: "It answers \u201cdid this stock beat the market?\u201d A stock that rose 10% while its index rose 20% actually lagged. Traders call this relative strength, and fund managers judge themselves against an index (their benchmark)." },
+    { ids: ["sma20", "sma50", "sma200"], title: "SMA: simple moving average (20, 50, 200)",
+      what: "The average closing price over the last 20, 50 or 200 bars, redrawn for every bar. It smooths out the day-to-day noise so the trend is easier to see. 20 is roughly a month of trading days, 50 a quarter, and 200 most of a year.",
+      why: "A price above its average suggests an uptrend, and below suggests a downtrend. The 200-day is the line many big investors watch. When the 50-day crosses above the 200-day, traders call it a \u201cgolden cross\u201d (bullish), and the reverse is a \u201cdeath cross\u201d (bearish). The averages also often act as support or resistance, levels where the price tends to pause or bounce." },
+    { ids: ["ema20", "ema50"], title: "EMA: exponential moving average (20, 50)",
+      what: "Like the SMA, but recent prices count more than older ones, so it turns faster when the price changes direction. It's drawn dashed, in the same color as the SMA with the same period.",
+      why: "Short-term traders like it because it reacts sooner than an SMA. The price crossing its EMA, or a fast EMA crossing a slow one, is a common entry or exit signal. The catch is more false signals when the market moves sideways." },
+    { ids: ["bb"], title: "Bollinger Bands (20, 2)",
+      what: "A 20-bar average with a band two standard deviations above and below it. The bands widen when the price swings a lot and narrow when it's calm. Most closes land inside the bands.",
+      why: "A price pushing the upper band is stretched to the upside, and the lower band to the downside. Traders watch for it to snap back toward the middle. A \u201csqueeze\u201d (very narrow bands) often comes before a big move, though it doesn't tell you which way." },
+    { ids: ["vol"], title: "Volume",
+      what: "How many shares changed hands in each bar. Green bars are bars where the price closed up, and red where it closed down.",
+      why: "Volume shows how much conviction is behind a move. A breakout on heavy volume is taken more seriously than one on light volume, and a rally on shrinking volume can mean buyers are running out. Unusual spikes often come with news or earnings." },
+    { ids: ["rsi"], title: "RSI: Relative Strength Index (14)",
+      what: "A score from 0 to 100 comparing the size of recent gains with recent losses over 14 bars. The shaded zone runs from 30 to 70.",
+      why: "Above 70 is often read as overbought (it may have run up too fast), and below 30 as oversold (it may have dropped too far). Traders also look for divergence: the price makes a new high but RSI doesn't, a hint that momentum is fading. In a strong trend RSI can stay high or low for a long time, so it's best used with other signals." },
+    { ids: ["macd"], title: "MACD (12, 26, 9)",
+      what: "The gap between a fast (12-bar) and a slow (26-bar) EMA, drawn as the blue line. The orange signal line is a 9-bar average of the blue line, and the bars show the difference between the two.",
+      why: "It tracks momentum and trend changes. The blue line crossing above the signal line is a common buy signal, and crossing below is a common sell signal. The line crossing zero means the short-term trend has moved above or below the longer one. Growing bars mean momentum is building, and shrinking bars mean it's fading." },
+  ];
+
+  // ---- compare with the seven market indexes from the main page
+  const COMPARE = [
+    ["^GSPTSE", "TSX"], ["^GSPC", "S&P 500"], ["^NDX", "Nasdaq-100"], ["^DJI", "Dow"],
+    ["^N225", "Nikkei 225"], ["^KS200", "KOSPI 200"], ["^TWII", "Taiwan 50"],
+  ].map(([t, label], k) => ({ t, label, color: `--cmp-${k + 1}` }));
+  const compare = new Set((() => {
+    try { const v = JSON.parse(localStorage.getItem("lookupCmp")); if (Array.isArray(v)) return v; } catch {}
+    return [];
+  })().filter((t) => COMPARE.some((c) => c.t === t)));
+  const cmpHist = {};
+  let explainOpen = (() => { try { return localStorage.getItem("lookupExplain") !== "0"; } catch { return true; } })();
+  async function loadCmp(t) {
+    if (cmpHist[t]) return;
+    cmpHist[t] = "loading";
+    let h;
+    try {
+      h = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })).json();
+    } catch (e) {
+      h = { d: [], i: [] };
+    }
+    if (window.Live && Live.on) {
+      try { const live = await Live.chart(t, "5d"); if (live.i && live.i.length) h.i = live.i; } catch (e) { /* keep saved prices */ }
+    }
+    cmpHist[t] = h;
+    if (!current || !hist || document.querySelector("#chart .tip:not([hidden])")) return;
+    // Redraw without losing keyboard focus on the toggle that was pressed
+    const f = document.activeElement && document.activeElement.closest && document.activeElement.closest(".chip");
+    const sel = f ? (f.dataset.c ? `.chip[data-c="${CSS.escape(f.dataset.c)}"]` : `.chip[data-i="${f.dataset.i}"]`) : null;
+    renderQuote();
+    if (sel) { const again = $("quote").querySelector(sel); if (again) again.focus(); }
+  }
+  // Indexes ready to draw against the stock on screen
+  const comparing = () => COMPARE.filter((c) => compare.has(c.t) && c.t !== current.t
+    && cmpHist[c.t] && cmpHist[c.t] !== "loading" && cmpHist[c.t].d && cmpHist[c.t].d.length);
+  // For each time, the index's latest close at or before it (markets close at different hours)
+  function align(src, times) {
+    const out = [];
+    let k = -1;
+    for (const t of times) {
+      while (k + 1 < src.length && src[k + 1][0] <= t) k++;
+      out.push(k >= 0 ? src[k][1] : null);
+    }
+    return out;
+  }
+
   async function pick(t, push = true) {
     const s = stocks.find((x) => x.t === t);
     if (!s) return;
@@ -313,15 +384,31 @@
         ${head}
         <div class="ranges" role="tablist" aria-label="Chart range">${RANGES.map(([r]) =>
           `<button class="tab" role="tab" aria-selected="${r === range}" data-r="${r}">${r}</button>`).join("")}</div>
+        <div class="ind-bar cmp-bar" role="group" aria-label="Compare with a market index">
+          <span class="ind-group">Compare</span>
+          ${COMPARE.filter((c) => c.t !== s.t).map((c) => `<button class="chip" aria-pressed="${compare.has(c.t)}" data-c="${esc(c.t)}" title="Overlay the ${esc(c.label)} as % change from the start of the chart"><i class="sw" style="--c:var(${c.color})"></i>${esc(c.label)}</button>`).join("")}
+        </div>
         <div class="ind-bar" role="group" aria-label="Technical indicators">
           ${INDICATORS.map((m, k) => `${k === 0 || m.panel !== INDICATORS[k - 1].panel ? `<span class="ind-group">${m.panel ? "Panels" : "Overlays"}</span>` : ""}
             <button class="chip" aria-pressed="${shown.has(m.id)}" data-i="${m.id}" title="${esc(m.help)}"><i class="sw ${m.dash ? "dash" : ""}" style="--c:var(${m.color})"></i>${esc(m.label)}</button>`).join("")}
         </div>
         <div class="legend" id="legend"></div>
         <div class="chart" id="chart"></div>
-        <div class="ind-note">Indicator periods count ${S.unit} bars.</div>
+        <div class="ind-note">${comparing().length ? "Showing % change from the start of the chart so the stock and indexes line up. " : ""}Indicator periods count ${S.unit} bars.</div>
         <div class="stats quote-stats">${stats.map(([l, v]) => `<div class="stat"><div class="label">${l}</div><div class="value num">${v}</div></div>`).join("")}</div>
-      </div>`;
+      </div>
+      <details class="panel explain" ${explainOpen ? "open" : ""}>
+        <summary>What the chart tools mean</summary>
+        <p class="explain-intro">Each toggle above the chart adds a tool that traders and brokers use to read price moves. None of them predicts the future on its own. Traders combine several and look for them to agree. The tools you have switched on are highlighted.</p>
+        <div class="explain-grid">${EXPLAIN.map((x) => {
+          const isOn = x.ids.some((id) => (id === "cmp" ? compare.size > 0 : shown.has(id)));
+          return `<section class="explain-card ${isOn ? "on" : ""}"><h3>${esc(x.title)}</h3><p><strong>What it is.</strong> ${esc(x.what)}</p><p><strong>Why traders use it.</strong> ${esc(x.why)}</p></section>`;
+        }).join("")}</div>
+      </details>`;
+    $("quote").querySelector(".explain").addEventListener("toggle", (e) => {
+      explainOpen = e.target.open;
+      try { localStorage.setItem("lookupExplain", explainOpen ? "1" : "0"); } catch {}
+    });
     $("qp").innerHTML = `<div class="value num big">${s.index ? plain(last, s.cur) : money(last, s.cur)}</div><div>${pct(chg)} <span class="tk">${range === "All" ? "all time" : range}</span></div>${afterHours(s)}`;
     $("quote").querySelector(".ranges").addEventListener("click", (e) => {
       const b = e.target.closest("button");
@@ -330,7 +417,17 @@
       try { localStorage.setItem("lookupRange", range); } catch {}
       renderQuote();
     });
-    $("quote").querySelector(".ind-bar").addEventListener("click", (e) => {
+    $("quote").querySelector(".cmp-bar").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const t = b.dataset.c;
+      if (compare.has(t)) compare.delete(t); else { compare.add(t); loadCmp(t); }
+      try { localStorage.setItem("lookupCmp", JSON.stringify([...compare])); } catch {}
+      renderQuote();
+      $("quote").querySelector(`.chip[data-c="${CSS.escape(t)}"]`).focus();
+    });
+    for (const t of compare) loadCmp(t);
+    $("quote").querySelector(".ind-bar:not(.cmp-bar)").addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b) return;
       const id = b.dataset.i;
@@ -371,6 +468,18 @@
     const rs = on("rsi") ? cut(rsi(closes)) : null;
     const md = on("macd") ? (() => { const m = macd(closes); return { line: cut(m.line), signal: cut(m.signal), hist: cut(m.hist) }; })() : null;
 
+    // Comparing with indexes switches the price area to % change from the first bar
+    const b0 = pts[0][1];
+    const cmps = comparing().map((c) => {
+      const h = cmpHist[c.t];
+      const src = intraday && h.i && h.i.length ? h.i : h.d;
+      const raw = align(src, pts.map((p) => p[0]));
+      const first = raw.find((v) => v != null);
+      return { ...c, v: raw.map((v) => (v == null || !first ? null : (v / first - 1) * 100)) };
+    });
+    const pctMode = cmps.length > 0;
+    const P = (v) => (v == null ? null : pctMode ? (v / b0 - 1) * 100 : v);
+
     const PH = narrow ? 64 : 80, LBL = 22;
     const panels = [];
     let y0 = mainB;
@@ -384,13 +493,16 @@
     const ys = pts.flatMap((p) => [p[1], ...(p[3] || []).map((e) => e[1])]);
     for (const l of lines) ys.push(...l.v);
     if (bb) ys.push(...bb.up, ...bb.lo);
-    const fin = ys.filter((v) => v != null && isFinite(v));
-    let lo = Math.min(...fin, intraday ? base : Infinity), hi = Math.max(...fin, intraday ? base : -Infinity);
+    const fin = ys.map(P).concat(...cmps.map((c) => c.v)).filter((v) => v != null && isFinite(v));
+    const ref = pctMode ? 0 : intraday ? base : null;
+    let lo = Math.min(...fin, ref ?? Infinity), hi = Math.max(...fin, ref ?? -Infinity);
     if (hi === lo) { hi += 1; lo -= 1; }
     const span = hi - lo; lo -= span * 0.06; hi += span * 0.06;
     // Even spacing by point index, so nights and weekends don't leave gaps
     const X = (n) => pad.l + (n / Math.max(1, pts.length - 1)) * (W - pad.l - pad.r);
     const Y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (mainB - pad.t);
+    const Yp = (v) => Y(P(v)); // a price, placed on the chart's scale
+    const fmtPct = (v) => (v == null ? "–" : `${v >= 0 ? "+" : ""}${v.toFixed(Math.abs(v) >= 100 ? 0 : Math.abs(v) >= 10 ? 1 : 2)}%`);
     const color = chg == null || chg >= 0 ? "var(--up)" : "var(--down)";
     // Weekly and monthly bars also pass through their highest and lowest closes,
     // placed between the bar and the one before it by date
@@ -401,9 +513,9 @@
       for (const [t, v] of p[3] || []) {
         if (t0 == null && n === 0) continue; // nothing to the left of the first bar
         const f = Math.min(1, Math.max(0, (t - t0) / Math.max(1, p[0] - t0)));
-        out.push(`${X(n - 1 + f).toFixed(1)},${Y(v).toFixed(1)}`);
+        out.push(`${X(n - 1 + f).toFixed(1)},${Yp(v).toFixed(1)}`);
       }
-      out.push(`${X(n).toFixed(1)},${Y(p[1]).toFixed(1)}`);
+      out.push(`${X(n).toFixed(1)},${Yp(p[1]).toFixed(1)}`);
       return out;
     }).join(" ");
     // A path that breaks wherever the values have a gap (indicators still warming up)
@@ -441,7 +553,7 @@
     let band = "";
     if (bb) {
       const idx = bb.up.map((v, n) => (v == null ? null : n)).filter((n) => n != null);
-      if (idx.length > 1) band = `<polygon class="bb-fill" points="${idx.map((n) => `${X(n).toFixed(1)},${Y(bb.up[n]).toFixed(1)}`).join(" ")} ${idx.slice().reverse().map((n) => `${X(n).toFixed(1)},${Y(bb.lo[n]).toFixed(1)}`).join(" ")}"/>`;
+      if (idx.length > 1) band = `<polygon class="bb-fill" points="${idx.map((n) => `${X(n).toFixed(1)},${Yp(bb.up[n]).toFixed(1)}`).join(" ")} ${idx.slice().reverse().map((n) => `${X(n).toFixed(1)},${Yp(bb.lo[n]).toFixed(1)}`).join(" ")}"/>`;
     }
 
     const panelSvg = panels.map((P) => {
@@ -478,18 +590,19 @@
     }).join("");
 
     el.innerHTML = `
-      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price chart, ${range}${shown.size ? ", with " + INDICATORS.filter((m) => on(m.id)).map((m) => m.label).join(", ") : ""}">
+      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price chart, ${range}${cmps.length ? ", compared with " + cmps.map((c) => c.label).join(", ") : ""}${shown.size ? ", with " + INDICATORS.filter((m) => on(m.id)).map((m) => m.label).join(", ") : ""}">
         <defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="${color}" stop-opacity=".18"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
         </linearGradient></defs>
         ${grid.map((v) => `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v)}" y2="${Y(v)}"/>
-          <text class="axis" x="${W - pad.r + 8}" y="${Y(v) + 4}">${plain(v, cur)}</text>`).join("")}
-        ${intraday ? `<line class="base" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(base)}" y2="${Y(base)}"/>` : ""}
+          <text class="axis" x="${W - pad.r + 8}" y="${Y(v) + 4}">${pctMode ? fmtPct(v) : plain(v, cur)}</text>`).join("")}
+        ${ref != null ? `<line class="base" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(ref)}" y2="${Y(ref)}"/>` : ""}
         ${band}
         <polygon fill="url(#fill)" points="${X(0)},${mainB} ${line} ${X(pts.length - 1)},${mainB}"/>
         <polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" points="${line}"/>
-        ${bb ? ["up", "mid", "lo"].map((k) => `<path class="ind bb ${k}" d="${path(bb[k], Y)}"/>`).join("") : ""}
-        ${lines.map((l) => `<path class="ind ${l.dash ? "dash" : ""}" style="--c:var(${l.color})" d="${path(l.v, Y)}"/>`).join("")}
+        ${bb ? ["up", "mid", "lo"].map((k) => `<path class="ind bb ${k}" d="${path(bb[k], Yp)}"/>`).join("") : ""}
+        ${lines.map((l) => `<path class="ind ${l.dash ? "dash" : ""}" style="--c:var(${l.color})" d="${path(l.v, Yp)}"/>`).join("")}
+        ${cmps.map((c) => `<path class="ind cmp" style="--c:var(${c.color})" d="${path(c.v, Y)}"/>`).join("")}
         ${panelSvg}
         ${xl.map((n, k) => `<text class="axis" x="${X(n)}" y="${H - 8}" text-anchor="${k === 0 ? "start" : k === xl.length - 1 ? "end" : "middle"}">${fmtX(pts[n][0])}</text>`).join("")}
         <g class="hover" visibility="hidden">
@@ -500,9 +613,11 @@
       <div class="tip" hidden></div>`;
 
     // Legend over the chart and labels on each panel show the values at the hovered bar, or the latest one
-    const fmtP = (v) => (v == null ? "–" : plain(v, cur));
+    const fmtP = (v) => (v == null ? "–" : pctMode ? fmtPct(P(v)) : plain(v, cur));
     const legend = $("legend");
     const items = [
+      ...(pctMode ? [{ html: `<i class="sw" style="--c:${color}"></i>${esc(current.s)}`, val: (n) => fmtPct(P(pts[n][1])) },
+        ...cmps.map((c) => ({ html: `<i class="sw" style="--c:var(${c.color})"></i>${esc(c.label)}`, val: (n) => fmtPct(c.v[n]) }))] : []),
       ...lines.map((l) => ({ html: `<i class="sw ${l.dash ? "dash" : ""}" style="--c:var(${l.color})"></i>${l.label}`, val: (n) => fmtP(l.v[n]) })),
       ...(bb ? [{ html: `<i class="sw" style="--c:var(--ind-band)"></i>Bollinger 20, 2`, val: (n) => `${fmtP(bb.lo[n])} – ${fmtP(bb.up[n])}` }] : []),
     ];
@@ -525,7 +640,7 @@
       const r = svg.getBoundingClientRect();
       const n = Math.round(((e.clientX - r.left - pad.l) / (W - pad.l - pad.r)) * (pts.length - 1));
       if (n < 0 || n >= pts.length) return hide();
-      const [ts, v] = pts[n], x = X(n), y = Y(v);
+      const [ts, v] = pts[n], x = X(n), y = Yp(v);
       g.setAttribute("visibility", "visible");
       g.querySelector("line").setAttribute("x1", x); g.querySelector("line").setAttribute("x2", x);
       g.querySelector("circle").setAttribute("cx", x); g.querySelector("circle").setAttribute("cy", y);
