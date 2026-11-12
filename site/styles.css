@@ -647,3 +647,26 @@ label.check { display: inline-flex; gap: 6px; align-items: center; }
 .mkt-hours i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
 .mkt-hours.open { color: var(--up); }
 .mkt-hours.open i { background: var(--up); }
+
+/* ---- Dividends */
+.safe { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--surface-2); color: var(--muted); cursor: help; white-space: nowrap; }
+.safe.safe { background: var(--up-soft); color: var(--up); }
+.safe.risk { background: var(--down-soft); color: var(--down); }
+.safe.watch { background: color-mix(in srgb, #d99a00 18%, transparent); color: #a86f00; }
+@media (prefers-color-scheme: dark) { .safe.watch { color: #f0b84a; } }
+.num.strong { font-weight: 600; }
+.table-wrap .hint.pad { padding: 10px 14px; margin: 0; }
+.div-plan { padding: 18px 20px; margin: 24px 0; display: flex; flex-direction: column; gap: 12px; }
+.div-plan h2 { margin: 0 0 4px; font-size: 18px; }
+.div-plan .hint { margin: 0; }
+.div-plan-head { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: flex-end; }
+.div-plan-head > div:first-child { flex: 1 1 320px; }
+.div-plan-in { display: flex; gap: 12px; }
+.div-plan-in label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.div-plan-in input { width: 150px; }
+.div-plan-stats .value { font-size: 20px; }
+.div-basket { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.div-basket a { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; color: var(--text); text-decoration: none; font-size: 13px; }
+.div-basket a:hover { border-color: var(--accent); }
+.div-basket a b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.div-basket a span:last-child { grid-column: 1 / -1; font-size: 12px; }

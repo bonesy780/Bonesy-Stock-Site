@@ -11,6 +11,7 @@
     ["heatmap.html", "Heatmap"],
     ["signals.html", "Signals"],
     ["compare.html", "Compare"],
+    ["dividends.html", "Dividends"],
     ["calendar.html", "Calendar"],
     ["alerts.html", "Alerts"],
     ["tools.html", "Calculators"],
