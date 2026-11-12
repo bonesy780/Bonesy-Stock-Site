@@ -156,6 +156,32 @@
     return ["vol"];
   })().filter((id) => INDICATORS.some((m) => m.id === id)));
 
+  // Plain-language notes shown under the chart: what each tool is and why traders use it.
+  // `ids` are the toggles each note covers, so the notes for what's switched on stand out.
+  const EXPLAIN = [
+    { ids: ["cmp"], title: "Compare with an index",
+      what: "Draws one of the seven market indexes on the same chart. Every line then shows its % change from the start of the chart, so a $20 stock and a 40,000-point index can sit side by side.",
+      why: "It answers \u201cdid this stock beat the market?\u201d A stock that rose 10% while its index rose 20% actually lagged. Traders call this relative strength, and fund managers judge themselves against an index (their benchmark)." },
+    { ids: ["sma20", "sma50", "sma200"], title: "SMA: simple moving average (20, 50, 200)",
+      what: "The average closing price over the last 20, 50 or 200 bars, redrawn for every bar. It smooths out the day-to-day noise so the trend is easier to see. 20 is roughly a month of trading days, 50 a quarter, and 200 most of a year.",
+      why: "A price above its average suggests an uptrend, and below suggests a downtrend. The 200-day is the line many big investors watch. When the 50-day crosses above the 200-day, traders call it a \u201cgolden cross\u201d (bullish), and the reverse is a \u201cdeath cross\u201d (bearish). The averages also often act as support or resistance, levels where the price tends to pause or bounce." },
+    { ids: ["ema20", "ema50"], title: "EMA: exponential moving average (20, 50)",
+      what: "Like the SMA, but recent prices count more than older ones, so it turns faster when the price changes direction. It's drawn dashed, in the same color as the SMA with the same period.",
+      why: "Short-term traders like it because it reacts sooner than an SMA. The price crossing its EMA, or a fast EMA crossing a slow one, is a common entry or exit signal. The catch is more false signals when the market moves sideways." },
+    { ids: ["bb"], title: "Bollinger Bands (20, 2)",
+      what: "A 20-bar average with a band two standard deviations above and below it. The bands widen when the price swings a lot and narrow when it's calm. Most closes land inside the bands.",
+      why: "A price pushing the upper band is stretched to the upside, and the lower band to the downside. Traders watch for it to snap back toward the middle. A \u201csqueeze\u201d (very narrow bands) often comes before a big move, though it doesn't tell you which way." },
+    { ids: ["vol"], title: "Volume",
+      what: "How many shares changed hands in each bar. Green bars are bars where the price closed up, and red where it closed down.",
+      why: "Volume shows how much conviction is behind a move. A breakout on heavy volume is taken more seriously than one on light volume, and a rally on shrinking volume can mean buyers are running out. Unusual spikes often come with news or earnings." },
+    { ids: ["rsi"], title: "RSI: Relative Strength Index (14)",
+      what: "A score from 0 to 100 comparing the size of recent gains with recent losses over 14 bars. The shaded zone runs from 30 to 70.",
+      why: "Above 70 is often read as overbought (it may have run up too fast), and below 30 as oversold (it may have dropped too far). Traders also look for divergence: the price makes a new high but RSI doesn't, a hint that momentum is fading. In a strong trend RSI can stay high or low for a long time, so it's best used with other signals." },
+    { ids: ["macd"], title: "MACD (12, 26, 9)",
+      what: "The gap between a fast (12-bar) and a slow (26-bar) EMA, drawn as the blue line. The orange signal line is a 9-bar average of the blue line, and the bars show the difference between the two.",
+      why: "It tracks momentum and trend changes. The blue line crossing above the signal line is a common buy signal, and crossing below is a common sell signal. The line crossing zero means the short-term trend has moved above or below the longer one. Growing bars mean momentum is building, and shrinking bars mean it's fading." },
+  ];
+
   // ---- compare with the seven market indexes from the main page
   const COMPARE = [
     ["^GSPTSE", "TSX"], ["^GSPC", "S&P 500"], ["^NDX", "Nasdaq-100"], ["^DJI", "Dow"],
@@ -166,6 +192,7 @@
     return [];
   })().filter((t) => COMPARE.some((c) => c.t === t)));
   const cmpHist = {};
+  let explainOpen = (() => { try { return localStorage.getItem("lookupExplain") !== "0"; } catch { return true; } })();
   async function loadCmp(t) {
     if (cmpHist[t]) return;
     cmpHist[t] = "loading";
@@ -368,7 +395,19 @@
         <div class="chart" id="chart"></div>
         <div class="ind-note">${comparing().length ? "Showing % change from the start of the chart so the stock and indexes line up. " : ""}Indicator periods count ${S.unit} bars.</div>
         <div class="stats quote-stats">${stats.map(([l, v]) => `<div class="stat"><div class="label">${l}</div><div class="value num">${v}</div></div>`).join("")}</div>
-      </div>`;
+      </div>
+      <details class="panel explain" ${explainOpen ? "open" : ""}>
+        <summary>What the chart tools mean</summary>
+        <p class="explain-intro">Each toggle above the chart adds a tool that traders and brokers use to read price moves. None of them predicts the future on its own. Traders combine several and look for them to agree. The tools you have switched on are highlighted.</p>
+        <div class="explain-grid">${EXPLAIN.map((x) => {
+          const isOn = x.ids.some((id) => (id === "cmp" ? compare.size > 0 : shown.has(id)));
+          return `<section class="explain-card ${isOn ? "on" : ""}"><h3>${esc(x.title)}</h3><p><strong>What it is.</strong> ${esc(x.what)}</p><p><strong>Why traders use it.</strong> ${esc(x.why)}</p></section>`;
+        }).join("")}</div>
+      </details>`;
+    $("quote").querySelector(".explain").addEventListener("toggle", (e) => {
+      explainOpen = e.target.open;
+      try { localStorage.setItem("lookupExplain", explainOpen ? "1" : "0"); } catch {}
+    });
     $("qp").innerHTML = `<div class="value num big">${s.index ? plain(last, s.cur) : money(last, s.cur)}</div><div>${pct(chg)} <span class="tk">${range === "All" ? "all time" : range}</span></div>`;
     $("quote").querySelector(".ranges").addEventListener("click", (e) => {
       const b = e.target.closest("button");
