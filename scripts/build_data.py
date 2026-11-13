@@ -147,18 +147,25 @@ def to_yahoo(symbol: str, ix) -> str:
 
 # ---------------------------------------------------------------- prices
 
+# Each ticker's daily intraday highs and lows, for the 52-week range
+HIGH_LOW: dict[str, tuple[pd.Series, pd.Series]] = {}
+
+
 def download_prices(tickers: list[str]) -> dict[str, pd.Series]:
     closes: dict[str, pd.Series] = {}
     for i in range(0, len(tickers), 200):
         batch = tickers[i:i + 200]
-        # Traded closes (split adjusted only), so the 52-week high and low match real prices
+        # Traded prices (split adjusted only), so the 52-week high and low match what really traded
         df = yf.download(batch, period="13mo", interval="1d", auto_adjust=False, group_by="ticker",
                          threads=True, progress=False)
         for t in batch:
             try:
-                s = df[t]["Close"].dropna() if isinstance(df.columns, pd.MultiIndex) else df["Close"].dropna()
+                sub = df[t] if isinstance(df.columns, pd.MultiIndex) else df
+                s = sub["Close"].dropna()
             except KeyError:
                 continue
+            if "High" in sub and "Low" in sub:
+                HIGH_LOW[t] = (sub["High"].reindex(s.index), sub["Low"].reindex(s.index))
             if len(s) > 30:
                 closes[t] = s
     return closes
@@ -168,7 +175,7 @@ def pct(a, b):
     return None if not b or b != b else (a / b - 1) * 100
 
 
-def price_stats(s: pd.Series) -> dict:
+def price_stats(s: pd.Series, t: str | None = None) -> dict:
     last = float(s.iloc[-1])
     def back(n):
         return float(s.iloc[-n - 1]) if len(s) > n else None
@@ -176,6 +183,13 @@ def price_stats(s: pd.Series) -> dict:
     ytd_base = float(s[s.index < year_start.index[0]].iloc[-1]) if len(year_start) and len(s) > len(year_start) else None
     last_year = s[s.index >= s.index[-1] - pd.Timedelta(days=365)]
     hi, lo = float(last_year.max()), float(last_year.min())
+    if t in HIGH_LOW:
+        # Intraday high and low, as broker sites show the 52-week range
+        h, l = (x[x.index >= last_year.index[0]] for x in HIGH_LOW[t])
+        if h.notna().any():
+            hi = max(hi, float(h.max()))
+        if (l > 0).any():
+            lo = min(lo, float(l[l > 0].min()))
     return {
         "price": last,
         "chg1d": pct(last, back(1)),
@@ -321,7 +335,7 @@ def build():
             t = to_yahoo(sym, ix)
             if t not in closes:
                 continue
-            st = price_stats(closes[t])
+            st = price_stats(closes[t], t)
             if st["price"] / rate < ix.get("min_price_usd", MIN_PRICE_USD) or st["chg3m"] is None:
                 continue
             cap = caps.get(t)
