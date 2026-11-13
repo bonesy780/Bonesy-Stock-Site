@@ -1,6 +1,6 @@
 """Build site/market.json and site/fund/<ticker>.json: facts on every stock.
 
-market.json holds one compact row per stock in all seven indexes (price moves,
+market.json holds one compact row per stock in all eight indexes (price moves,
 volume, valuation, dividends, analyst views, next earnings date). It feeds the
 screener, market movers, sector heatmap, watchlists, compare page and calendar.
 

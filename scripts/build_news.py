@@ -1,4 +1,4 @@
-"""Build site/news.json: top news stories for each of the seven markets.
+"""Build site/news.json: top news stories for each of the eight markets.
 
 Headlines come from Yahoo Finance (via yfinance) for each index and its biggest
 companies, topped up with Google News search results. Run after build_data.py:
@@ -35,6 +35,7 @@ MARKETS = {
     "nasdaq100": ("^NDX", "Nasdaq 100 stocks"),
     "dow": ("^DJI", "Dow Jones stocks"),
     "tsx": ("^GSPTSE", "TSX Toronto stock market"),
+    "tsxv": ("^SPCDNX", "TSX Venture Exchange stocks"),
     "nikkei225": ("^N225", "Nikkei 225 Japan stocks"),
     "kospi200": ("^KS200", "KOSPI Korea stocks"),
     "twse50": ("^TWII", "Taiwan stock market TAIEX"),
