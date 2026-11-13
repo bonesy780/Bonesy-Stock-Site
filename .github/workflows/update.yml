@@ -38,6 +38,8 @@ jobs:
         run: python scripts/build_history.py || echo "::warning::history step failed, stock lookup may be stale"
       - name: Gather facts on every stock for the screener, watchlists and other tools
         run: python scripts/build_market.py || echo "::warning::market facts step failed, tool pages may be stale"
+      - name: Gather which analyst firms rate each stock
+        run: python scripts/build_ratings.py || echo "::warning::analyst history step failed, stock pages will skip it"
       - name: Deploy the live price service
         id: worker
         if: env.CF_TOKEN != '' && env.CF_ACCOUNT != ''

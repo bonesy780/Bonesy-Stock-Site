@@ -71,6 +71,50 @@
     </div>`;
   }
 
+  // ---- which firms rate it: ratings/<ticker>.json (rating changes by firm and monthly counts)
+  const ACT = { up: ["Upgrade", "up"], down: ["Downgrade", "down"], init: ["Started coverage", "init"], main: ["Maintained", ""], reit: ["Reiterated", ""] };
+  const MIX = [["sb", "Strong Buy"], ["b", "Buy"], ["h", "Hold"], ["s", "Sell"], ["ss", "Strong Sell"]];
+  const monthName = (period) => {
+    const back = -parseInt(period, 10) || 0;
+    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - back);
+    return back === 0 ? "This month" : d.toLocaleDateString(undefined, { month: "long" });
+  };
+  function actions(r, cur, price) {
+    const acts = r.actions || [], trend = (r.trend || []).slice().sort((a, b) => parseInt(b.period, 10) - parseInt(a.period, 10));
+    const firms = new Set(acts.map((a) => a.firm));
+    const count = (k) => acts.filter((a) => a.act === k).length;
+    const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+    const mixBar = (p) => {
+      const n = MIX.reduce((a, [k]) => a + (p[k] || 0), 0);
+      return `<div class="ra-mix"><span class="ra-mlabel">${esc(monthName(p.period))}</span><div class="ra-bar" title="${MIX.map(([k, l]) => `${l}: ${p[k] || 0}`).join(", ")}">${MIX.map(([k]) => p[k] ? `<i class="ra-${k}" style="flex:${p[k]}">${p[k]}</i>` : "").join("")}</div><span class="ra-n num">${n}</span></div>`;
+    };
+    const rows = acts.map((a, i) => {
+      const act = ACT[a.act] || [a.act || "–", ""];
+      const grade = a.from && a.from !== a.to ? `${esc(a.from)} → <b>${esc(a.to)}</b>` : `<b>${esc(a.to || "–")}</b>`;
+      const tgt = a.pt ? (a.ppt && a.ppt !== a.pt ? `${money(a.ppt, cur)} → <b>${money(a.pt, cur)}</b>` : `<b>${money(a.pt, cur)}</b>`) : "–";
+      const vs = a.pt && price ? (a.pt / price - 1) * 100 : null;
+      return `<tr${i >= 10 ? ' class="ra-more" hidden' : ""}><td class="left num">${new Date(a.d + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", ...(a.d.slice(0, 4) !== String(new Date().getFullYear()) ? { year: "2-digit" } : {}) })}</td>
+        <td class="left">${esc(a.firm)}</td><td class="left hide-sm"><span class="ra-act ${act[1]}">${act[0]}</span></td><td class="left">${grade}</td>
+        <td class="num">${tgt}</td><td class="hide-sm">${vs != null ? pct(vs, 0) : "–"}</td></tr>`;
+    }).join("");
+    return `<div class="ra">
+      <h3>Who rates it</h3>
+      <p class="hint">The rating above is Yahoo Finance's average of every analyst covering the stock. Yahoo doesn't name them all, but it does record each firm's rating changes, listed here.${acts.length ? ` In the past year, <b>${plural(firms.size, "firm")}</b> made ${plural(acts.length, "rating call")}: ${plural(count("up"), "upgrade")}, ${plural(count("down"), "downgrade")} and ${count("init")} new.` : ""}</p>
+      ${trend.length ? `<div class="ra-trend"><div class="ra-legend">${MIX.map(([k, l]) => `<span><b class="ra-${k}"></b>${l}</span>`).join("")}</div>${trend.map(mixBar).join("")}</div>` : ""}
+      ${acts.length ? `<div class="table-wrap"><table class="grid-table ra-table"><thead><tr><th class="left">Date</th><th class="left">Firm</th><th class="left hide-sm">Action</th><th class="left">Rating</th><th>Price target</th><th class="hide-sm" title="Target vs today's price">vs now</th></tr></thead><tbody>${rows}</tbody></table></div>
+        ${acts.length > 10 ? `<p class="hint pad"><button class="btn small" id="ra-all">Show all ${acts.length}</button></p>` : ""}` : `<p class="muted">No rating changes by named firms in the past year.</p>`}
+    </div>`;
+  }
+  async function ratings(t, cur, price) {
+    let r = null;
+    try { const res = await fetch(`ratings/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" }); if (res.ok) r = await res.json(); } catch {}
+    const box = document.getElementById("rating-acts");
+    if (showing !== t || !box || !r) return;
+    box.innerHTML = actions(r, cur, price);
+    const all = document.getElementById("ra-all");
+    if (all) all.onclick = () => { box.querySelectorAll(".ra-more").forEach((x) => (x.hidden = false)); all.parentElement.remove(); };
+  }
+
   async function render(t, s) {
     showing = t;
     const box = el();
@@ -143,9 +187,11 @@
           ${targetBar(f, price, cur)}
         </div>
       </div>
+      <div id="rating-acts"></div>
       ${peers(t, m, all)}
       <p class="hint">Figures from Yahoo Finance as of ${new Date(f.asOf).toLocaleDateString(undefined, { dateStyle: "medium" })}. Amounts are in ${esc(cur)}. Hover a figure for what it means.</p>
     </div>`;
+    if (f.recommendationMean != null || f.numberOfAnalystOpinions) ratings(t, cur, price);
   }
 
   window.renderFund = render;

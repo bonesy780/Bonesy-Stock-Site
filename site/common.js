@@ -14,6 +14,7 @@
     ["signals.html", "Signals", null, "Research"],
     ["analysts.html", "Analysts", null, "Research"],
     ["dividends.html", "Dividends", null, "Research"],
+    ["earnings.html", "Earnings", null, "Research"],
     ["calendar.html", "Calendar", null, "Research"],
     ["compare.html", "Compare", null, "Tools"],
     ["backtest.html", "Backtest", null, "Tools"],
