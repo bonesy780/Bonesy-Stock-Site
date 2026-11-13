@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 OUT = SITE / "ratings"
 
-WORKERS = 4
+WORKERS = 3
+COOL_DOWN = 45            # seconds to wait first: the facts step just before often leaves Yahoo rate limiting us
 BUDGET = 20 * 60          # seconds; stop asking Yahoo after this and keep what we have
 KEEP_DAYS = 365
 MAX_ACTIONS = 60
@@ -35,17 +36,21 @@ def log(*a):
     print(*a, file=sys.stderr, flush=True)
 
 
+class Refused(Exception):
+    """Yahoo gave no answer (rate limit or a stale session), as opposed to an answer with no data."""
+
+
 def fetch(t: str) -> dict:
     """Both lists in one request where yfinance allows it, else one request each."""
     tk = yf.Ticker(t)
-    try:
-        res = tk._quote._fetch(modules=MODULES)  # one call for both modules
-        r = (res or {}).get("quoteSummary", {}).get("result") or []
-        if r:
-            return {"hist": (r[0].get("upgradeDowngradeHistory") or {}).get("history") or [],
-                    "trend": (r[0].get("recommendationTrend") or {}).get("trend") or []}
-    except Exception:
-        pass
+    quote = getattr(tk, "_quote", None)
+    if quote is not None and hasattr(quote, "_fetch"):
+        res = quote._fetch(modules=MODULES)  # one call for both modules
+        if not res or "quoteSummary" not in res:
+            raise Refused(t)
+        r = (res.get("quoteSummary") or {}).get("result") or []
+        return {"hist": (r[0].get("upgradeDowngradeHistory") or {}).get("history") or [] if r else [],
+                "trend": (r[0].get("recommendationTrend") or {}).get("trend") or [] if r else []}
     hist, trend = [], []
     try:
         df = tk.upgrades_downgrades
@@ -110,16 +115,26 @@ def build():
                if (s.get("analysts") or 0) >= 1]
     log(f"{len(tickers)} stocks with analyst coverage; fetching rating history")
     OUT.mkdir(parents=True, exist_ok=True)
+    log(f"waiting {COOL_DOWN}s for Yahoo's rate limit to reset")
+    time.sleep(COOL_DOWN)
     start = time.monotonic()
+    state = {"pause_until": 0.0, "refused": 0}
 
     def one(t):
-        if time.monotonic() - start > BUDGET:
-            return t, None
-        for attempt in range(3):
+        for attempt in range(4):
+            wait = state["pause_until"] - time.monotonic()
+            if wait > 0:
+                time.sleep(wait)
+            if time.monotonic() - start > BUDGET:
+                return t, None
             try:
                 return t, tidy(fetch(t), now)
             except Exception as e:
-                time.sleep((15 if "Too Many" in str(e) else 2) * (attempt + 1))
+                # Refused or rate limited: every worker pauses, longer each time
+                state["refused"] += 1
+                state["pause_until"] = max(state["pause_until"], time.monotonic() + 20 * (attempt + 1))
+                if attempt == 3:
+                    log(f"{t}: gave up ({e or type(e).__name__})")
         return t, None
 
     saved = 0
@@ -128,7 +143,8 @@ def build():
             if body:
                 (OUT / f"{t.replace('^', '_')}.json").write_text(json.dumps(body, separators=(",", ":"), ensure_ascii=False))
                 saved += 1
-    log(f"saved analyst history for {saved} of {len(tickers)} stocks in {time.monotonic() - start:.0f}s")
+    log(f"saved analyst history for {saved} of {len(tickers)} stocks in {time.monotonic() - start:.0f}s "
+        f"({state['refused']} refused requests retried)")
 
 
 if __name__ == "__main__":
