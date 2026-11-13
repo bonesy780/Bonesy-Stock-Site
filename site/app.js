@@ -201,7 +201,7 @@
     `Buy ideas need an analyst consensus of Buy or better from at least 5 analysts, 10% or more upside to the average price target, a positive 3-month return and a price above the 50-day average.`,
     `Sell ideas are stocks down over the last 3 months and below their 50-day average, where analysts rate them Hold or worse (at least 3 analysts) or the price is above the average target.`,
     `Dividend yield is the last year of regular payments divided by today's price. Pays shows how often the company pays, based on its recent payment dates.`,
-    `Taiwan 50 is approximated by the 50 largest companies on the Taiwan Stock Exchange. Member lists are refreshed from public sources when available.`,
+    `TSX Venture has no published member list, so it uses the 250 largest companies on the TSX Venture Exchange, with lower price and size floors for the picks since most are small. Taiwan 50 is approximated by the 50 largest companies on the Taiwan Stock Exchange. Member lists are refreshed from public sources when available.`,
   ].map((t) => `<li>${esc(t)}</li>`).join("");
 
   // Matrix-style rain of digits and tickers in the side gutters

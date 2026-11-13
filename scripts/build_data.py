@@ -36,6 +36,11 @@ INDEXES = [
     {"id": "tsx", "name": "TSX (S&P/TSX Composite)", "region": "Canada", "currency": "CAD", "suffix": ".TO",
      "benchmark": "^GSPTSE", "wiki": "https://en.wikipedia.org/wiki/S%26P/TSX_Composite_Index",
      "col": "Ticker", "min_rows": 200},
+    # The Venture exchange has no published member list, so this takes its largest companies by market cap.
+    # Many are small, so the home page picks use lower price and size floors here.
+    {"id": "tsxv", "name": "TSX Venture (TSXV)", "region": "Canada", "currency": "CAD", "suffix": ".V",
+     "benchmark": "^SPCDNX", "yahoo_exchange": "VAN", "top": 250, "min_rows": 100,
+     "min_price_usd": 0.10, "min_mcap_usd": 50e6},
     {"id": "sp500", "name": "S&P 500", "region": "United States", "currency": "USD", "suffix": "",
      "benchmark": "^GSPC", "wiki": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
      "col": "Symbol", "min_rows": 450},
@@ -93,9 +98,31 @@ def _from_nikkei(ix):
     return pd.DataFrame({"symbol": t["Code"].astype(str).str.strip(), "name": t[name_col].astype(str).str.strip()})
 
 
+def _from_yahoo_screen(ix):
+    """Largest common shares listed on one exchange, from Yahoo's stock screener."""
+    from yfinance import EquityQuery as Q
+    query = Q("eq", ["exchange", ix["yahoo_exchange"]])
+    quotes = []
+    for offset in range(0, ix["top"] * 2, 250):
+        r = yf.screen(query, sortField="intradaymarketcap", sortAsc=False, size=250, offset=offset)
+        quotes += r.get("quotes", [])
+    rows = {}
+    for q in quotes:
+        sym = str(q.get("symbol", ""))
+        if not sym.endswith(ix["suffix"]) or not q.get("marketCap"):
+            continue
+        base = sym[: -len(ix["suffix"])]
+        if "-" in base:  # preferred shares, units and warrants
+            continue
+        rows[base] = (q["marketCap"], q.get("shortName") or q.get("longName") or base)
+    top = sorted(rows.items(), key=lambda kv: kv[1][0], reverse=True)[: ix["top"]]
+    return pd.DataFrame({"symbol": [k for k, _ in top], "name": [v[1].strip().title() if v[1].isupper() else v[1].strip() for _, v in top]})
+
+
 def load_constituents(ix) -> pd.DataFrame:
     cache = CONSTITUENTS / f"{ix['id']}.csv"
-    fetch = _from_wiki if "wiki" in ix else _from_nikkei if "nikkei" in ix else None
+    fetch = (_from_wiki if "wiki" in ix else _from_nikkei if "nikkei" in ix
+             else _from_yahoo_screen if "yahoo_exchange" in ix else None)
     if fetch:
         try:
             df = fetch(ix).drop_duplicates("symbol")
@@ -295,7 +322,7 @@ def build():
             if t not in closes:
                 continue
             st = price_stats(closes[t])
-            if st["price"] / rate < MIN_PRICE_USD or st["chg3m"] is None:
+            if st["price"] / rate < ix.get("min_price_usd", MIN_PRICE_USD) or st["chg3m"] is None:
                 continue
             cap = caps.get(t)
             rows.append({"ticker": t, "symbol": sym, "name": name, "currency": ix["currency"], **st,
@@ -321,9 +348,10 @@ def build():
             ed = earnings_date(inf)
             r["earnings"] = ed.date().isoformat() if ed else None
             r["rating"] = rating_label(r["recMean"])
-        cands = [r for r in cands if not r["mcapUsd"] or r["mcapUsd"] >= MIN_MCAP_USD]
+        floor = ix.get("min_mcap_usd", MIN_MCAP_USD)
+        cands = [r for r in cands if not r["mcapUsd"] or r["mcapUsd"] >= floor]
         for r in losers:
-            if r["mcapUsd"] and r["mcapUsd"] >= MIN_MCAP_USD:
+            if r["mcapUsd"] and r["mcapUsd"] >= floor:
                 r["score"] = None
                 weak.setdefault(r["ticker"], {**r, "indexes": []})["indexes"].append(ix["name"])
 

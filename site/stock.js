@@ -160,7 +160,7 @@
   // `ids` are the toggles each note covers, so the notes for what's switched on stand out.
   const EXPLAIN = [
     { ids: ["cmp"], title: "Compare with an index",
-      what: "Draws one of the seven market indexes on the same chart. Every line then shows its % change from the start of the chart, so a $20 stock and a 40,000-point index can sit side by side.",
+      what: "Draws one of the eight market indexes on the same chart. Every line then shows its % change from the start of the chart, so a $20 stock and a 40,000-point index can sit side by side.",
       why: "It answers \u201cdid this stock beat the market?\u201d A stock that rose 10% while its index rose 20% actually lagged. Traders call this relative strength, and fund managers judge themselves against an index (their benchmark)." },
     { ids: ["sma20", "sma50", "sma200"], title: "SMA: simple moving average (20, 50, 200)",
       what: "The average closing price over the last 20, 50 or 200 bars, redrawn for every bar. It smooths out the day-to-day noise so the trend is easier to see. 20 is roughly a month of trading days, 50 a quarter, and 200 most of a year.",
@@ -182,7 +182,7 @@
       why: "It tracks momentum and trend changes. The blue line crossing above the signal line is a common buy signal, and crossing below is a common sell signal. The line crossing zero means the short-term trend has moved above or below the longer one. Growing bars mean momentum is building, and shrinking bars mean it's fading." },
   ];
 
-  // ---- compare with the seven market indexes from the main page
+  // ---- compare with the eight market indexes from the main page
   const COMPARE = [
     ["^GSPTSE", "TSX"], ["^GSPC", "S&P 500"], ["^NDX", "Nasdaq-100"], ["^DJI", "Dow"],
     ["^N225", "Nikkei 225"], ["^KS200", "KOSPI 200"], ["^TWII", "Taiwan 50"],

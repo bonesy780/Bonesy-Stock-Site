@@ -231,7 +231,7 @@
     },
     {
       id: "fx", title: "Currency converter",
-      intro: "Convert between the currencies of the seven markets at the last daily exchange rate, for example to compare a Canadian and a US stock.",
+      intro: "Convert between the currencies of the markets on this site at the last daily exchange rate, for example to compare a Canadian and a US stock.",
       inputs: [["amount", "Amount", 1000], ["from", "From", "USD", { type: "select", options: [] }], ["to", "To", "CAD", { type: "select", options: [] }]],
       calc: (v) => {
         const fx = (M && M.fx) || null;

@@ -271,9 +271,10 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", header); else header();
 
-  // ---- trading hours of the seven markets (regular sessions; exchange holidays aren't known here)
+  // ---- trading hours of the eight markets (regular sessions; exchange holidays aren't known here)
   const HOURS = {
     tsx: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto" },
+    tsxv: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto" },
     sp500: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
     nasdaq100: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
     dow: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
@@ -388,7 +389,7 @@
   }
 
   // ---- market clock strip under the menu on every page, one toggle per market
-  const CLOCKS = [["tsx", "TSX"], ["sp500", "S&P 500"], ["nasdaq100", "Nasdaq"], ["dow", "Dow"], ["nikkei225", "Nikkei"], ["kospi200", "KOSPI"], ["twse50", "Taiwan"]];
+  const CLOCKS = [["tsx", "TSX"], ["tsxv", "TSXV"], ["sp500", "S&P 500"], ["nasdaq100", "Nasdaq"], ["dow", "Dow"], ["nikkei225", "Nikkei"], ["kospi200", "KOSPI"], ["twse50", "Taiwan"]];
   const dur = (t) => {
     const d = Math.floor(t / 86400), hh = Math.floor(t % 86400 / 3600), mm = Math.floor(t % 3600 / 60), ss = t % 60;
     const p2 = (n) => String(n).padStart(2, "0");

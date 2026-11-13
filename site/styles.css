@@ -846,3 +846,8 @@ table.op-table { min-width: 0; }
 .mc-t { color: var(--muted); }
 .mc.open .mc-t { color: var(--up); }
 .mc-t .num { font-variant-numeric: tabular-nums; color: inherit; font-weight: 600; }
+/* Wide screens: show every market card at once (two rows of four) instead of a sideways scroll */
+@media (min-width: 900px) {
+  .markets { display: grid; grid-template-columns: repeat(4, 1fr); overflow: visible; }
+  .markets .mkt { min-width: 0; }
+}
