@@ -231,11 +231,24 @@
   // Each point is [unix time, price], so drawings stay put when the range or overlays change.
   const DRAW_TOOLS = [
     ["hline", "Level", "Click to draw a horizontal line at a price, e.g. a high, low, support or resistance"],
-    ["trend", "Trend line", "Drag from one point to another to draw a line; it shows the % move between the two ends"],
+    ["trend", "Trend line", "Drag from one point to another to draw a line; its label shows the move between the two ends (choose what it shows under Label)"],
     ["rect", "Zone", "Drag to shade a box over a stretch of time and prices"],
     ["text", "Note", "Click where you want a text note, type it and press Enter"],
     ["erase", "Erase", "Click a drawing to remove it"],
   ];
+  // What the label at the end of a trend line shows
+  const LINE_LABELS = [
+    ["pct", "% change", "How far the price moved between the two ends, in percent"],
+    ["price", "Price change", "The move in the stock's own currency, per share"],
+    ["both", "Price and %", "The move per share and in percent"],
+    ["yearly", "% per year", "The move as a yearly rate, so short and long lines can be compared"],
+    ["perday", "Per day", "The average move per calendar day (or per week for slow, cheap moves), per share and in percent"],
+    ["span", "Time span", "The % move and how long it took"],
+    ["k10", "$10,000 becomes", "What $10,000 put in at the start of the line would be worth at the end (before fees and dividends)"],
+    ["all", "Everything", "Price change, %, time span and yearly rate together"],
+  ];
+  let lineLabel = (() => { try { return localStorage.getItem("lineLabel") || "pct"; } catch { return "pct"; } })();
+  if (!LINE_LABELS.some((x) => x[0] === lineLabel)) lineLabel = "pct";
   let tool = null, drawings = [], lastS = null, dragging = false;
   const drawKey = (t) => "lookupDraw:" + t;
   const loadDraw = (t) => { try { const v = JSON.parse(localStorage.getItem(drawKey(t))); return Array.isArray(v) ? v : []; } catch { return []; } };
@@ -429,6 +442,7 @@
           <button class="chip" data-a="hilo" title="Add level lines at the highest and lowest prices in this range">High / low</button>
           <button class="chip" data-a="undo" title="Remove the last drawing" ${drawings.length ? "" : "disabled"}>Undo</button>
           <button class="chip" data-a="clear" title="Remove every drawing on this stock" ${drawings.length ? "" : "disabled"}>Clear</button>
+          <label class="line-label" title="What the label on trend lines shows">Label <select class="field" id="line-label">${LINE_LABELS.map(([id, l, h]) => `<option value="${id}" title="${esc(h)}" ${id === lineLabel ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
         </div>
         <div class="legend" id="legend"></div>
         <div class="chart" id="chart"></div>
@@ -474,6 +488,13 @@
       try { localStorage.setItem("lookupInd", JSON.stringify([...shown])); } catch {}
       renderQuote();
       $("quote").querySelector(`.chip[data-i="${id}"]`).focus();
+    });
+    $("line-label").addEventListener("change", (e) => {
+      lineLabel = e.target.value;
+      try { localStorage.setItem("lineLabel", lineLabel); } catch {}
+      renderQuote();
+      const again = $("line-label");
+      if (again) again.focus();
     });
     $("quote").querySelector(".draw-bar").addEventListener("click", (e) => {
       const b = e.target.closest("button");
@@ -747,6 +768,35 @@
     };
     const fmtD = (v) => (current.index ? plain(v, cur) : money(v, cur));
     const chgTxt = (a, b) => (a ? `${b >= a ? "+" : ""}${((b / a - 1) * 100).toFixed(2)}%` : "");
+    // Label for a line from point a to point b ([unix time, price]) in the chosen style
+    const sign = (v) => (v >= 0 ? "+" : "\u2212");
+    const fmtAbs = (v) => sign(v) + fmtD(Math.abs(v));
+    const spanTxt = (secs) => {
+      const days = secs / 86400;
+      if (days < 1.5) return `${Math.max(1, Math.round(secs / 3600))}h`;
+      if (days < 60) return `${Math.round(days)} days`;
+      if (days < 730) return `${(days / 30.44).toFixed(days < 365 ? 0 : 1)} months`;
+      return `${(days / 365.25).toFixed(1)} years`;
+    };
+    const lineTxt = (a, b) => {
+      if (!a[1]) return "";
+      const move = b[1] - a[1], p = (b[1] / a[1] - 1) * 100, secs = Math.abs(b[0] - a[0]), days = Math.max(secs / 86400, 1 / 24);
+      const pctS = chgTxt(a[1], b[1]);
+      const yearly = days >= 7 && b[1] > 0 ? (Math.pow(b[1] / a[1], 365.25 / days) - 1) * 100 : null;
+      const yearlyS = yearly == null ? "" : yearly >= 10000 ? "over +10,000%/yr" : `${sign(yearly)}${Math.abs(yearly).toFixed(1)}%/yr`;
+      switch (lineLabel) {
+        case "price": return fmtAbs(move);
+        case "both": return `${fmtAbs(move)} (${pctS})`;
+        case "yearly": return yearlyS || `${pctS} (under a week)`;
+        case "perday": return Math.abs(move / days) >= 0.01 || days < 7
+          ? `${fmtAbs(move / days)} (${sign(p)}${Math.abs(p / days).toFixed(2)}%) a day`
+          : `${fmtAbs(move / days * 7)} (${sign(p)}${Math.abs(p / days * 7).toFixed(2)}%) a week`;
+        case "span": return `${pctS} in ${spanTxt(secs)}`;
+        case "k10": return `$10,000 \u2192 $${Math.round(10000 * b[1] / a[1]).toLocaleString()}`;
+        case "all": return [fmtAbs(move), pctS, spanTxt(secs), yearlyS].filter(Boolean).join(" \u00b7 ");
+        default: return pctS;
+      }
+    };
     const tag = (x, y, text, cls, anchor = "start") => {
       const w = text.length * 6.6 + 10;
       const left = Math.max(pad.l, Math.min(W - w - 2, anchor === "end" ? x - w : x));
@@ -773,7 +823,7 @@
         return `<g class="dr" ${key}><g clip-path="url(#draw-clip)"><line class="hit" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>
           <line class="dl" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>
           <circle class="dot" cx="${x1}" cy="${y1}" r="3"/><circle class="dot" cx="${x2}" cy="${y2}" r="3"/></g>
-          ${tag(x2 + (x2 >= x1 ? 6 : -6), y2, chgTxt(d.a[1], d.b[1]), "", x2 >= x1 ? "start" : "end")}</g>`;
+          ${tag(x2 + (x2 >= x1 ? 6 : -6), y2, d.a[0] <= d.b[0] ? lineTxt(d.a, d.b) : lineTxt(d.b, d.a), "", x2 >= x1 ? "start" : "end")}</g>`;
       }
       const [lx, rx] = [Math.min(x1, x2), Math.max(x1, x2)], [ty, by] = [Math.min(y1, y2), Math.max(y1, y2)];
       const [pl, ph] = [Math.min(d.a[1], d.b[1]), Math.max(d.a[1], d.b[1])];
