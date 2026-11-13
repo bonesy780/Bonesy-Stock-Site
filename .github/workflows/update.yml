@@ -78,7 +78,7 @@ jobs:
           git commit -m "Refresh index member lists"
           # main may have moved during the build; rebase and retry, and never hold up the deploy
           for i in 1 2 3; do
-            git pull --rebase -q origin main && git push && exit 0
+            git pull --rebase --autostash -q origin main && git push && exit 0
             sleep 5
           done
           echo "::warning::could not save the refreshed member lists this run"
