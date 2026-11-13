@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ask · Market Leaders</title>
+<meta name="description" content="Ask how the site gets its data: where prices, ratings, news and every other figure come from and how they are worked out.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Ask me</h1>
+    <p>Ask how the site gets its data: where a price, rating, date or news story comes from, how a number is worked out, and how often it updates.</p>
+  </section>
+
+  <div class="panel ask">
+    <div class="ask-log" id="log" aria-live="polite"></div>
+    <form class="ask-form" id="form">
+      <input class="field" id="q" type="text" maxlength="600" autocomplete="off" placeholder="e.g. Where does the 52-week low come from?" aria-label="Your question">
+      <button class="btn primary" id="send" type="submit">Ask</button>
+    </form>
+    <div class="ask-foot"><span class="hint" id="mode"></span><button class="btn" id="clear" type="button" hidden>Clear conversation</button></div>
+  </div>
+
+  <section class="panel ask-topics"><h2 class="pad-h">All topics</h2><div id="topics"></div></section>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Answers explain how the site works. They don't say whether to buy or sell anything.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="ask.js?v=__V__"></script>
+</body>
+</html>

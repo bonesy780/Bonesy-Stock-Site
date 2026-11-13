@@ -35,5 +35,5 @@
 
   const stamp = (d) => d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
-  window.Live = { on, quotes, chart, every, stamp };
+  window.Live = { on, api: on ? API : null, quotes, chart, every, stamp };
 })();

@@ -14,6 +14,7 @@ A static website showing the top 10 stocks in the S&P 500, Nasdaq-100, Dow Jones
 - `signals.html` lists stocks that just triggered chart signals (golden and death crosses, crossing the 50- and 200-day averages, MACD crossovers, 20-day breakouts and breakdowns, volume surges, RSI extremes, Bollinger squeezes), worked out by `build_market.py`.
 - `calendar.html` shows upcoming earnings reports and ex-dividend dates by week, filterable by market or your watchlists.
 - `tools.html` holds calculators: position size from risk, profit and loss, average cost, dividend income with reinvesting, compound growth, TFSA versus RRSP, retirement savings and income, margin and margin-call price, recovering from a loss, options payoff and currency conversion.
+- `ask.html` ("Ask me") answers questions about how the site gets its data. Its notes are in `site/ask-kb.json`, one entry per topic, written from the build scripts; update them when a data source or formula changes. Without an Anthropic API key the page matches the question to the closest note. With one, the live price service's `/ask` route passes the question and the notes to Claude, which answers in its own words (see below).
 - `.github/workflows/update.yml` rebuilds the data every weekday after the US close and on Sundays, then deploys to GitHub Pages.
 
 ## Live prices
@@ -28,6 +29,10 @@ To turn it on (free Cloudflare plan is enough):
 4. Run the **Update data and deploy** workflow. It deploys the worker and points the site at it.
 
 To use a price service hosted somewhere else, set the repo variable `LIVE_API_URL` to its address instead. Without either, the site shows the saved prices from the last build.
+
+## Claude answers on the Ask page
+
+To have Claude answer questions on the Ask page (instead of the built-in notes alone), set up the live price service above, create an API key at console.anthropic.com, and add it as the repo secret `ANTHROPIC_API_KEY`. The next run of the workflow stores it in the Cloudflare Worker. Each question is billed to that key; the worker only accepts questions from the site itself, caps each visitor at 6 questions a minute and 60 a day, and asks for short answers. Delete the secret (and the Worker's `ANTHROPIC_API_KEY` secret in Cloudflare) to switch it off.
 
 Ranking: 3-month performance (50%), analyst consensus (30%), market cap (20%). Penny stocks (under $1 USD equivalent or under $300M market cap) are excluded. Big Asian companies often trade below $5 a share, so a $5 cutoff would drop blue chips.
 
