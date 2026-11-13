@@ -99,6 +99,30 @@ def points(f: pd.DataFrame) -> list:
             for ts, c, v in zip(f.index, f["c"], f["v"])]
 
 
+# Longer trend lines for the screener's trend column: [key, days back] (None = year to date, 0 = all)
+TRENDS = [("m6", 182), ("y1", 365), ("ytd", None), ("y5", 1826), ("y10", 3652), ("all", 0)]
+TREND_POINTS = 30
+
+
+def trends(f: pd.DataFrame) -> dict:
+    """TREND_POINTS evenly spaced closes for each period the history covers."""
+    out = {}
+    idx = f.index.values.astype("datetime64[s]").astype(np.int64)
+    c = f["c"].values
+    end, first = idx[-1], idx[0]
+    year_start = int(pd.Timestamp(f.index[-1].year, 1, 1).timestamp())
+    for key, days in TRENDS:
+        start = first if days == 0 else year_start if days is None else end - days * 86400
+        # Skip periods longer than the stock's history (allow a week of slack)
+        if start < first - 7 * 86400:
+            continue
+        start = max(start, first)
+        ts = np.linspace(start, end, TREND_POINTS)
+        pos = np.clip(np.searchsorted(idx, ts, side="right") - 1, 0, len(c) - 1)
+        out[key] = [float(f"{x:.4g}") for x in c[pos]]
+    return out
+
+
 def build():
     stocks: dict[str, dict] = {}
     for ix in INDEXES:
@@ -122,6 +146,7 @@ def build():
 
     HIST.mkdir(parents=True, exist_ok=True)
     listed = []
+    lines = {}
     for t in tickers:
         d = daily.get(t)
         if d is None or len(d) < 2:
@@ -132,6 +157,11 @@ def build():
         body = {"t": t, "d": points(rows), "df": len(rows) - daily_n, "i": points(i) if i is not None else []}
         (HIST / f"{t.replace('^', '_')}.json").write_text(json.dumps(body, separators=(",", ":")))
         listed.append(stocks[t])
+        try:
+            lines[t] = trends(d)
+        except Exception as e:  # a bad series shouldn't stop the build
+            log(f"trend failed for {t} ({e})")
+    (SITE / "trends.json").write_text(json.dumps(lines, separators=(",", ":")))
     (SITE / "stocks.json").write_text(json.dumps(listed, separators=(",", ":"), ensure_ascii=False))
     log(f"wrote {len(listed)} histories to {HIST}")
 
