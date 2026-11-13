@@ -84,7 +84,7 @@
     if (k === "p") return `<span class="num">${money(s.p, s.cur)}</span>`;
     if (k === "target") return `<span class="num">${money(s.target, s.cur)}</span>`;
     if (k === "divRate") return `<span class="num">${s.divRate != null ? money(s.divRate, s.cur) : "–"}</span>`;
-    if (k === "spark") return spark(s.spark, 80, 24);
+    if (k === "spark") { const a = trendPts(s); return a ? `<span title="${esc(trendName())}: ${(trendChg(s) ?? 0).toFixed(1)}%">${spark(a, 80, 24)}</span>` : '<span class="num">–</span>'; }
     if (k === "mcapUsd" || k === "dollarVolUsd") return `<span class="num">${big(v)}</span>`;
     if (k === "exDiv" || k === "earnings") return v ? new Date(v + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" }) : "–";
     if (k === "recMean") return v == null ? "–" : `<span class="pill ${v <= 2.5 ? "buy" : v > 3.5 ? "sell" : ""}">${v <= 1.5 ? "Strong Buy" : v <= 2.5 ? "Buy" : v <= 3.5 ? "Hold" : "Sell"} <span class="num">${v.toFixed(1)}</span></span>`;
@@ -95,17 +95,37 @@
     if (k === "analysts") return `<span class="num">${v ?? "–"}</span>`;
     return `<span class="num">${fixed(v, k === "beta" ? 2 : 0)}</span>`;
   };
-  const LABELS = { p: "Price", spark: "1M trend", divRate: "Dividend / yr", exDiv: "Ex-dividend", target: "Target", earnings: "Earnings" };
-  const labelOf = (k) => LABELS[k] || (FK[k] ? FK[k].label.replace("Change ", "") : k);
+  // The trend column can show 1 month (from market.json) or longer periods (from trends.json, loaded when asked for)
+  const TRENDS = [["m1", "1M"], ["m6", "6M"], ["y1", "12M"], ["ytd", "YTD"], ["y5", "5Y"], ["y10", "10Y"], ["all", "All time"]];
+  let T = null;
+  const trendName = () => (TRENDS.find((x) => x[0] === S.trend) || TRENDS[0])[1] + " trend";
+  const trendPts = (s) => (S.trend === "m1" ? s.spark : T && T[s.t] && T[s.t][S.trend]) || null;
+  const trendChg = (s) => {
+    if (S.trend === "m1" && s.m1 != null) return s.m1;
+    const a = trendPts(s);
+    return a && a.length > 1 && a[0] > 0 ? (a[a.length - 1] / a[0] - 1) * 100 : null;
+  };
+  const LABELS = { p: "Price", divRate: "Dividend / yr", exDiv: "Ex-dividend", target: "Target", earnings: "Earnings" };
+  const labelOf = (k) => k === "spark" ? trendName() : LABELS[k] || (FK[k] ? FK[k].label.replace("Change ", "") : k);
 
   // ---- state: chosen markets, sector, filters { key: [min, max] }, column view and sort
-  const empty = () => ({ markets: [], sector: "", f: {}, view: "Overview", sort: { key: "mcapUsd", dir: -1 } });
+  const empty = () => ({ markets: [], sector: "", f: {}, view: "Overview", trend: "m1", sort: { key: "mcapUsd", dir: -1 } });
   let S = empty();
   try {
-    if (location.hash.length > 1) S = { ...S, ...JSON.parse(decodeURIComponent(location.hash.slice(1))) };
+    if (location.hash.length > 1) S = { ...S, trend: store.get("screen", {}).trend || "m1", ...JSON.parse(decodeURIComponent(location.hash.slice(1))) };
     else S = { ...S, ...store.get("screen", {}) };
   } catch {}
   if (!VIEWS[S.view]) S.view = "Overview";
+  if (!TRENDS.some((x) => x[0] === S.trend)) S.trend = "m1";
+  $("trend").innerHTML = TRENDS.map(([k, l]) => `<option value="${k}">${l}</option>`).join("");
+  $("trend").value = S.trend;
+  async function loadTrends() {
+    if (T || S.trend === "m1") return;
+    $("trend").disabled = true;
+    try { T = await UI.load("trends.json"); } catch { T = {}; }
+    $("trend").disabled = false;
+    if (!Object.keys(T).length) $("count").textContent = "Longer trends are not ready yet. They appear after the next data refresh.";
+  }
   const persist = () => { store.set("screen", S); history.replaceState(null, "", "#" + encodeURIComponent(JSON.stringify({ markets: S.markets, sector: S.sector, f: S.f }))); };
 
   // Sectors present in the data
@@ -159,12 +179,13 @@
     $("views").innerHTML = Object.keys(VIEWS).map((v) => `<button role="tab" aria-selected="${v === S.view}" data-v="${v}">${v}</button>`).join("");
     // The filtered figures join the chosen view's columns so you can see why a stock matched
     const keys = [...new Set(VIEWS[S.view].concat(active.map(([k]) => k)))];
+    $("trend-wrap").hidden = !keys.includes("spark");
     const cols = [
       { key: "name", label: "Company", left: true, sm: true, val: (r) => r.n,
         html: (r) => `<div class="co-row">${UI.star(r.t)}<div class="co"><span class="nm"><a href="${stockUrl(r.t)}">${esc(r.n)}</a></span><span class="tk">${esc(r.s)} · ${esc(r.region)}${r.sector ? " · " + esc(r.sector) : ""}</span></div></div>` },
       ...keys.map((k, n) => ({
         key: k, label: labelOf(k), title: FK[k] && FK[k].help ? FK[k].help : undefined, sm: n === 0 || (n === 1 && keys[0] === "p"),
-        val: k === "spark" ? null : k === "p" ? (r) => r.p : FK[k] ? (r) => val(r, FK[k]) : (r) => r[k],
+        val: k === "spark" ? trendChg : k === "p" ? (r) => r.p : FK[k] ? (r) => val(r, FK[k]) : (r) => r[k],
         html: (r) => fmt(k, r),
       })),
     ];
@@ -240,6 +261,12 @@
     persist(); results();
   });
   $("more").addEventListener("click", () => { limit += 50; results(); });
+  $("trend").addEventListener("change", async () => {
+    S.trend = $("trend").value;
+    persist();
+    await loadTrends();
+    results();
+  });
 
   $("save").addEventListener("click", () => {
     const btn = $("save");
@@ -294,4 +321,5 @@
   });
 
   render();
+  if (S.trend !== "m1") loadTrends().then(results);
 })();
