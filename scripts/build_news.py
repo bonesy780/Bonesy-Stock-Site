@@ -102,6 +102,105 @@ def google_news(query: str) -> list[dict]:
     return out
 
 
+# ---------------------------------------------------------------- top stories by outlet
+# Each outlet's own feed where it publishes one, else Google News limited to that site.
+# Paywalled outlets (WSJ, FT, Bloomberg, The Economist) still show headlines; the full story may need a subscription.
+SOURCES = [
+    ("wsj", "Wall Street Journal", "wsj.com", ["https://feeds.content.dowjones.io/public/rss/RSSMarketsMain", "https://feeds.a.dj.com/rss/RSSMarketsMain.xml"]),
+    ("ft", "Financial Times", "ft.com", ["https://www.ft.com/markets?format=rss"]),
+    ("bloomberg", "Bloomberg", "bloomberg.com", ["https://feeds.bloomberg.com/markets/news.rss"]),
+    ("reuters", "Reuters", "reuters.com", []),
+    ("cnbc", "CNBC", "cnbc.com", ["https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114",
+                                  "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=20910258"]),
+    ("yahoo", "Yahoo Finance", "finance.yahoo.com", []),
+    ("marketwatch", "MarketWatch", "marketwatch.com", ["https://feeds.content.dowjones.io/public/rss/mw_marketpulse", "https://feeds.content.dowjones.io/public/rss/mw_topstories"]),
+    ("economist", "The Economist", "economist.com", ["https://www.economist.com/finance-and-economics/rss.xml",
+                                                     "https://www.economist.com/business/rss.xml"]),
+    ("forbes", "Forbes", "forbes.com", ["https://www.forbes.com/business/feed/"]),
+    ("investing", "Investing.com", "investing.com", ["https://www.investing.com/rss/news_25.rss", "https://www.investing.com/rss/news_14.rss"]),
+]
+STORIES_PER_SOURCE = 10
+SOURCE_MAX_AGE = timedelta(days=3)
+MEDIA = "{http://search.yahoo.com/mrss/}"
+ATOM = "{http://www.w3.org/2005/Atom}"
+TAGS = re.compile(r"<[^>]+>")
+
+
+def _clean(text: str) -> str:
+    text = TAGS.sub(" ", text or "")
+    for a, b in (("&amp;", "&"), ("&quot;", '"'), ("&#39;", "'"), ("&#039;", "'"), ("&nbsp;", " "), ("&lt;", "<"), ("&gt;", ">")):
+        text = text.replace(a, b)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _when(text):
+    if not text:
+        return None
+    try:
+        d = parsedate_to_datetime(text)
+    except Exception:
+        try:
+            d = datetime.fromisoformat(text.strip().replace("Z", "+00:00"))
+        except Exception:
+            return None
+    return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+
+
+def feed(url: str, source: str) -> list[dict]:
+    """Stories from one RSS or Atom feed."""
+    try:
+        r = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) stocks-site news builder"}, timeout=30)
+        r.raise_for_status()
+        root = ET.fromstring(r.content)
+    except Exception as e:
+        log(f"feed {url} failed ({e})")
+        return []
+    out = []
+    for it in list(root.iter("item")) + list(root.iter(ATOM + "entry")):
+        title = _clean(it.findtext("title") or it.findtext(ATOM + "title"))
+        link = (it.findtext("link") or "").strip()
+        if not link:
+            a = it.find(ATOM + "link")
+            link = a.get("href") if a is not None else ""
+        when = _when(it.findtext("pubDate") or it.findtext(ATOM + "updated") or it.findtext(ATOM + "published"))
+        image = None
+        for tag in (MEDIA + "content", MEDIA + "thumbnail", "enclosure"):
+            m = it.find(tag)
+            if m is not None and (m.get("url") or "").startswith("http") and "video" not in (m.get("type") or ""):
+                image = m.get("url")
+                break
+        summary = _clean(it.findtext("description") or it.findtext(ATOM + "summary") or "")[:280]
+        if title and link.startswith("http"):
+            out.append({"title": title, "url": link, "source": source, "published": when,
+                        "summary": summary if summary.lower() != title.lower() else "", "image": image, "related": None})
+    return out
+
+
+def top_stories(now: datetime) -> list[dict]:
+    out = []
+    for sid, name, domain, urls in SOURCES:
+        got, how = [], "feed"
+        for u in urls:
+            got += feed(u, name)
+        fresh = [s for s in got if s["published"] and now - s["published"] <= SOURCE_MAX_AGE]
+        if len(fresh) < 4:  # no feed, or it failed: search Google News for that site
+            how = "search"
+            fresh += [{**s, "source": name} for s in google_news(f"site:{domain} markets OR economy OR stocks")
+                      if s["published"] and now - s["published"] <= SOURCE_MAX_AGE]
+        seen, picked = set(), []
+        for s in sorted(fresh, key=lambda s: s["published"], reverse=True):
+            key = s["title"].lower()[:80]
+            if key in seen or NOT_NEWS.search(s["title"]):
+                continue
+            seen.add(key)
+            picked.append({**s, "published": s["published"].isoformat(timespec="minutes")})
+            if len(picked) >= STORIES_PER_SOURCE:
+                break
+        out.append({"id": sid, "name": name, "site": domain, "stories": picked})
+        log(f"{name}: {len(picked)} stories (from {how})")
+    return out
+
+
 def build():
     now = datetime.now(timezone.utc)
     data = json.loads(DATA.read_text())
@@ -129,7 +228,8 @@ def build():
                         "chg1d": ix.get("chg1d"), "stories": picked})
         log(f"{ix['name']}: {len(picked)} stories ({len(stories)} found)")
 
-    OUT.write_text(json.dumps({"generated": now.isoformat(timespec="minutes"), "markets": markets},
+    sources = top_stories(now)
+    OUT.write_text(json.dumps({"generated": now.isoformat(timespec="minutes"), "markets": markets, "sources": sources},
                               separators=(",", ":")))
     log(f"wrote {OUT}")
 

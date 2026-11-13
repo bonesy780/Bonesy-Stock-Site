@@ -51,7 +51,7 @@ FUND_KEYS = (
     "beta", "averageVolume", "averageVolume10days",
     "recommendationMean", "recommendationKey", "numberOfAnalystOpinions",
     "targetMeanPrice", "targetHighPrice", "targetLowPrice", "targetMedianPrice",
-    "earningsTimestampStart", "earningsTimestampEnd", "earningsTimestamp",
+    "earningsTimestampStart", "earningsTimestampEnd", "earningsTimestamp", "isEarningsDateEstimate",
 )
 
 
@@ -306,6 +306,10 @@ def build():
             "target": sig(inf.get("targetMeanPrice")),
             "upside": num(pct(inf.get("targetMeanPrice"), price), 2) if inf.get("targetMeanPrice") else None,
             "earnings": day(earn),
+            # Exact time of the report (seconds), and whether the date is still Yahoo's estimate
+            "earnAt": int(earn) if earn else None,
+            "earnEst": True if earn and (inf.get("isEarningsDateEstimate")
+                                         or (inf.get("earningsTimestampEnd") or earn) != earn) else None,
             "shortFloat": num(inf.get("shortPercentOfFloat") * 100, 2) if inf.get("shortPercentOfFloat") is not None else None,
         }
         rows.append({k: v for k, v in row.items() if v is not None and v != []})

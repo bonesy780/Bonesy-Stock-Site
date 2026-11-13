@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Upcoming Earnings · Market Leaders</title>
+<meta name="description" content="Which companies report earnings today, tomorrow, this week and this month across eight markets, with report times, how each stock has done going in and what analysts expect.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Upcoming earnings</h1>
+    <p>Who reports today, tomorrow, over the next week and over the next month. Prices often jump or drop on earnings day, so it helps to know what is coming for the stocks you own or watch.</p>
+  </section>
+
+  <div class="toolbar">
+    <div class="seg" id="range" role="tablist" aria-label="Period"></div>
+    <span class="spacer"></span>
+    <label class="hint">Market <select class="field" id="market"><option value="">All markets</option></select></label>
+    <label class="hint">Size <select class="field" id="size">
+      <option value="0">Any size</option><option value="1">Over $1B</option><option value="10">Over $10B</option><option value="100">Over $100B</option>
+    </select></label>
+    <label class="hint check"><input type="checkbox" id="mine"> My watchlists only</label>
+  </div>
+
+  <div class="panel breadth" id="summary"></div>
+  <div class="panel er-chart" id="chart" hidden></div>
+  <div id="days"></div>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Dates come from Yahoo Finance and refresh every weekday after the US close. Dates marked "estimated" are not yet confirmed by the company and often move. Report times are shown in your own time zone. Check the company's investor relations page before trading around a report.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="earnings.js?v=__V__"></script>
+</body>
+</html>
