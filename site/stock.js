@@ -415,8 +415,8 @@
     const chg = base ? (last / base - 1) * 100 : null;
     const year = hist.d.filter((p) => p[0] >= hist.d[hist.d.length - 1][0] - 365 * 86400).map((p) => p[1]);
     const stats = [
-      ["52W high", plain(Math.max(...year), s.cur)],
-      ["52W low", plain(Math.min(...year), s.cur)],
+      ["52W high", plain(Math.max(hist.hi52 || -Infinity, ...year), s.cur)],
+      ["52W low", plain(Math.min(hist.lo52 || Infinity, ...year), s.cur)],
       ["Mkt cap (USD)", big(x.mcapUsd)],
       ["Analysts", x.rating ? esc(x.rating) + (x.analysts ? ` (${x.analysts})` : "") : "–"],
       ["Target", x.target ? plain(x.target, s.cur) : "–"],

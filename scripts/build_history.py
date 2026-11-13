@@ -49,13 +49,26 @@ def bars(tickers: list[str], **kw) -> dict[str, pd.DataFrame]:
         for t in batch:
             try:
                 sub = df[t] if isinstance(df.columns, pd.MultiIndex) else df
-                f = pd.DataFrame({"c": sub["Close"], "v": sub["Volume"] if "Volume" in sub else float("nan")})
+                f = pd.DataFrame({"c": sub["Close"], "v": sub["Volume"] if "Volume" in sub else float("nan"),
+                                  "h": sub["High"] if "High" in sub else float("nan"),
+                                  "l": sub["Low"] if "Low" in sub else float("nan")})
             except KeyError:
                 continue
             f = f.dropna(subset=["c"])
             if len(f):
                 out[t] = f
     return out
+
+
+def range52(d: pd.DataFrame) -> dict:
+    """The 52-week high and low from each day's intraday high and low, as broker
+    sites show them (closing prices alone can miss a sharp dip that recovered the
+    same day). Falls back to closes where Yahoo has no high or low."""
+    y = d[d.index >= d.index[-1] - pd.Timedelta(days=365)]
+    hi = pd.concat([y["h"], y["c"]]).max()
+    lo = pd.concat([y["l"].where(y["l"] > 0), y["c"]]).min()
+    nd = 2 if y["c"].abs().max() >= 100 else 4
+    return {"hi52": round(float(hi), nd), "lo52": round(float(lo), nd)} if hi == hi and lo == lo else {}
 
 
 def every(f: pd.DataFrame, n: int) -> pd.DataFrame:
@@ -154,7 +167,7 @@ def build():
         i = intraday.get(t)
         rows, daily_n = thin(d)
         # "df": index in "d" where the every-day stretch begins
-        body = {"t": t, "d": points(rows), "df": len(rows) - daily_n, "i": points(i) if i is not None else []}
+        body = {"t": t, "d": points(rows), "df": len(rows) - daily_n, "i": points(i) if i is not None else [], **range52(d)}
         (HIST / f"{t.replace('^', '_')}.json").write_text(json.dumps(body, separators=(",", ":")))
         listed.append(stocks[t])
         try:
