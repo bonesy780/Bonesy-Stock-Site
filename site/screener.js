@@ -11,7 +11,6 @@
     return;
   }
   $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
 
   // Each filter works on one number. unit: "B" means billions of US dollars, "%" a percent, "x" a ratio
   const F = [

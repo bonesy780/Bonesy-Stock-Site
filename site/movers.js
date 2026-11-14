@@ -11,7 +11,6 @@
     return;
   }
   $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
 
   const PERIODS = { d1: "today", w1: "this week", m1: "this month", m3: "over 3 months", ytd: "this year" };
   const VIEWS = [
