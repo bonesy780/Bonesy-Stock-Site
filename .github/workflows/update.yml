@@ -87,9 +87,11 @@ jobs:
           git add data/constituents
           git diff --cached --quiet && exit 0
           git commit -m "Refresh index member lists"
-          # main may have moved during the build; rebase and retry, and never hold up the deploy
+          # main may have moved during the build; rebase and retry, and never hold up the deploy.
+          # If another run saved the same lists meanwhile, this run's (newer) lists win.
           for i in 1 2 3; do
-            git pull --rebase --autostash -q origin main && git push && exit 0
+            git pull --rebase --autostash -X theirs -q origin main && git push && exit 0
+            git rebase --abort 2>/dev/null || true
             sleep 5
           done
           echo "::warning::could not save the refreshed member lists this run"
