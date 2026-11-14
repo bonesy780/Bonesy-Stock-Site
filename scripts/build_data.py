@@ -406,11 +406,15 @@ def build():
         "sellIdeas": sell_ideas(list(weak.values()) + stocks),
         "watchlist": watchlist(stocks, now),
         "snapshots": snapshots(list(everyone.values())),
-        # S&P 500 tickers for the Matrix rain background
-        "rainTickers": sorted({str(t) for t in members["sp500"]["symbol"] if str(t).strip()}),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(out, separators=(",", ":"), allow_nan=False, default=str))
+    # Small file for the ticker tape in every page's header: each index and its top 3 stocks
+    tape = {"generated": out["generated"], "items": []}
+    for ixo in indexes_out:
+        tape["items"].append({"t": ixo["benchmark"], "ix": ixo["id"], "p": ixo["level"], "c": ixo["chg1d"]})
+        tape["items"] += [{"t": r["ticker"], "s": r["symbol"], "p": r.get("price"), "c": r.get("chg1d")} for r in ixo["top"][:3]]
+    (OUT.parent / "tape.json").write_text(json.dumps(tape, separators=(",", ":"), allow_nan=False, default=str))
     for ixo in indexes_out:
         log(f"{ixo['name']}: {ixo['priced']}/{ixo['members']} priced, top: "
             + ", ".join(f"{r['symbol']} {r['chg3m']:+.0f}%" for r in ixo["top"][:3]))

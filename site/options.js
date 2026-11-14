@@ -5,7 +5,6 @@
   const M = await UI.market().catch(() => null);
   if (M) {
     $("updated").textContent = "Prices from " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-    if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
   } else $("updated").textContent = "";
 
   // ---- Black-Scholes (European, no dividends)

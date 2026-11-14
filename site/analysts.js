@@ -11,7 +11,6 @@
     return;
   }
   $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
 
   // 1 = strong buy … 5 = sell, the scale Yahoo reports
   const BUCKETS = [

@@ -151,15 +151,6 @@ section { margin-bottom: 40px; }
   .updated { font-size: 12px; }
 }
 
-/* Matrix-style rain in the empty space beside the content */
-.side-art { position: fixed; top: 0; bottom: 0; width: calc((100vw - 1240px) / 2); z-index: -1; pointer-events: none; display: none; background: #010a03; }
-.side-art.left { left: 0; }
-.side-art.right { right: 0; }
-.side-art canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.side-art::after { content: ""; position: absolute; top: 0; bottom: 0; width: 60px; }
-.side-art.left::after { right: 0; background: linear-gradient(90deg, rgba(1,10,3,0), var(--bg)); }
-.side-art.right::after { left: 0; background: linear-gradient(270deg, rgba(1,10,3,0), var(--bg)); }
-@media (min-width: 1300px) { .side-art { display: block; } }
 
 /* top menu */
 .brand { color: inherit; text-decoration: none; }
@@ -195,20 +186,6 @@ section { margin-bottom: 40px; }
   .story-grid { grid-template-columns: 1fr; }
 }
 
-/* narrower screens: no side gutters, so the rain fills the whole background */
-@media (max-width: 1299px) {
-  .side-art.left { display: block; width: 100%; }
-  .side-art.left::after { display: none; }
-  .hero, .section-head, .subhead, .method, .news-head, .foot, .snap-head {
-    background: var(--bg); border-radius: var(--radius); padding: 14px 16px;
-  }
-  .hero { margin-top: 16px; padding: 20px 16px; }
-  .section-head { margin-bottom: 12px; }
-  .section-head p { margin-bottom: 0; }
-  .subhead { margin-top: 20px; }
-  .tabs { padding: 8px; background: var(--bg); border-radius: var(--radius); margin-bottom: 12px; }
-  .foot { margin-bottom: 24px; padding-bottom: 14px; }
-}
 .muted { color: var(--muted); }
 
 /* stock lookup page */
@@ -339,7 +316,7 @@ section { margin-bottom: 40px; }
 
 /* phones: show only the key columns so tables fit without sideways scrolling */
 @media (max-width: 640px) {
-  .hero { padding: 16px; }
+  .hero { padding: 20px 0 12px; }
   .hero h1 { font-size: 24px; }
   .hero p { font-size: 14px; }
   table.ranked, table.largest { min-width: 0; table-layout: fixed; }
@@ -435,10 +412,6 @@ section { margin-bottom: 40px; }
 .toolbar .seg { overflow-x: auto; scrollbar-width: none; max-width: 100%; }
 .toolbar .seg button { flex: none; white-space: nowrap; }
 .toolbar label { display: inline-flex; align-items: center; gap: 6px; }
-@media (max-width: 1299px) {
-  main > .toolbar, main > p.hint, .list-tabs { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; }
-  main > p.hint:empty { display: none; }
-}
 
 /* stock screener */
 .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -456,7 +429,6 @@ section { margin-bottom: 40px; }
 .screen-tools { margin: 12px 0 8px; padding-top: 12px; border-top: 1px solid var(--border); background: none !important; padding-left: 0 !important; padding-right: 0 !important; }
 .screen .hint { margin: 0; }
 .more { display: flex; justify-content: center; margin: 12px 0 24px; }
-@media (max-width: 1299px) { .presets { background: var(--bg); border-radius: var(--radius); padding: 10px 12px; } }
 @media (max-width: 640px) {
   .filters { grid-template-columns: 1fr; }
   .screen-tools .field, .screen-tools .btn { flex: 1 1 auto; }
@@ -923,3 +895,52 @@ table.op-table { min-width: 0; }
 .ask-topic summary:hover { color: var(--accent); }
 .ask-body { padding: 0 16px 14px; font-size: 14px; line-height: 1.55; color: var(--text); }
 .ask-body p { margin: 0 0 8px; }
+
+/* ---- page background: plain, with a faint grid that fades out down the page */
+body { position: relative; }
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(900px 420px at 15% -120px, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+    radial-gradient(800px 380px at 90% -160px, color-mix(in srgb, var(--up) 9%, transparent), transparent 70%),
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 32px 32px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 260px, transparent 720px);
+  mask-image: linear-gradient(180deg, #000 0, #000 260px, transparent 720px);
+}
+:root { --grid: rgba(36, 86, 214, .05); }
+@media (prefers-color-scheme: dark) { :root { --grid: rgba(126, 162, 255, .05); } }
+
+/* ---- header: ticker tape, graph-paper bar and logo, the same on every page */
+.top {
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 16px 16px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 16px 16px,
+    color-mix(in srgb, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(8px); backdrop-filter: saturate(1.4) blur(8px);
+}
+.brand { gap: 10px; }
+.logo { display: inline-flex; color: inherit; }
+.logo-mark { display: block; width: 32px; height: 32px; filter: drop-shadow(0 1px 2px rgba(15, 27, 61, .25)); }
+.brand-text { font-weight: 800; font-size: 19px; letter-spacing: -.02em; }
+.brand-text b { color: var(--up); font-weight: 800; }
+.top .mc:not(.on) { background: var(--surface); }
+
+.tape { background: #0b0f17; color: #cbd5e1; border-bottom: 2px solid #f5b301; overflow: hidden; white-space: nowrap; font: 600 12px/28px "JetBrains Mono", ui-monospace, monospace; }
+.tape-run { display: inline-flex; animation: tape 90s linear infinite; will-change: transform; }
+.tape:hover .tape-run, .tape:focus-within .tape-run { animation-play-state: paused; }
+.tape-set { display: inline-flex; flex: none; }
+.tape .tk { display: inline-flex; gap: 7px; align-items: baseline; padding: 0 16px; color: inherit; text-decoration: none; border-right: 1px solid #1f2937; }
+.tape a.tk:hover b { text-decoration: underline; }
+.tape .tk b { color: #fff; font-weight: 700; }
+.tape .tk.ix b { color: #f5b301; }
+.tape .tk .num { font-size: 12px; }
+.tape .tk i { font-style: normal; }
+.tape .tk .u { color: #4ade80; }
+.tape .tk .d { color: #f87171; }
+@keyframes tape { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .tape { overflow-x: auto; scrollbar-width: none; }
+  .tape-run { animation: none; }
+  .tape-set[aria-hidden] { display: none; }
+}

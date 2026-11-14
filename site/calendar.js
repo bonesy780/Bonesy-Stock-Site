@@ -11,7 +11,6 @@
     return;
   }
   $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
 
   const KINDS = { earnings: "Earnings", exDiv: "Ex-dividend" };
   const state = { kind: "earnings", market: "", mine: false, ...store.get("calendar", {}) };

@@ -25,7 +25,6 @@
     if (!$("updated").querySelector(".live-dot")) $("updated").textContent = "Updated " + new Date(d.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
     const all = d.indexes.flatMap((i) => i.top.concat(i.largest || [])).concat(d.buyIdeas, d.sellIdeas || [], d.watchlist);
     for (const s of all) details[s.ticker] = { ...details[s.ticker], ...s };
-    if (window.startRain) window.startRain(d.rainTickers || []);
     if (current) renderQuote();
   }).catch(() => { $("updated").textContent = ""; });
 
@@ -262,7 +261,7 @@
     current = s; hist = null;
     drawings = loadDraw(t);
     if (push) history.replaceState(null, "", "?t=" + encodeURIComponent(t));
-    document.title = `${s.s} · Stock Lookup · Market Leaders`;
+    document.title = `${s.s} · Stock Lookup · TopTicker`;
     renderQuote();
     if (window.renderFund) window.renderFund(t, s);
     try {

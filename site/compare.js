@@ -10,7 +10,6 @@
   ]);
   const byT = Object.fromEntries(stocks.map((s) => [s.t, s]));
   if (M.generated) $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain((M.stocks || []).filter((s) => s.cur === "USD").map((s) => s.s));
 
   const fromUrl = new URLSearchParams(location.search).get("t");
   let picked = (fromUrl ? fromUrl.split(",") : store.get("compare", ["AAPL", "MSFT", "^GSPC"])).filter((t) => byT[t]).slice(0, MAX);

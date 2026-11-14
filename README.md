@@ -1,4 +1,4 @@
-# Market Leaders
+# TopTicker
 
 A static website showing the top 10 stocks in the S&P 500, Nasdaq-100, Dow Jones, TSX (S&P/TSX Composite), TSX Venture (the 250 largest Venture companies, from the Yahoo screener), Nikkei 225, KOSPI 200 and Taiwan 50, plus buy ideas and stocks to watch in the coming week.
 

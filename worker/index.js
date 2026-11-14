@@ -34,7 +34,7 @@ const PER_MINUTE = 6, PER_DAY = 60; // questions per visitor (per worker instanc
 const ASK_ORIGINS = [/^https:\/\/bonesy780\.github\.io$/i, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
 const seen = new Map();
 
-const SYSTEM = `You answer questions from visitors to "Market Leaders", a free stock market website, about how the site gets and works out its data. Below are the site's own notes, written from its code. Answer from these notes.
+const SYSTEM = `You answer questions from visitors to "TopTicker", a free stock market website, about how the site gets and works out its data. Below are the site's own notes, written from its code. Answer from these notes.
 
 Rules:
 - Keep answers short: two to five plain sentences, no headings. Use a short list only when it really helps.

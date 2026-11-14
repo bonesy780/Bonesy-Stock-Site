@@ -13,7 +13,6 @@
   const when = new Date(M.generated);
   $("updated").textContent = "Updated " + when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
   $("lede").textContent = `The last session across the eight markets, in plain words. Written ${when.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}.`;
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
 
   const name = (i) => i.name.replace(/ \(.*\)/, "");
   const link = (s) => `<a class="co-link" href="${stockUrl(s.t)}" title="${esc(s.n)}">${esc(s.s)}</a>`;

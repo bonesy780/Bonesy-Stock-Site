@@ -87,12 +87,5 @@
     try { localStorage.setItem("newsTab", current); } catch {}
     render();
   });
-
-  // Rain the same S&P 500 tickers as the main page
-  if (window.startRain) {
-    fetch("data.json").then((r) => r.json()).then((d) => d.rainTickers || [])
-      .catch(() => data.markets.flatMap((m) => m.stories.map((s) => s.related).filter(Boolean)))
-      .then((t) => window.startRain(t));
-  }
   render();
 })();

@@ -15,7 +15,6 @@
   const stocks = await UI.load("stocks.json").catch(() => []);
   const byT = Object.fromEntries(stocks.map((s) => [s.t, s]));
   $("updated").textContent = "Prices from " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
 
   // S&P 500 level, to compare each portfolio with the market since it started
   let benchNow = null;

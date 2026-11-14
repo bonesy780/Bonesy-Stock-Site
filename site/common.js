@@ -436,5 +436,48 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", marketClock); else marketClock();
 
+  // ---- ticker tape across the top of every page: each index and its top stocks.
+  // Starts from tape.json (saved after the US close) and switches to live prices when the price service is on.
+  function tickerTape() {
+    const top = document.querySelector("header.top");
+    if (!top || document.getElementById("tape")) return;
+    const names = Object.fromEntries(CLOCKS);
+    load("tape.json").then((d) => {
+      const items = (d.items || []).filter((x) => x.p != null);
+      if (!items.length) return;
+      const tape = document.createElement("div");
+      tape.className = "tape";
+      tape.id = "tape";
+      tape.setAttribute("role", "region");
+      tape.setAttribute("aria-label", "Ticker tape: index levels and top stocks");
+      top.prepend(tape);
+      const num = (v) => v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const cell = (x) => {
+        const label = x.ix ? names[x.ix] || x.t : x.s || x.t;
+        const c = x.c == null ? "" : `<i class="${x.c >= 0 ? "u" : "d"}">${x.c >= 0 ? "▲" : "▼"} ${Math.abs(x.c).toFixed(2)}%</i>`;
+        const inner = `<b>${esc(label)}</b><span class="num">${num(x.p)}</span>${c}`;
+        return x.ix ? `<span class="tk ix">${inner}</span>` : `<a class="tk" href="${stockUrl(x.t)}">${inner}</a>`;
+      };
+      const draw = () => {
+        const row = items.map(cell).join("");
+        // Two copies side by side so the loop is seamless; the second is hidden from screen readers
+        tape.innerHTML = `<div class="tape-run"><div class="tape-set">${row}</div><div class="tape-set" aria-hidden="true">${row}</div></div>`;
+      };
+      draw();
+      if (window.Live && Live.on) {
+        Live.every(60000, async () => {
+          const q = await Live.quotes(items.map((x) => x.t));
+          let changed = false;
+          for (const x of items) {
+            const y = q[x.t];
+            if (y && y.price != null) { x.p = y.price; if (y.chg1d != null) x.c = y.chg1d; changed = true; }
+          }
+          if (changed) draw();
+        });
+      }
+    }).catch(() => { /* no tape until the data has been built */ });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tickerTape); else tickerTape();
+
   window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, star, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();
