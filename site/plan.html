@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Investment Plan · Market Leaders</title>
+<meta name="description" content="Pick an amount and a target yearly return and get a plan: how to split the money, how it could grow, how bad a down year could get, and the steps to set it up.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+<link rel="stylesheet" href="plan.css?v=__V__">
+</head>
+<body>
+<div class="side-art left" aria-hidden="true"></div>
+<div class="side-art right" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Investment plan</h1>
+    <p>Choose how much to invest and the yearly return you're aiming for. You'll get a way to split the money, how it could grow (with a good case and a bad case), how much it could drop in a rough year, and the steps to set it up.</p>
+  </section>
+
+  <section class="panel pl-form">
+    <div class="pl-pick">
+      <span class="pl-lbl">Amount to invest</span>
+      <div class="seg" id="amounts" role="tablist" aria-label="Amount to invest"></div>
+      <label class="pl-own">or <input class="field num" id="amount" type="number" min="100" step="1000" inputmode="decimal" aria-label="Your own amount"></label>
+    </div>
+    <div class="pl-pick">
+      <span class="pl-lbl">Yearly return you're aiming for</span>
+      <div class="seg" id="targets" role="tablist" aria-label="Target return"></div>
+    </div>
+    <div class="pl-opts">
+      <label>Years <select class="field" id="years"><option>3</option><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option></select></label>
+      <label>Add each month <input class="field num" id="monthly" type="number" min="0" step="50" value="0" inputmode="decimal"></label>
+    </div>
+  </section>
+
+  <div class="panel breadth" id="summary"></div>
+
+  <div class="pl-grid">
+    <section class="panel pl-alloc">
+      <h2 class="pad-h">How to split the money</h2>
+      <div class="pl-bar" id="bar" aria-hidden="true"></div>
+      <div class="table-wrap" id="alloc"></div>
+    </section>
+    <section class="panel pl-proj">
+      <h2 class="pad-h">How it could grow</h2>
+      <div class="pl-chart-wrap">
+        <div class="legend" id="legend"></div>
+        <div class="chart" id="chart"></div>
+        <p class="hint" id="chart-note"></p>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel pl-text" id="plan"></section>
+
+  <section class="panel table-wrap pl-cmp">
+    <h2 class="pad-h">The three plans side by side</h2>
+    <div id="compare"></div>
+  </section>
+
+  <p class="disclaimer"><strong>Not financial advice, and no return is guaranteed.</strong> Expected returns here are long-run estimates built from how each kind of investment has done historically and where interest rates are now. Any single year can be far above or below them, and the bad-case and good-case lines are a rough 1-in-10 range, not limits. Fund tickers are common examples of each type, not recommendations. Fees, taxes and inflation aren't included. Think about talking to a licensed adviser before investing money you can't afford to see fall.</p>
+</main>
+
+<footer class="wrap foot">Return estimates: long-run historical averages and current yields. Not live data.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="rain.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="plan.js?v=__V__"></script>
+</body>
+</html>
