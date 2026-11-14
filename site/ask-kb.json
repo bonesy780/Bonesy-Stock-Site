@@ -2,7 +2,7 @@
  {
   "id": "overview",
   "title": "Where does the site get its data?",
-  "page": "./",
+  "page": "markets.html",
   "keys": [
    "source",
    "sources",
@@ -19,7 +19,7 @@
  {
   "id": "schedule",
   "title": "When is the data updated?",
-  "page": "./",
+  "page": "markets.html",
   "keys": [
    "when",
    "update",
@@ -62,7 +62,7 @@
  {
   "id": "members",
   "title": "How do you know which stocks are in each index?",
-  "page": "./",
+  "page": "markets.html",
   "keys": [
    "index",
    "member",
@@ -89,7 +89,7 @@
  {
   "id": "ranking",
   "title": "How are the top 10 stocks ranked?",
-  "page": "./",
+  "page": "markets.html",
   "keys": [
    "rank",
    "ranking",
@@ -107,7 +107,7 @@
  {
   "id": "ideas",
   "title": "How are buy and sell ideas picked?",
-  "page": "./",
+  "page": "markets.html",
   "keys": [
    "buy",
    "sell",
@@ -397,7 +397,7 @@
  {
   "id": "news",
   "title": "Where does the news come from?",
-  "page": "news.html",
+  "page": "./",
   "keys": [
    "news",
    "headline",
@@ -495,7 +495,7 @@
  {
   "id": "hours",
   "title": "How do the market clocks know when exchanges open?",
-  "page": "./",
+  "page": "markets.html",
   "keys": [
    "clock",
    "clocks",
@@ -526,7 +526,7 @@
  {
   "id": "accuracy",
   "title": "Why might a number differ from my broker?",
-  "page": "./",
+  "page": "markets.html",
   "keys": [
    "wrong",
    "different",

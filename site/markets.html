@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Markets · TopTicker</title>
+<meta name="description" content="Top 10 stocks across the S&P 500, Nasdaq-100, Dow, TSX, Nikkei 225, KOSPI 200 and Taiwan 50, with buy ideas and stocks to watch this week.">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading data…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>The strongest stocks in eight markets</h1>
+    <p>Ranked on recent performance first, then analyst ratings, then company size. <span id="hero-note">Updated every weekday after US markets close.</span></p>
+  </section>
+
+  <section class="snap" aria-label="Snapshot">
+    <div class="markets" id="markets"></div>
+    <div class="snap-head">
+      <h2>Doing well</h2>
+      <div class="seg" role="tablist" aria-label="Period">
+        <button role="tab" aria-selected="true" data-p="day">Today</button><button role="tab" aria-selected="false" data-p="week">This week</button>
+      </div>
+    </div>
+    <div class="snap-row" id="snaps"></div>
+  </section>
+
+  <section class="mine" id="mine" hidden aria-label="Your watchlist and paper portfolio"></section>
+
+  <nav class="tabs" id="tabs" aria-label="Index"></nav>
+
+  <section id="index-view" aria-live="polite"></section>
+
+  <section>
+    <div class="section-head">
+      <h2>Buy ideas</h2>
+      <p>Strong momentum that analysts also rate a buy, with at least 10% to their average price target.</p>
+    </div>
+    <div class="cards" id="ideas"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Sell ideas</h2>
+      <p>Falling stocks trading below their 50-day average that analysts rate Hold or worse, or that sit above their average price target.</p>
+    </div>
+    <div class="cards" id="sells"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Stocks to watch this week</h2>
+      <p>Earnings reports in the next 7 days, breakouts to new highs, and last week's biggest movers.</p>
+    </div>
+    <div class="watch" id="watch"></div>
+  </section>
+
+  <section class="method">
+    <h2>How the ranking works</h2>
+    <ul id="method"></ul>
+    <p class="disclaimer"><strong>Not financial advice.</strong> This site is generated automatically from public market data for information only. Data can be delayed or wrong, and past performance does not predict future returns. Do your own research or talk to a licensed advisor before investing.</p>
+  </section>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance. Index member lists: Wikipedia, Nikkei Inc. and exchange listings.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="app.js?v=__V__"></script>
+<script src="home.js?v=__V__"></script>
+</body>
+</html>

@@ -43,7 +43,7 @@
         <span class="muted">${adv} stocks up, ${dec} down${pa != null ? `, ${pa}% above their 200-day average` : ""}. Week ${pct(i.chg1w)}, year to date ${pct(i.ytd)}.</span></li>`;
     });
     section("Markets", `<p class="brief-lead">${mood}: ${up} of ${moved.length} indexes closed higher. ${esc(name(best))} led with ${pct(best.chg1d, 2)}${worst !== best ? ` and ${esc(name(worst))} lagged with ${pct(worst.chg1d, 2)}` : ""}.</p><ul class="brief-list">${lines.join("")}</ul>`,
-      `<a href="./">See the markets</a> · <a href="heatmap.html">Heatmap</a>`);
+      `<a href="markets.html">See the markets</a> · <a href="heatmap.html">Heatmap</a>`);
   }
 
   // ---- sectors (all markets together, weighted by size)
