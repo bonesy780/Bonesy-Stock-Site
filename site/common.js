@@ -3,7 +3,8 @@
 (function () {
   // [href, label, other file names that count as this page, menu group]
   const PAGES = [
-    ["./", "Markets", ["index.html", ""]],
+    ["./", "News", ["index.html", "", "news.html"]],
+    ["markets.html", "Markets"],
     ["stock.html", "Stock Lookup"],
     ["watchlist.html", "Watchlists"],
     ["portfolio.html", "Paper Trading"],
@@ -21,7 +22,6 @@
     ["options.html", "Options", null, "Tools"],
     ["alerts.html", "Alerts", null, "Tools"],
     ["tools.html", "Calculators", null, "Tools"],
-    ["news.html", "News"],
     ["ask.html", "Ask"],
   ];
 

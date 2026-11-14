@@ -95,7 +95,7 @@
     }
     UI.table($("table"), cols, rows, sort, {
       cls: "wl-table",
-      empty: `This list is empty. Search above to add a stock, or tap the ☆ beside any stock on the <a href="./">Markets</a> or <a href="stock.html">Stock Lookup</a> pages.`,
+      empty: `This list is empty. Search above to add a stock, or tap the ☆ beside any stock on the <a href="markets.html">Markets</a> or <a href="stock.html">Stock Lookup</a> pages.`,
       onSort: (s) => store.set("watchSort", s),
     });
     $("note").textContent = rows.length ? "Tap a column heading to sort. Tap it again to flip the order." : "";

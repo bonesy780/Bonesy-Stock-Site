@@ -5,11 +5,11 @@
   const { esc, store } = window.UI;
   const $ = (id) => document.getElementById(id);
   const PAGE_NAMES = {
-    "./": "Markets", "stock.html": "Stock Lookup", "watchlist.html": "Watchlists", "portfolio.html": "Paper Trading",
+    "markets.html": "Markets", "stock.html": "Stock Lookup", "watchlist.html": "Watchlists", "portfolio.html": "Paper Trading",
     "screener.html": "Screener", "movers.html": "Movers", "brief.html": "Daily Brief", "heatmap.html": "Heatmap",
     "signals.html": "Signals", "analysts.html": "Analysts", "dividends.html": "Dividends", "earnings.html": "Earnings",
     "calendar.html": "Calendar", "compare.html": "Compare", "backtest.html": "Backtest", "options.html": "Options",
-    "alerts.html": "Alerts", "tools.html": "Calculators", "news.html": "News",
+    "alerts.html": "Alerts", "tools.html": "Calculators", "./": "News",
   };
   const STARTERS = ["overview", "52week", "analyst", "schedule", "news", "ranking"];
   const HKEY = "askChat";
