@@ -1,4 +1,4 @@
-"""Build the real estate section's data: site/re/data.json, site/re/hist.json,
+"""Build the real estate section's data: site/re/data.json, site/re/hist.json, site/re/hist/,
 site/re/listings.json and site/re/news.json.
 
 Every source is free to use with credit:
@@ -714,12 +714,18 @@ def main():
         "markets": us + ca + mx, "errors": errors,
     }
     (OUT / "data.json").write_text(json.dumps(data, separators=(",", ":"), ensure_ascii=False))
+    # History: national series in hist.json, and one small file per market in hist/ (loaded only when charted)
     hist = {
-        "markets": {**us_hist, **ca_hist},
         "rates": {"us30": thin(us30), "us15": thin(us15), "ca5": thin(ca5), "caPolicy": thin(capol), "mxRate": thin(mxpol)},
         "bis": {c: thin(s) for c, s in bis.items()}, "bisReal": {c: thin(s) for c, s in bisr.items()},
     }
     (OUT / "hist.json").write_text(json.dumps(hist, separators=(",", ":")))
+    hdir = OUT / "hist"
+    hdir.mkdir(exist_ok=True)
+    for old in hdir.glob("*.json"):
+        old.unlink()
+    for mid, h in {**us_hist, **ca_hist}.items():
+        (hdir / f"{mid}.json").write_text(json.dumps(h, separators=(",", ":")))
     (OUT / "listings.json").write_text(json.dumps(listings, separators=(",", ":"), ensure_ascii=False))
     (OUT / "news.json").write_text(json.dumps({"updated": NOW.isoformat(timespec="seconds"), "news": safe("news", news, {})},
                                               separators=(",", ":"), ensure_ascii=False))

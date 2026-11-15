@@ -41,6 +41,10 @@ jobs:
         run: python scripts/build_market.py || echo "::warning::market facts step failed, tool pages may be stale"
       - name: Gather which analyst firms rate each stock
         run: python scripts/build_ratings.py || echo "::warning::analyst history step failed, stock pages will skip it"
+      - name: Gather housing market data and listings for the real estate pages
+        env:
+          RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
+        run: python scripts/build_realestate.py || echo "::warning::real estate step failed, real estate pages may be stale"
       - name: Give the live service the Ask page's notes
         run: cp site/ask-kb.json worker/ask-kb.json
       - name: Deploy the live price service
@@ -79,12 +83,13 @@ jobs:
             echo "::notice::No live price service set up yet, so the site shows the saved prices. See README."
           fi
       - name: Bust browser cache for CSS and JS
-        run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html
-      - name: Save refreshed member lists
+        run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html site/re/*.html
+      - name: Save refreshed member lists and this week's listings
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/constituents
+          [ -f data/realestate/listings.json ] && git add data/realestate/listings.json
           git diff --cached --quiet && exit 0
           git commit -m "Refresh index member lists"
           # main may have moved during the build; rebase and retry, and never hold up the deploy.

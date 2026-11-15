@@ -122,8 +122,8 @@
 
   if (m.c === "MX") return;
   let H;
-  try { H = await RE.load("hist.json"); } catch { document.getElementById("chart").innerHTML = `<div class="empty">No history yet.</div>`; return; }
-  const hs = (H.markets || {})[m.id] || {};
+  let hs;
+  try { [H, hs] = await Promise.all([RE.load("hist.json"), RE.load(`hist/${m.id}.json`)]); } catch { document.getElementById("chart").innerHTML = `<div class="empty">No history yet.</div>`; return; }
   const st = { range: 10, what: m.c === "CA" ? "idx" : "v" };
   const WHAT = m.c === "US" ? [["v", "Home value"], ["rent", "Rent"], ["inv", "For sale"], ["dtp", "Days to pending"], ["rate", "Mortgage rate"]]
     : [["idx", "Price index"], ["rent", "Rent"], ["rate", "Mortgage rate"]];

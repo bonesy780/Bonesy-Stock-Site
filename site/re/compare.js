@@ -2,7 +2,7 @@
 (async function () {
   const { esc, short, money, pct, fixed, int, marketUrl, place, chart, since, rebase, store, picker, COUNTRY, FLAG } = RE;
   let D, H;
-  try { [D, H] = await Promise.all([RE.data(), RE.load("hist.json")]); } catch {
+  try { D = await RE.data(); } catch {
     document.getElementById("c-chart").innerHTML = `<div class="empty">The real estate data hasn't been built yet.</div>`; return;
   }
   const COLORS = ["var(--cmp-1)", "var(--cmp-2)", "var(--cmp-3)", "var(--cmp-4)", "var(--cmp-5)"];
@@ -10,9 +10,11 @@
   let ids = fromUrl.length ? fromUrl : store.get("re-compare", ["us", "us-new-york-ny", "ca-toronto", "us-austin-tx"]).filter((id) => D.byId[id]);
   if (!ids.length) ids = ["us", "ca"].filter((id) => D.byId[id]);
   const st = { range: 10 };
-  const series = (m) => { const h = (H.markets || {})[m.id] || {}; return m.c === "CA" ? h.idx : h.v; };
-  function draw() {
+  const hists = {};
+  const series = (m) => { const h = hists[m.id] || {}; return m.c === "CA" ? h.idx : h.v; };
+  async function draw() {
     ids = ids.slice(0, 5);
+    await Promise.all(ids.map(async (id) => { hists[id] ||= await RE.load(`hist/${id}.json`).catch(() => ({})); }));
     store.set("re-compare", ids);
     history.replaceState(null, "", "?m=" + ids.map(encodeURIComponent).join(","));
     document.getElementById("picked").innerHTML = ids.map((id, i) => { const m = D.byId[id];

@@ -543,5 +543,67 @@
    "bug"
   ],
   "answer": "Common reasons: the build runs once a day, so most figures are as of the last close; some exchanges reach Yahoo up to 20 minutes late; past prices are adjusted for splits but not dividends; a broker may use another data provider or count trades from other venues; and market caps are converted to US dollars at the build day's rate. Yahoo's own data can also have gaps or errors. If a number looks wrong, mention it and it can be checked against Yahoo directly."
+ },
+ {
+  "id": "realestate",
+  "title": "Where does the real estate data come from?",
+  "page": "re/",
+  "keys": [
+   "real",
+   "estate",
+   "housing",
+   "house",
+   "home",
+   "homes",
+   "zillow",
+   "zhvi",
+   "zori",
+   "rent",
+   "rents",
+   "cmhc",
+   "statcan",
+   "shf",
+   "mexico",
+   "canada",
+   "property",
+   "mortgage"
+  ],
+  "answer": "The real estate pages use free public statistics. US metro areas: Zillow Research's monthly CSVs (typical home value, rent, homes for sale, new listings, days to pending, price cuts, sale-to-list ratio, market heat and Zillow's 12-month forecast). Canada: Statistics Canada's New Housing Price Index by city (new homes only, because the CREA MLS resale index is licensed) and CMHC's average two-bedroom rent, plus the Bank of Canada's 5-year mortgage rate. Mexico: Sociedad Hipotecaria Federal's quarterly prices by state, entered by hand because SHF only publishes PDF and Excel. FRED supplies US mortgage rates, exchange rates and the BIS house price index for all three countries. The build runs with the stock data."
+ },
+ {
+  "id": "realestate-listings",
+  "title": "Are the home listings real?",
+  "page": "re/listings.html",
+  "keys": [
+   "listing",
+   "listings",
+   "sale",
+   "mls",
+   "realtor",
+   "sample",
+   "fake",
+   "rentcast",
+   "active"
+  ],
+  "answer": "Real US listings appear when the repo has a RentCast API key (secret RENTCAST_API_KEY). Its free plan allows 50 requests a month, so 10 big US cities are fetched once a week. Everywhere else, and in the US without a key, the page shows homes marked Sample, made up from each market's typical price to show how the page works. MLS, REALTOR.ca and Mexican portal listings are licensed, so the page links to those sites instead of copying them."
+ },
+ {
+  "id": "realestate-score",
+  "title": "How are buyer's and seller's markets worked out?",
+  "page": "re/",
+  "keys": [
+   "buyer",
+   "buyers",
+   "seller",
+   "sellers",
+   "score",
+   "balanced",
+   "upper",
+   "hand",
+   "buy",
+   "ideas",
+   "watch"
+  ],
+  "answer": "Each US metro gets a score from -100 (buyer's market) to +100 (seller's market): the average of Zillow's heat index, the sale-to-list ratio, the share of listings with a price cut, days to pending, the change in homes for sale on a year ago and the 3-month price trend, each scaled to -1..1. Buy ideas among the 100 biggest metros favour a buyer's market (40%), a good gross rent yield (30%), Zillow's forecast (20%) and prices below their peak (10%). Markets to watch are those whose last 3 months differ most from the past year's pace, or whose supply jumped. These are rules, not advice."
  }
 ]
