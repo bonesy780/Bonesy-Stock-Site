@@ -9,7 +9,7 @@
     "screener.html": "Screener", "movers.html": "Movers", "brief.html": "Daily Brief", "heatmap.html": "Heatmap",
     "signals.html": "Signals", "analysts.html": "Analysts", "dividends.html": "Dividends", "earnings.html": "Earnings",
     "calendar.html": "Calendar", "compare.html": "Compare", "backtest.html": "Backtest", "options.html": "Options",
-    "alerts.html": "Alerts", "tools.html": "Calculators", "./": "News",
+    "alerts.html": "Alerts", "tools.html": "Calculators", "news.html": "News", "re/": "Real Estate", "re/listings.html": "Real Estate Listings",
   };
   const STARTERS = ["overview", "52week", "analyst", "schedule", "news", "ranking"];
   const HKEY = "askChat";

@@ -9,3 +9,9 @@ site/fund/
 site/trends.json
 site/ratings/
 worker/ask-kb.json
+site/re/data.json
+site/re/hist.json
+site/re/listings.json
+site/re/news.json
+re-test-output/
+site/re/hist/

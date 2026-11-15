@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TopTicker Homes · Market Lookup</title>
+<meta name="description" content="Price history, rents, supply, days to sell and who has the upper hand for one housing market.">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css?v=__V__">
+<link rel="stylesheet" href="re.css?v=__V__">
+</head>
+<body class="re">
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="../" title="Home: choose stocks or real estate"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><path d="M6 16.5 16 8l10 8.5" fill="none" stroke="#22c55e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 15v10h13V15" fill="#22c55e" fill-opacity=".85"/><rect x="14" y="19" width="4" height="6" rx=".8" fill="#0b1330"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker <span class="brand-tag">Homes</span></span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a market…" aria-label="Go to a market" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading data…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section id="view" aria-live="polite"><div class="empty">Loading…</div></section>
+</main>
+
+<footer class="wrap foot">Data: <a href="https://www.zillow.com/research/data/">Zillow Research</a>, <a href="https://www.bis.org/statistics/pp.htm">BIS</a> house prices, <a href="https://www.freddiemac.com/pmms">Freddie Mac</a>, <a href="https://fred.stlouisfed.org/">FRED</a>, <a href="https://www.statcan.gc.ca/">Statistics Canada</a> and CMHC, <a href="https://www.bankofcanada.ca/">Bank of Canada</a>, <a href="https://www.gob.mx/shf">Sociedad Hipotecaria Federal</a>. Not financial advice.</footer>
+
+<script src="re-common.js?v=__V__"></script>
+<script src="market.js?v=__V__"></script>
+</body>
+</html>
