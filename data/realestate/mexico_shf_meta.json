@@ -1,0 +1,25 @@
+{
+  "period": "2026-Q2",
+  "published": "2026-08-13",
+  "national": {"avg_price": 1960032, "q1": 843000, "median": 1299580, "q3": 2226101, "yoy": 7.31, "yoy_prev": 8.57},
+  "metros": [
+    {"name": "Guadalajara metro area", "state": "JAL", "yoy": 9.99, "yoy_prev": 12.29},
+    {"name": "Monterrey metro area", "state": "NL", "yoy": 7.55},
+    {"name": "Mexico City metro area (Valle de México)", "state": "CDMX", "yoy": 4.21}
+  ],
+  "municipalities": [
+    {"name": "Reynosa, Tamaulipas", "yoy": 13.51, "rank": 1},
+    {"name": "Matamoros, Tamaulipas", "yoy": 12.72, "rank": 2},
+    {"name": "Huejotzingo, Puebla", "yoy": 10.61, "rank": 3},
+    {"name": "Tlajomulco de Zúñiga, Jalisco", "yoy": 10.46, "rank": 4},
+    {"name": "Kanasín, Yucatán", "yoy": 10.26, "rank": 5},
+    {"name": "Solidaridad (Playa del Carmen), Quintana Roo", "yoy": 9.96, "rank": 6},
+    {"name": "Aguascalientes, Aguascalientes", "yoy": 9.92, "rank": 7},
+    {"name": "San Pedro Tlaquepaque, Jalisco", "yoy": 9.87, "rank": 8},
+    {"name": "Benito Juárez (Cancún), Quintana Roo", "yoy": 9.69, "rank": 9},
+    {"name": "Guadalajara, Jalisco", "yoy": 9.64, "rank": 10}
+  ],
+  "source": "Sociedad Hipotecaria Federal (SHF) house price index, 2nd quarter 2026 (preliminary), as summarized by IIEG Jalisco",
+  "source_url": "https://iieg.gob.mx/ns/wp-content/uploads/2026/08/reporte_indice_precios_vivienda_mexico_2doT_2026.pdf",
+  "note": "SHF publishes once a quarter as PDF and Excel tables, so this file is updated by hand. Average and quartile prices are in Mexican pesos for homes with a mortgage appraisal."
+}
