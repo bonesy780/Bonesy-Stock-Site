@@ -75,9 +75,30 @@
   q.addEventListener("blur", () => { matches = []; showResults(); });
 
   // ---- quote and chart
-  const RANGES = [["1D", 1], ["5D", 5], ["1M", 30], ["3M", 91], ["6M", 182], ["YTD", "ytd"], ["1Y", 365], ["5Y", 1826], ["All", 0]];
+  const RANGES = [["1D", 1], ["5D", 5], ["1M", 30], ["3M", 91], ["6M", 182], ["YTD", "ytd"], ["1Y", 365], ["5Y", 1826], ["All", 0], ["Custom", "custom"]];
   let current = null, hist = null;
   let range = (() => { try { return localStorage.getItem("lookupRange"); } catch { return null; } })() || "1Y";
+  if (!RANGES.some((x) => x[0] === range)) range = "1Y";
+  // The reader's own start and end dates for the Custom range, as YYYY-MM-DD (empty means not chosen yet)
+  let custom = (() => {
+    try { const v = JSON.parse(localStorage.getItem("lookupCustom")); if (v && typeof v.from === "string" && typeof v.to === "string") return v; } catch {}
+    return { from: "", to: "" };
+  })();
+  const isoDay = (ts) => new Date(ts * 1000).toISOString().slice(0, 10);
+  const dayTs = (iso) => { const t = Date.parse(iso + "T00:00:00Z"); return isNaN(t) ? null : t / 1000; };
+  const shortDate = (iso, withYear = true) => new Date(iso + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" });
+  // The custom window clamped to the history on hand: [from, to] as YYYY-MM-DD, earliest first
+  function customSpan() {
+    const d = hist && hist.d;
+    if (!d || !d.length) return null;
+    const first = isoDay(d[0][0]), last = isoDay(d[d.length - 1][0]);
+    let from = custom.from || isoDay(d[d.length - 1][0] - 365 * 86400), to = custom.to || last;
+    if (from > to) [from, to] = [to, from];
+    if (from < first) from = first;
+    if (to > last) to = last;
+    if (from > to) from = to;
+    return { from, to, first, last };
+  }
 
   // ---- technical indicators, worked out in the browser from the closing prices
   function sma(c, n) {
@@ -361,19 +382,30 @@
       const all = d.slice(dailyFrom(d));
       return done(all, Math.max(0, all.length - (range === "1D" ? 2 : 6)), null, { unit: "daily" });
     }
-    const end = d[d.length - 1][0];
+    let end = d[d.length - 1][0];
     const r = RANGES.find((x) => x[0] === range)[1];
-    let from = 0;
-    if (r === "ytd") from = Date.UTC(new Date(end * 1000).getUTCFullYear(), 0, 1) / 1000;
+    let from = 0, src = d;
+    if (r === "custom") {
+      // A window the reader picked: bars after the end date are dropped before anything
+      // else, so the line, indicators and change all stop on that day
+      const c = customSpan();
+      from = dayTs(c.from);
+      const to = dayTs(c.to) + DAY - 1;
+      src = d.filter((p) => p[0] <= to);
+      end = src[src.length - 1][0];
+    } else if (r === "ytd") from = Date.UTC(new Date(end * 1000).getUTCFullYear(), 0, 1) / 1000;
     else if (r) from = end - r * DAY;
-    const df = dailyFrom(d);
+    const df = Math.min(dailyFrom(d), src.length - 1);
     let all, unit;
-    if (df === 0 || from >= d[df][0] - 5 * DAY) { all = d.slice(df); unit = "daily"; }
-    else if (end - Math.max(from, d[0][0]) <= 6.5 * 365 * DAY) { all = bucket(d, weekOf); unit = "weekly"; }
-    else { all = bucket(d, monthOf); unit = "monthly"; }
-    const idx = all.findIndex((p) => p[0] >= from);
+    if (df === 0 || from >= src[df][0] - 5 * DAY) { all = src.slice(df); unit = "daily"; }
+    else if (end - Math.max(from, src[0][0]) <= 6.5 * 365 * DAY) { all = bucket(src, weekOf); unit = "weekly"; }
+    else { all = bucket(src, monthOf); unit = "monthly"; }
+    let idx = all.findIndex((p) => p[0] >= from);
+    if (idx < 0) idx = all.length - 1;
+    // A custom window of a single day still needs a line, so reach back one more bar
+    if (r === "custom" && idx === all.length - 1 && idx > 0) idx--;
     // start from the last close before the window so the change matches the usual definition
-    return done(all, idx > 0 ? idx - 1 : 0, null, { unit });
+    return done(all, idx > 0 ? idx - 1 : 0, null, { unit, from, end });
   }
 
   function renderQuote() {
@@ -408,6 +440,7 @@
       }).filter(Boolean);
       return cells.length ? `<div class="stats quote-stats returns-row"><div class="stat ret-head"><div class="label">Returns</div><div class="value tk">price only</div></div>${cells.join("")}</div>` : "";
     };
+    const cs = range === "Custom" ? customSpan() : null;
     const S = series(), { pts, base } = S;
     lastS = S;
     const last = pts[pts.length - 1][1];
@@ -427,6 +460,11 @@
         ${head}
         <div class="ranges" role="tablist" aria-label="Chart range">${RANGES.map(([r]) =>
           `<button class="tab" role="tab" aria-selected="${r === range}" data-r="${r}">${r}</button>`).join("")}</div>
+        ${range === "Custom" && cs ? `<div class="custom-range" role="group" aria-label="Custom date range">
+          <label>From <input class="field" type="date" id="cr-from" value="${cs.from}" min="${cs.first}" max="${cs.last}"></label>
+          <label>To <input class="field" type="date" id="cr-to" value="${cs.to}" min="${cs.first}" max="${cs.last}"></label>
+          <span class="custom-presets">${[["Since 2020", "2020-01-01"], ["Last 2Y", 730], ["Last 10Y", 3652]].map(([l, v]) => `<button class="chip" data-p="${v}">${l}</button>`).join("")}</span>
+        </div>` : ""}
         <div class="ind-bar cmp-bar" role="group" aria-label="Compare with a market index">
           <span class="ind-group">Compare</span>
           ${COMPARE.filter((c) => c.t !== s.t).map((c) => `<button class="chip" aria-pressed="${compare.has(c.t)}" data-c="${esc(c.t)}" title="Overlay the ${esc(c.label)} as % change from the start of the chart"><i class="sw" style="--c:var(${c.color})"></i>${esc(c.label)}</button>`).join("")}
@@ -461,14 +499,39 @@
       explainOpen = e.target.open;
       try { localStorage.setItem("lookupExplain", explainOpen ? "1" : "0"); } catch {}
     });
-    $("qp").innerHTML = `<div class="value num big">${s.index ? plain(last, s.cur) : money(last, s.cur)}</div><div>${pct(chg)} <span class="tk">${range === "All" ? "all time" : range}</span></div>${afterHours(s)}`;
+    $("qp").innerHTML = `<div class="value num big">${s.index ? plain(last, s.cur) : money(last, s.cur)}</div><div>${pct(chg)} <span class="tk">${range === "All" ? "all time" : cs ? (cs.from === cs.to ? shortDate(cs.to) : `${shortDate(cs.from, cs.from.slice(0, 4) !== cs.to.slice(0, 4))} – ${shortDate(cs.to)}`) : range}</span></div>${afterHours(s)}`;
     $("quote").querySelector(".ranges").addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b) return;
       range = b.dataset.r;
       try { localStorage.setItem("lookupRange", range); } catch {}
       renderQuote();
+      if (range === "Custom" && $("cr-from")) $("cr-from").focus();
     });
+    const cr = $("quote").querySelector(".custom-range");
+    if (cr) {
+      const setCustom = (from, to, focusSel) => {
+        custom = { from, to };
+        try { localStorage.setItem("lookupCustom", JSON.stringify(custom)); } catch {}
+        renderQuote();
+        const again = focusSel && $("quote").querySelector(focusSel);
+        if (again) again.focus();
+      };
+      cr.addEventListener("change", (e) => {
+        let f = $("cr-from").value, t = $("cr-to").value;
+        if (!f || !t) return; // half-typed date: wait for the rest
+        // Moving one end past the other drags the other end along with it
+        if (f > t) { if (e.target.id === "cr-from") t = f; else f = t; }
+        setCustom(f, t, "#" + e.target.id);
+      });
+      cr.querySelector(".custom-presets").addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        const v = b.dataset.p;
+        const from = /^\d{4}-/.test(v) ? v : isoDay(dayTs(cs.last) - Number(v) * DAY);
+        setCustom(from, cs.last, `.custom-presets [data-p="${v}"]`);
+      });
+    }
     $("quote").querySelector(".cmp-bar").addEventListener("click", (e) => {
       const b = e.target.closest("button");
       if (!b) return;
@@ -624,6 +687,11 @@
       if (range === "1D") return dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
       if (range === "5D") return dt.toLocaleDateString(undefined, { weekday: "short" });
       if (["1M", "3M", "6M", "YTD", "1Y"].includes(range)) return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      if (range === "Custom") {
+        const days = (S.end - Math.max(S.from, pts[0][0])) / DAY;
+        if (days <= 14) return dt.toLocaleDateString(undefined, { weekday: "short", day: "numeric" });
+        if (days <= 400) return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      }
       return dt.toLocaleDateString(undefined, { month: "short", year: "numeric" });
     };
     const nLabels = Math.min(pts.length, Math.max(2, Math.floor((W - pad.r) / 120)));
