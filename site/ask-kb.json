@@ -419,6 +419,28 @@
   "answer": "Market news comes from Yahoo Finance's headlines for each index and its biggest companies, topped up with Google News search results, keeping stories from the last 7 days. 'Top stories' takes the 10 newest stories from each of 10 outlets: their own RSS feeds for the Wall Street Journal, Financial Times, Bloomberg, CNBC, MarketWatch, The Economist, Forbes and Investing.com, and Google News limited to the outlet's site for Reuters and Yahoo Finance, which have no public feed. Stories marked 'Subscription' may need a paid account to read."
  },
  {
+  "id": "daily-news",
+  "title": "Where does the Daily News page get its stories?",
+  "page": "daily/",
+  "keys": [
+   "daily",
+   "world",
+   "headlines",
+   "morning",
+   "outlets",
+   "cnn",
+   "espn",
+   "cbc",
+   "province",
+   "state",
+   "genre",
+   "briefing",
+   "big stories",
+   "local"
+  ],
+  "answer": "The Daily News page gathers the past 48 hours of headlines every 15 minutes from about 90 outlets' public RSS feeds, including Yahoo, CNBC, Bloomberg, Forbes, Front Office Sports, Benzinga, the BBC, NPR, CBC (with its provincial feeds), Global News and The Globe and Mail. Outlets without a working public feed (CNN, ESPN, The Action Network, Sports Business Journal, AP, Reuters, Politico, CTV, National Post, Toronto Star, TSN) are filled from Google News results limited to their site, searched about once an hour. Local stories for every US state and Canadian province come from Google News searches every two hours, kept only when the headline names the place. Only the headline, a short summary and a picture are shown, linking to the publisher. Genres come from the outlet's section plus words in the headline, and 'Everyone's talking about' groups headlines from three or more outlets that share most of their words."
+ },
+ {
   "id": "brief",
   "title": "Who writes the daily brief?",
   "page": "brief.html",
