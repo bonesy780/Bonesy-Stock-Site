@@ -2,9 +2,19 @@ name: Update data and deploy
 
 on:
   schedule:
+    # Times are UTC. The two full refreshes rebuild everything (about 20 minutes):
     - cron: "30 22 * * 1-5"   # weekdays after the US close
     - cron: "0 12 * * 0"      # Sunday refresh for the week-ahead watchlist
+    # Quick refresh every 15 minutes (a couple of minutes each): stock news, housing news, and prices while
+    # Asian or North American markets are open. Off the hour, when GitHub's scheduler is least busy.
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "full rebuilds everything; quick refreshes news (and prices in market hours)"
+        type: choice
+        options: [full, quick]
+        default: full
   push:
     branches: [main]
     paths: ["site/**", "scripts/**", "worker/**", ".github/workflows/**"]
@@ -14,6 +24,8 @@ permissions:
   pages: write
   id-token: write
 
+# One run at a time, so two runs never fetch RentCast listings or save data together. A run that starts while
+# another is going waits; if a third arrives, the older waiting one is dropped (the newer one covers it).
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -21,6 +33,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 50
     env:
       CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -32,16 +45,72 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - run: python scripts/build_data.py
+      - name: Fingerprint the build scripts
+        id: code
+        run: echo "hash=${{ hashFiles('scripts/**', 'requirements.txt', '.github/workflows/update.yml') }}" >> "$GITHUB_OUTPUT"
+      - name: Bring back the data the last run built
+        # Built data is not in the repo, so a quick run starts from what the last run saved here and only
+        # refreshes the fast-changing parts. A full run starts from it too, so a step that fails keeps the old data.
+        id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .data-cache
+          key: site-data-v1-${{ steps.code.outputs.hash }}-${{ github.run_id }}
+          restore-keys: |
+            site-data-v1-${{ steps.code.outputs.hash }}-
+            site-data-v1-
+      - name: Decide how much to rebuild
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          ASKED: ${{ inputs.mode }}
+          MATCHED: ${{ steps.restore.outputs.cache-matched-key }}
+          CODE: ${{ steps.code.outputs.hash }}
+        run: |
+          [ -f .data-cache/site.tar ] && tar -xf .data-cache/site.tar
+          last=$(cat .data-cache/last-full 2>/dev/null || echo 0)
+          full=true
+          if [ "$EVENT" = schedule ] && [ "$SCHEDULE" != "30 22 * * 1-5" ] && [ "$SCHEDULE" != "0 12 * * 0" ] || [ "$ASKED" = quick ]; then
+            # A quick run still does everything when the saved data is from older scripts (a change was merged
+            # but its full run was dropped) or when no full refresh has finished in 26 hours.
+            if [[ "$MATCHED" != "site-data-v1-$CODE-"* ]]; then echo "Saved data is from older scripts, doing a full run"
+            elif [ $(( $(date -u +%s) - last )) -gt 93600 ]; then echo "No full refresh in 26 hours, doing a full run"
+            else full=false
+            fi
+          fi
+          # Prices in quick runs while markets are open, Monday to Friday (UTC): Tokyo, Seoul and Taipei
+          # 00:00 to 07:15, Toronto and New York 13:15 to 21:15 (covers both summer and winter time).
+          hm=$((10#$(date -u +%H%M)))
+          prices=false
+          if [ "$full" = false ] && [ "$(date -u +%u)" -le 5 ] && { [ $hm -le 715 ] || { [ $hm -ge 1315 ] && [ $hm -le 2115 ]; }; }; then
+            prices=true
+          fi
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+          echo "prices=$prices" >> "$GITHUB_OUTPUT"
+          echo "Full rebuild: $full. Price refresh: $prices."
+      - name: Gather prices and rank the top stocks
+        if: steps.mode.outputs.full == 'true' || steps.mode.outputs.prices == 'true'
+        env:
+          FAST: ${{ steps.mode.outputs.full == 'true' && '0' || '1' }}
+        # A quick price refresh that fails keeps the last prices; a full run that fails stops here as before
+        run: python scripts/build_data.py || { [ "$FAST" = 1 ] && echo "::warning::price refresh failed, keeping the last prices"; }
       - name: Gather market news
         run: python scripts/build_news.py || echo "::warning::news step failed, deploying without fresh news"
+      - name: Gather housing news
+        if: steps.mode.outputs.full != 'true'
+        run: python scripts/build_realestate.py --news-only || echo "::warning::housing news step failed, keeping the last headlines"
       - name: Save price history for the stock lookup page
+        if: steps.mode.outputs.full == 'true'
         run: python scripts/build_history.py || echo "::warning::history step failed, stock lookup may be stale"
       - name: Gather facts on every stock for the screener, watchlists and other tools
+        if: steps.mode.outputs.full == 'true'
         run: python scripts/build_market.py || echo "::warning::market facts step failed, tool pages may be stale"
       - name: Gather which analyst firms rate each stock
+        if: steps.mode.outputs.full == 'true'
         run: python scripts/build_ratings.py || echo "::warning::analyst history step failed, stock pages will skip it"
       - name: Use the latest saved listings and RentCast request log from main
+        if: steps.mode.outputs.full == 'true'
         # This run may have checked out an older commit than main (runs queue one after another), so take
         # the newest log, or a second run could fetch again before the first run's log reached it.
         run: |
@@ -50,6 +119,7 @@ jobs:
             git show "origin/main:data/realestate/$f" > "/tmp/$f" 2>/dev/null && mv "/tmp/$f" "data/realestate/$f" || true
           done
       - name: Gather housing market data and listings for the real estate pages
+        if: steps.mode.outputs.full == 'true'
         env:
           RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
@@ -58,7 +128,7 @@ jobs:
         run: cp site/ask-kb.json worker/ask-kb.json
       - name: Deploy the live price service
         id: worker
-        if: env.CF_TOKEN != '' && env.CF_ACCOUNT != ''
+        if: steps.mode.outputs.full == 'true' && env.CF_TOKEN != '' && env.CF_ACCOUNT != ''
         continue-on-error: true
         uses: cloudflare/wrangler-action@v3
         with:
@@ -91,6 +161,16 @@ jobs:
           else
             echo "::notice::No live price service set up yet, so the site shows the saved prices. See README."
           fi
+      - name: Keep this run's data for the next run
+        run: |
+          mkdir -p .data-cache
+          git ls-files -z --others --ignored --exclude-standard site | tar --null -cf .data-cache/site.tar -T -
+          [ "${{ steps.mode.outputs.full }}" = true ] && date -u +%s > .data-cache/last-full
+          du -sh .data-cache
+      - uses: actions/cache/save@v4
+        with:
+          path: .data-cache
+          key: site-data-v1-${{ steps.code.outputs.hash }}-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Bust browser cache for CSS and JS
         run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html site/re/*.html
       - name: Save refreshed member lists and this week's listings

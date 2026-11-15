@@ -14,7 +14,7 @@
    "general",
    "everything"
   ],
-  "answer": "Almost all prices and company facts come from Yahoo Finance, read through yfinance, a free Python library. A GitHub Actions job rebuilds the data every weekday after the US close (22:30 UTC) and on Sundays at 12:00 UTC, then publishes the site to GitHub Pages. Index member lists come from Wikipedia, stockanalysis.com, Nikkei's own site and the Yahoo screener. News comes from Yahoo Finance, Google News and each outlet's RSS feed. Live prices during the day come from a small Cloudflare Worker that asks Yahoo for quotes."
+  "answer": "Almost all prices and company facts come from Yahoo Finance, read through yfinance, a free Python library. A GitHub Actions job rebuilds all the data every weekday after the US close (22:30 UTC) and on Sundays at 12:00 UTC, then publishes the site to GitHub Pages. In between, every 15 minutes it refreshes the stock and housing news, and while Asian or North American markets are open it also refreshes prices and the top 10 rankings (the screener, dividends, movers and price history pages stay on the last full rebuild). Index member lists come from Wikipedia, stockanalysis.com, Nikkei's own site and the Yahoo screener. News comes from Yahoo Finance, Google News and each outlet's RSS feed. Live prices during the day come from a small Cloudflare Worker that asks Yahoo for quotes."
  },
  {
   "id": "schedule",

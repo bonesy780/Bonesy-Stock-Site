@@ -1353,5 +1353,22 @@ def main():
     log(f"Wrote {len(data['markets'])} markets, {len(listings['items'])} listings; failed parts: {errors or 'none'}")
 
 
+def news_only():
+    """Refresh just the housing headlines (the workflow does this every 15 minutes between full runs), using the
+    markets from the last full build. Keeps the old file if the news searches all fail."""
+    try:
+        data = json.loads((OUT / "data.json").read_text())
+    except (OSError, ValueError):
+        data = {}
+    ms = data.get("markets") or []
+    nw = news(*([m for m in ms if m.get("c") == c] for c in ("US", "CA", "MX")))
+    if not any(nw.get("items", {}).values()):
+        log("news: nothing came back, keeping the saved headlines")
+        return
+    (OUT / "news.json").write_text(json.dumps({"updated": NOW.isoformat(timespec="seconds"), "news": nw["items"],
+                                               "markets": nw["markets"], "topics": list(TOPICS)},
+                                              separators=(",", ":"), ensure_ascii=False))
+
+
 if __name__ == "__main__":
-    main()
+    news_only() if "--news-only" in sys.argv else main()
