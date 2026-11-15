@@ -17,7 +17,7 @@ The stock side is a static website showing the top 10 stocks in the S&P 500, Nas
 - `calendar.html` shows upcoming earnings reports and ex-dividend dates by week, filterable by market or your watchlists.
 - `tools.html` holds calculators: position size from risk, profit and loss, average cost, dividend income with reinvesting, compound growth, TFSA versus RRSP, retirement savings and income, margin and margin-call price, recovering from a loss, options payoff and currency conversion.
 - `ask.html` ("Ask me") answers questions about how the site gets its data. Its notes are in `site/ask-kb.json`, one entry per topic, written from the build scripts; update them when a data source or formula changes. Without an Anthropic API key the page matches the question to the closest note. With one, the live price service's `/ask` route passes the question and the notes to Claude, which answers in its own words (see below).
-- `.github/workflows/update.yml` rebuilds the data every weekday after the US close and on Sundays, then deploys to GitHub Pages.
+- `.github/workflows/update.yml` rebuilds all the data every weekday after the US close and on Sundays, then deploys to GitHub Pages. Every 15 minutes in between, a quick run (a couple of minutes) refreshes stock and housing news, plus prices and the top 10 rankings while Asian or North American markets are open (`FAST=1 python scripts/build_data.py`, which reuses saved market caps, analyst data and dividends). Built data is kept between runs in the Actions cache, and a quick run turns into a full one when the build scripts changed or no full rebuild finished in 26 hours. Runs never overlap, and RentCast is only called by full runs, within its own weekly limit.
 
 ## Real estate
 

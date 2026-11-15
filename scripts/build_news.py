@@ -229,6 +229,9 @@ def build():
         log(f"{ix['name']}: {len(picked)} stories ({len(stories)} found)")
 
     sources = top_stories(now)
+    if OUT.exists() and not any(m["stories"] for m in markets) and not any(s["stories"] for s in sources):
+        log("no stories came back, keeping the saved news")
+        return
     OUT.write_text(json.dumps({"generated": now.isoformat(timespec="minutes"), "markets": markets, "sources": sources},
                               separators=(",", ":")))
     log(f"wrote {OUT}")

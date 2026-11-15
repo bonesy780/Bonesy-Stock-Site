@@ -8,6 +8,7 @@ from __future__ import annotations
 import io
 import json
 import math
+import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -21,6 +22,11 @@ import yfinance as yf
 ROOT = Path(__file__).resolve().parent.parent
 CONSTITUENTS = ROOT / "data" / "constituents"
 OUT = ROOT / "site" / "data.json"
+# Between full runs, the workflow refreshes prices every 15 minutes with FAST=1. A fast run reuses the member
+# lists, market caps, analyst data and dividends saved by the last run here, so it asks Yahoo for prices only
+# (a handful of batched calls) instead of over a thousand per-stock lookups.
+FAST = os.environ.get("FAST") == "1"
+SAVED = ROOT / ".data-cache" / "build_data.json"
 
 # Ranking settings
 PERF_WINDOW = "3m"          # performance used for ranking
@@ -121,7 +127,7 @@ def _from_yahoo_screen(ix):
 
 def load_constituents(ix) -> pd.DataFrame:
     cache = CONSTITUENTS / f"{ix['id']}.csv"
-    fetch = (_from_wiki if "wiki" in ix else _from_nikkei if "nikkei" in ix
+    fetch = None if FAST else (_from_wiki if "wiki" in ix else _from_nikkei if "nikkei" in ix
              else _from_yahoo_screen if "yahoo_exchange" in ix else None)
     if fetch:
         try:
@@ -216,6 +222,9 @@ def fx_rates() -> dict[str, float]:
 
 def market_caps(tickers: list[str]) -> dict[str, float]:
     """Market cap in local currency for every ticker, fetched in parallel."""
+    known = {t: _saved["caps"][t] for t in tickers if FAST and t in _saved["caps"]}
+    todo = [t for t in tickers if t not in known]
+
     def one(t):
         for attempt in range(3):
             try:
@@ -225,12 +234,18 @@ def market_caps(tickers: list[str]) -> dict[str, float]:
                 time.sleep(1 + attempt)
         return t, None
     with ThreadPoolExecutor(max_workers=12) as ex:
-        return {t: v for t, v in ex.map(one, tickers) if v}
+        return {**known, **{t: v for t, v in ex.map(one, todo) if v}}
 
 
 # ---------------------------------------------------------------- dividends
 
 _div: dict[str, dict] = {}
+_saved: dict[str, dict] = {"caps": {}, "info": {}, "div": {}}
+if FAST:
+    try:
+        _saved.update(json.loads(SAVED.read_text()))
+    except (OSError, ValueError):
+        pass
 FREQS = ((45, "Monthly", 12), (130, "Quarterly", 4), (240, "Semi-annual", 2), (400, "Annual", 1))
 
 
@@ -255,6 +270,8 @@ def dividend(t: str, price: float) -> tuple[str, dict]:
 
 
 def dividends(rows: list[dict]) -> None:
+    if FAST:
+        _div.update({r["ticker"]: _saved["div"][r["ticker"]] for r in rows if r["ticker"] in _saved["div"]})
     todo = {r["ticker"]: r["price"] for r in rows if r["ticker"] not in _div}
     with ThreadPoolExecutor(max_workers=4) as ex:
         _div.update(ex.map(lambda kv: dividend(*kv), todo.items()))
@@ -268,6 +285,8 @@ _info_cache: dict[str, dict] = {}
 def info(ticker: str) -> dict:
     if ticker in _info_cache:
         return _info_cache[ticker]
+    if FAST and ticker in _saved["info"]:
+        return _info_cache.setdefault(ticker, _saved["info"][ticker])
     data = {}
     for attempt in range(3):
         try:
@@ -425,6 +444,15 @@ def build():
     log(f"watchlist: {len(out['watchlist'])} ({', '.join(r['symbol'] for r in out['watchlist'][:5])})")
     log(f"dividends: {sum(1 for v in _div.values() if v.get('divYield'))}/{len(_div)} payers")
     log(f"wrote {OUT}")
+    # What the next fast run reuses. A fast run keeps what it was given and adds anything it had to look up.
+    keep = ("shortName", "longName", "sector", "marketCap", "recommendationMean", "numberOfAnalystOpinions",
+            "targetMeanPrice", "earningsTimestampStart", "earningsTimestamp")
+    SAVED.parent.mkdir(exist_ok=True)
+    SAVED.write_text(json.dumps({
+        "caps": {**_saved["caps"], **caps},
+        "info": {**_saved["info"], **{t: {k: v.get(k) for k in keep} for t, v in _info_cache.items() if v}},
+        "div": {**_saved["div"], **_div},
+    }, default=str))
 
 
 def clean(r: dict) -> dict:
