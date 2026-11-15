@@ -26,7 +26,8 @@
   --radius: 12px;
   --shadow: 0 1px 2px rgba(16, 24, 40, .05);
 }
-@media (prefers-color-scheme: dark) {
+/* Dark theme: follows the device setting, and is always on for phone-size screens. */
+@media (prefers-color-scheme: dark), (max-width: 640px) {
   :root {
     --bg: #0e1116;
     --surface: #161a21;
@@ -53,6 +54,7 @@
     --cmp-6: #aab4c3;
     --cmp-7: #d4a373;
     --shadow: none;
+    color-scheme: dark;
   }
 }
 
@@ -625,7 +627,7 @@ label.check { display: inline-flex; gap: 6px; align-items: center; }
 .safe.safe { background: var(--up-soft); color: var(--up); }
 .safe.risk { background: var(--down-soft); color: var(--down); }
 .safe.watch { background: color-mix(in srgb, #d99a00 18%, transparent); color: #a86f00; }
-@media (prefers-color-scheme: dark) { .safe.watch { color: #f0b84a; } }
+@media (prefers-color-scheme: dark), (max-width: 640px) { .safe.watch { color: #f0b84a; } }
 .num.strong { font-weight: 600; }
 .table-wrap .hint.pad { padding: 10px 14px; margin: 0; }
 .div-plan { padding: 18px 20px; margin: 24px 0; display: flex; flex-direction: column; gap: 12px; }
@@ -909,7 +911,7 @@ body::before {
   mask-image: linear-gradient(180deg, #000 0, #000 260px, transparent 720px);
 }
 :root { --grid: rgba(36, 86, 214, .05); }
-@media (prefers-color-scheme: dark) { :root { --grid: rgba(126, 162, 255, .05); } }
+@media (prefers-color-scheme: dark), (max-width: 640px) { :root { --grid: rgba(126, 162, 255, .05); } }
 
 /* ---- header: ticker tape, graph-paper bar and logo, the same on every page */
 .top {
