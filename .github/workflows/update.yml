@@ -41,6 +41,14 @@ jobs:
         run: python scripts/build_market.py || echo "::warning::market facts step failed, tool pages may be stale"
       - name: Gather which analyst firms rate each stock
         run: python scripts/build_ratings.py || echo "::warning::analyst history step failed, stock pages will skip it"
+      - name: Use the latest saved listings and RentCast request log from main
+        # This run may have checked out an older commit than main (runs queue one after another), so take
+        # the newest log, or a second run could fetch again before the first run's log reached it.
+        run: |
+          git fetch -q origin main
+          for f in listings.json rentcast_usage.json; do
+            git show "origin/main:data/realestate/$f" > "/tmp/$f" 2>/dev/null && mv "/tmp/$f" "data/realestate/$f" || true
+          done
       - name: Gather housing market data and listings for the real estate pages
         env:
           RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}

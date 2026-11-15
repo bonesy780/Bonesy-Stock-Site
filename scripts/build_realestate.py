@@ -675,13 +675,15 @@ TYPES = ["Single Family", "Condo", "Townhouse"]
 STREETS = ["Maple", "Oak", "Cedar", "Lakeview", "Park", "Hillside", "River", "Sunset", "Willow", "Birch", "Elm", "Harbour"]
 
 
-RENTCAST_MONTHLY_CAP = 40  # free plan allows 50 a month; stay well under so it never bills
+RENTCAST_CAP = 30         # requests in any 31 days; the free plan allows 50 per billing month, so this never bills
+RENTCAST_WINDOW = timedelta(days=31)
 
 
 def rentcast():
-    """Real US listings from RentCast, at most once a week and never more than RENTCAST_MONTHLY_CAP
-    requests in a calendar month. Every request is counted in rentcast_usage.json before it is sent,
-    whether it succeeds or not, and that file is committed back so the count survives between runs."""
+    """Real US listings from RentCast, at most once a week and never more than RENTCAST_CAP requests in any
+    31 days (a rolling window, so it holds whatever day RentCast's billing month starts). Every request is
+    logged in rentcast_usage.json before it is sent, whether it succeeds or not; the workflow refreshes that
+    file from main before this runs and commits it back after, so the log survives between runs."""
     key = os.environ.get("RENTCAST_API_KEY", "").strip()
     saved = SRC / "listings.json"
     old = json.loads(saved.read_text()) if saved.exists() else None
@@ -692,20 +694,23 @@ def rentcast():
         ledger = json.loads(ledger_file.read_text())
     except (OSError, ValueError):
         ledger = {}
-    month = NOW.strftime("%Y-%m")
-    if ledger.get("month") != month:
-        ledger = {"month": month, "used": 0, "last_try": ledger.get("last_try")}
-    last = ledger.get("last_try") or (old or {}).get("fetched")
+    reqs = list(ledger.get("requests") or [])
+    if not reqs and ledger.get("used"):  # older format: a count for the month and the last fetch time
+        reqs = [ledger.get("last_try") or NOW.isoformat(timespec="seconds")] * int(ledger.get("used"))
+    reqs = [t for t in reqs if NOW - datetime.fromisoformat(t) < RENTCAST_WINDOW]
+    ledger = {"requests": reqs, "cap": RENTCAST_CAP, "window_days": RENTCAST_WINDOW.days}
+    last = max(reqs) if reqs else (old or {}).get("fetched")
     if last and NOW - datetime.fromisoformat(last) < timedelta(days=6, hours=12):
-        log(f"  RentCast: last fetched {last}; waiting a week between fetches (used {ledger['used']}/{RENTCAST_MONTHLY_CAP} this month)")
+        log(f"  RentCast: last fetched {last}; waiting a week between fetches ({len(reqs)}/{RENTCAST_CAP} in the last 31 days)")
+        ledger_file.write_text(json.dumps(ledger))
         return old
-    if ledger["used"] + len(LISTING_CITIES) > RENTCAST_MONTHLY_CAP:
-        log(f"  RentCast: {ledger['used']} requests used this month; skipping to stay under {RENTCAST_MONTHLY_CAP}")
+    if len(reqs) + len(LISTING_CITIES) > RENTCAST_CAP:
+        log(f"  RentCast: {len(reqs)} requests in the last 31 days; skipping to stay under {RENTCAST_CAP}")
+        ledger_file.write_text(json.dumps(ledger))
         return old
-    ledger["last_try"] = NOW.isoformat(timespec="seconds")
     items = []
     for n, (city, st) in enumerate(LISTING_CITIES):
-        ledger["used"] += 1
+        ledger["requests"].append(NOW.isoformat(timespec="seconds"))
         ledger_file.write_text(json.dumps(ledger))
         r = get(f"https://api.rentcast.io/v1/listings/sale?city={quote_plus(city)}&state={st}&status=Active&limit=40",
                 tries=1, headers={"X-Api-Key": key, "Accept": "application/json"})
@@ -727,7 +732,7 @@ def rentcast():
                 "lat": x.get("latitude"), "lon": x.get("longitude"),
                 "office": (x.get("listingOffice") or {}).get("name"), "mls": x.get("mlsName"), "sample": False,
             })
-    log(f"  RentCast: {ledger['used']}/{RENTCAST_MONTHLY_CAP} requests used this month")
+    log(f"  RentCast: {len(ledger['requests'])}/{RENTCAST_CAP} requests in the last 31 days")
     if not items:
         return old
     data = {"fetched": NOW.isoformat(timespec="seconds"), "source": "RentCast", "items": items}
