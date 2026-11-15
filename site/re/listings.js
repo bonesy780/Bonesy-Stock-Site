@@ -33,7 +33,7 @@
   const card = (x) => {
     const m = x.market && D.byId[x.market];
     const typical = m && m.v;
-    const vs = typical && x.c !== "CA" ? (x.price / typical - 1) * 100 : null;
+    const vs = typical && !x.sample && x.c !== "CA" ? (x.price / typical - 1) * 100 : null;
     const q = encodeURIComponent(`${x.addr}, ${x.city}, ${x.region}${x.zip ? " " + x.zip : ""}`);
     const out = x.sample ? "" : `<a class="btn small" href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Find this listing ↗</a>`;
     return `<article class="panel re-home${x.sample ? " is-sample" : ""}">

@@ -634,9 +634,9 @@ def picks(us, ca, mx):
         if m.get("v3m") is not None and m.get("v1y") is not None:
             ann = m["v3m"] * 4
             if ann > m["v1y"] + 1:
-                w.append(f"prices speeding up: {m['v3m']:+.1f}% in 3 months vs {m['v1y']:+.1f}% over the year")
+                w.append(f"prices firming: {m['v3m']:+.1f}% in 3 months vs {m['v1y']:+.1f}% over the year")
             elif ann < m["v1y"] - 1:
-                w.append(f"prices slowing: {m['v3m']:+.1f}% in 3 months vs {m['v1y']:+.1f}% over the year")
+                w.append(f"prices cooling: {m['v3m']:+.1f}% in 3 months vs {m['v1y']:+.1f}% over the year")
         if m.get("inv1y") is not None and abs(m["inv1y"]) >= 10:
             w.append(f"homes for sale {m['inv1y']:+.0f}% on a year ago")
         if m.get("dtp1y") is not None and abs(m["dtp1y"]) >= 5:
@@ -768,7 +768,7 @@ def news():
                 if pub and title.endswith(" - " + pub):
                     title = title[: -len(pub) - 3]
                 key = re.sub(r"\W+", "", title.lower())[:60]
-                if not title or key in seen or not ON_TOPIC.search(title):
+                if not title or key in seen or not ON_TOPIC.search(title) or (c == "MX" and "New Mexico" in title):
                     continue
                 seen.add(key)
                 try:
