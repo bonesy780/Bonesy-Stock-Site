@@ -1,4 +1,4 @@
-// Home page: pick stocks or real estate, with a glance at each side's latest figures.
+// Home page: pick the daily news, stocks or real estate, with a glance at each side's latest figures.
 (function () {
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const chg = (v) => v == null ? "" : `<i class="${v >= 0 ? "up" : "down"}">${v >= 0 ? "▲" : "▼"} ${Math.abs(v).toFixed(2)}%</i>`;
@@ -16,6 +16,12 @@
     const ix = ((d && d.items) || []).filter((x) => x.ix && NAMES[x.ix]).slice(0, 4);
     if (ix.length) document.getElementById("live-stocks").innerHTML = ix.map((x) =>
       `<span><b>${esc(NAMES[x.ix])}</b> <span class="num">${x.p.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span> ${chg(x.c)}</span>`).join("");
+  }).catch(() => {});
+  fetch("daily/news.json", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((d) => {
+    if (!d || !d.stories) return;
+    const big = d.big && d.big[0] && d.stories[d.big[0][0]];
+    document.getElementById("live-daily").innerHTML = `<span><b>${d.stories.length.toLocaleString()}</b> stories</span>`
+      + (big ? `<span class="choose-headline">🔥 ${esc(big.t)}</span>` : "");
   }).catch(() => {});
   fetch("re/data.json", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((d) => {
     if (!d) return;

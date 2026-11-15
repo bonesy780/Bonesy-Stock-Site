@@ -1,9 +1,10 @@
 /* Home page: stocks or real estate */
 .choose { min-height: 100vh; background: radial-gradient(1200px 500px at 50% -10%, var(--accent-soft), transparent 70%), var(--bg); }
-.choose-main { max-width: 1000px; padding-top: 56px; padding-bottom: 40px; }
+.choose-main { max-width: 1180px; padding-top: 56px; padding-bottom: 40px; }
 .choose-brand { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 24px; font-weight: 700; }
 .choose h1 { text-align: center; font-size: clamp(24px, 4vw, 34px); letter-spacing: -.02em; margin: 18px 0 28px; }
-.choose-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.choose-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.choose-headline { flex-basis: 100%; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .choose-card { display: flex; flex-direction: column; overflow: hidden; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s, box-shadow .15s; }
 .choose-card:hover, .choose-card:focus-visible { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(16, 24, 40, .08); outline: none; }
 .choose-art { background: var(--surface-2); border-bottom: 1px solid var(--border); }
@@ -18,6 +19,7 @@
 .choose-live i.up { color: var(--up); } .choose-live i.down { color: var(--down); }
 .choose-remember { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 22px; font-size: 14px; color: var(--muted); }
 .choose-foot { text-align: center; color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+@media (max-width: 980px) and (min-width: 721px) { .choose-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 720px) {
   .choose-main { padding-top: 28px; }
   .choose-grid { grid-template-columns: 1fr; gap: 12px; }

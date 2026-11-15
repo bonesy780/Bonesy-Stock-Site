@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
-<title>TopTicker · Stocks and Real Estate</title>
-<meta name="description" content="TopTicker: choose the stock market (top stocks, buy ideas and news across eight markets) or real estate (home prices, rents and listings across North America).">
+<title>TopTicker · News, Stocks and Real Estate</title>
+<meta name="description" content="TopTicker: choose the day's news (headlines from about 90 outlets), the stock market (top stocks, buy ideas and news across eight markets) or real estate (home prices, rents and listings across North America).">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,7 @@
     const pick = localStorage.getItem("home-pick");
     let fromHere = false;
     try { fromHere = !!document.referrer && new URL(document.referrer).host === location.host; } catch {}
-    if (pick && !fromHere && !/[?&]choose/.test(location.search)) location.replace(pick === "re" ? "re/" : "news.html");
+    if (pick && !fromHere && !/[?&]choose/.test(location.search)) location.replace(pick === "re" ? "re/" : pick === "daily" ? "daily/" : "news.html");
   } catch {}
 </script>
 </head>
@@ -29,7 +29,7 @@
     <svg class="logo-mark" viewBox="0 0 32 32" width="44" height="44" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg>
     <span><b>Top</b>Ticker</span>
   </div>
-  <h1>Which market are you looking at today?</h1>
+  <h1>What are you looking at today?</h1>
 
   <div class="choose-grid">
     <a class="panel choose-card" href="news.html" data-pick="stocks">
@@ -46,6 +46,26 @@
         <p>Top 10 stocks across the S&amp;P 500, Nasdaq-100, Dow, TSX, Nikkei, KOSPI and Taiwan 50, with buy ideas, stocks to watch, market news, a screener and tools.</p>
         <div class="choose-live" id="live-stocks"></div>
         <span class="btn primary">Go to stocks →</span>
+      </div>
+    </a>
+
+    <a class="panel choose-card" href="daily/" data-pick="daily">
+      <div class="choose-art" aria-hidden="true">
+        <svg viewBox="0 0 320 140" preserveAspectRatio="xMidYMid slice">
+          <circle cx="250" cy="70" r="46" fill="var(--accent)" fill-opacity=".14"/>
+          <path d="M204 70h92M250 24v92M218 42c20 12 44 12 64 0M218 98c20-12 44-12 64 0" fill="none" stroke="var(--accent)" stroke-opacity=".5" stroke-width="2"/>
+          <ellipse cx="250" cy="70" rx="22" ry="46" fill="none" stroke="var(--accent)" stroke-opacity=".5" stroke-width="2"/>
+          <rect x="28" y="24" width="150" height="96" rx="8" fill="var(--surface)" stroke="var(--border)" stroke-width="2"/>
+          <rect x="40" y="36" width="56" height="34" rx="4" fill="#f5b301" fill-opacity=".8"/>
+          <rect x="104" y="38" width="62" height="7" rx="3" fill="var(--text)" fill-opacity=".75"/><rect x="104" y="51" width="48" height="7" rx="3" fill="var(--text)" fill-opacity=".45"/>
+          <rect x="40" y="80" width="126" height="6" rx="3" fill="var(--muted)" fill-opacity=".55"/><rect x="40" y="92" width="110" height="6" rx="3" fill="var(--muted)" fill-opacity=".55"/><rect x="40" y="104" width="80" height="6" rx="3" fill="var(--muted)" fill-opacity=".55"/>
+        </svg>
+      </div>
+      <div class="choose-body">
+        <h2>Daily news</h2>
+        <p>Your morning read: the day's headlines from about 90 outlets, from world news to sports and betting, with every U.S. state and Canadian province.</p>
+        <div class="choose-live" id="live-daily"></div>
+        <span class="btn primary">Go to the news →</span>
       </div>
     </a>
 

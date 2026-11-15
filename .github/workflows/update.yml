@@ -100,6 +100,8 @@ jobs:
       - name: Gather housing news
         if: steps.mode.outputs.full != 'true'
         run: python scripts/build_realestate.py --news-only || echo "::warning::housing news step failed, keeping the last headlines"
+      - name: Gather the day's headlines for the Daily News page
+        run: python scripts/build_daily_news.py || echo "::warning::daily news step failed, keeping the last headlines"
       - name: Save price history for the stock lookup page
         if: steps.mode.outputs.full == 'true'
         run: python scripts/build_history.py || echo "::warning::history step failed, stock lookup may be stale"
@@ -172,7 +174,7 @@ jobs:
           path: .data-cache
           key: site-data-v1-${{ steps.code.outputs.hash }}-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Bust browser cache for CSS and JS
-        run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html site/re/*.html
+        run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html site/re/*.html site/daily/*.html
       - name: Save refreshed member lists and this week's listings
         run: |
           git config user.name "github-actions[bot]"
