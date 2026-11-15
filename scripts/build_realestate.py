@@ -383,7 +383,8 @@ def build_us():
         if z["type"] not in ("msa", "country"):
             continue
         is_us = z["type"] == "country"
-        if not is_us and len([m for m in markets if m["id"] != "us"]) >= US_MARKETS:
+        # The biggest US_MARKETS metros, plus the biggest metro of any state they leave out (so every state can be looked up)
+        if not is_us and len([m for m in markets if m["id"] != "us"]) >= US_MARKETS and z["state"] in {m["region"] for m in markets}:
             continue
         s = z["series"]
         if len(s) < 13:
