@@ -675,7 +675,7 @@ TYPES = ["Single Family", "Condo", "Townhouse"]
 STREETS = ["Maple", "Oak", "Cedar", "Lakeview", "Park", "Hillside", "River", "Sunset", "Willow", "Birch", "Elm", "Harbour"]
 
 
-RENTCAST_CAP = 30         # requests in any 31 days; the free plan allows 50 per billing month, so this never bills
+RENTCAST_CAP = 40         # requests in any 31 days; the free plan allows 50 per billing month, so this never bills
 RENTCAST_WINDOW = timedelta(days=31)
 
 
