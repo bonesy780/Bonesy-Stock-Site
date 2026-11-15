@@ -1086,37 +1086,118 @@ ON_TOPIC = re.compile(r"\bhousing\b|\bhomes?\b|home ?(buyer|owner|sale|price|val
                       r"vivienda|inmobiliari|hipotec|\bcasas?\b|departamento|\brentas?\b|bienes ra", re.I)
 
 
-def news():
-    out = {}
+# Topics a headline is tagged with (for the news page's toggles)
+TOPICS = {
+    "prices": r"price|valu|cost|afford|bubble|boom|crash|slump|cool|soar|surge|record|precio|plusval",
+    "sales": r"\bsales?\b|\bsold\b|buyers?|sellers?|deman|listings?|inventory|transaction|purchase|compra|venta",
+    "rates": r"mortgage|\brates?\b|interest|lend|loan|central bank|\bfed\b|refinanc|hipotec|cr[eé]dito|tasa",
+    "rent": r"\brent|tenant|landlord|lease|vacanc|renta|alquiler|arrend",
+    "build": r"build|construct|starts|permits?|develop|supply|new homes|housing shortage|construcc|desarroll",
+    "policy": r"tax|polic|government|rule|regulat|ban\b|foreign buyer|minister|law|subsid|stimulus|gobierno|impuesto",
+}
+TOPIC_RE = {k: re.compile(v, re.I) for k, v in TOPICS.items()}
+
+
+def rss(q, hl="en-US", gl="US", ceid="US:en"):
+    r = get(f"https://news.google.com/rss/search?q={quote_plus(q + ' when:7d')}&hl={hl}&gl={gl}&ceid={ceid}", tries=1, timeout=20)
+    if not r:
+        return []
+    try:
+        return list(ET.fromstring(r.content).iter("item"))
+    except ET.ParseError:
+        return []
+
+
+# Other words a headline may use for a country (searches drift to stories that only mention it in passing)
+ALSO = {"GB": "UK|U\\.K\\.|Britain|British|England|English|London|Scotland|Wales", "US": "U\\.S\\.|America", "NL": "Dutch|Amsterdam",
+        "CH": "Swiss|Zurich|Geneva", "DE": "German|Berlin|Munich", "FR": "French|Paris", "ES": "Spanish|Madrid|Barcelona",
+        "IT": "Italian|Milan|Rome", "DK": "Danish|Copenhagen", "SE": "Swedish|Stockholm", "NO": "Norwegian|Oslo",
+        "FI": "Finnish|Helsinki", "IE": "Irish|Dublin", "PT": "Portuguese|Lisbon", "GR": "Greek|Athens", "PL": "Polish|Warsaw",
+        "CZ": "Czech|Prague", "HU": "Hungarian|Budapest", "AT": "Austrian|Vienna", "BE": "Belgian|Brussels", "TR": "Turkey|Turkish|Istanbul",
+        "JP": "Japanese|Tokyo", "KR": "Korean|Seoul", "CN": "Chinese|Beijing|Shanghai|Shenzhen", "HK": "Hong Kong", "AU": "Australian|Sydney|Melbourne",
+        "NZ": "Kiwi|Auckland", "IN": "Indian|Mumbai|Delhi|Bengaluru", "AE": "UAE|Dubai|Abu Dhabi|Emirati", "SA": "Saudi|Riyadh",
+        "IL": "Israeli|Tel Aviv", "ZA": "South African|Johannesburg|Cape Town", "SG": "Singapore", "MY": "Malaysian|Kuala Lumpur",
+        "TH": "Thai|Bangkok", "ID": "Indonesian|Jakarta|Bali", "PH": "Philippine|Filipino|Manila", "BR": "Brazilian|S[aã]o Paulo|Rio",
+        "CL": "Chilean|Santiago", "CO": "Colombian|Bogot", "PE": "Peruvian|Lima", "AR": "Argentin|Buenos Aires", "MX": "Mexican",
+        "CA": "Canadian", "RU": "Russian|Moscow", "MA": "Moroccan|Marrakech|Casablanca", "CY": "Cypriot|Cyprus|Limassol"}
+
+
+def mentions(title, words):
+    return not words or re.search(r"\b(" + words + r")", title, re.I) is not None
+
+
+# Listing pages, sale ads and art shows that slip past the housing words
+JUNK = re.compile(r"^[,;|]|(?-i:\b[A-Z]{2} \d{5}\b)|\|\s*(Realtor\.com|Zillow|Redfin)|\b(exhibition|gallery|paintings?)\b", re.I)
+
+
+def stories(items, seen, skip=None, need=None):
+    out = []
+    for it in items:
+        title = (it.findtext("title") or "").strip()
+        src = it.find("source")
+        pub = src.text.strip() if src is not None and src.text else ""
+        if pub and title.endswith(" - " + pub):
+            title = title[: -len(pub) - 3]
+        key = re.sub(r"\W+", "", title.lower())[:60]
+        if not title or key in seen or not ON_TOPIC.search(title) or JUNK.search(title) or (skip and skip in title) or not mentions(title, need):
+            continue
+        seen.add(key)
+        try:
+            when = parsedate_to_datetime(it.findtext("pubDate")).astimezone(timezone.utc).isoformat()
+        except Exception:  # noqa: BLE001
+            when = None
+        out.append({"title": title, "url": it.findtext("link"), "src": pub, "at": when,
+                    "t": [k for k, rx in TOPIC_RE.items() if rx.search(title)]})
+    return out
+
+
+REGION_FULL = {**{v: k for k, v in US_STATES.items()}, **{v: k for k, v in PROVINCES.items()}}
+
+
+def news(us=(), ca=(), mx=()):
+    """The past week's housing headlines for the three countries, every country on the World page and the
+    biggest North American cities, each tagged with topics."""
+    out, markets = {}, []
+    # Countries with their own searches (two each)
     for c, queries in NEWS.items():
         seen, items = set(), []
         for q, hl, gl, ceid in queries:
-            r = get(f"https://news.google.com/rss/search?q={quote_plus(q + ' when:7d')}&hl={hl}&gl={gl}&ceid={ceid}", tries=2)
-            if not r:
-                continue
-            try:
-                root = ET.fromstring(r.content)
-            except ET.ParseError:
-                continue
-            for it in root.iter("item"):
-                title = (it.findtext("title") or "").strip()
-                src = it.find("source")
-                pub = src.text.strip() if src is not None and src.text else ""
-                if pub and title.endswith(" - " + pub):
-                    title = title[: -len(pub) - 3]
-                key = re.sub(r"\W+", "", title.lower())[:60]
-                if not title or key in seen or not ON_TOPIC.search(title) or (c == "MX" and "New Mexico" in title):
-                    continue
-                seen.add(key)
-                try:
-                    when = parsedate_to_datetime(it.findtext("pubDate")).astimezone(timezone.utc).isoformat()
-                except Exception:  # noqa: BLE001
-                    when = None
-                items.append({"title": title, "url": it.findtext("link"), "src": pub, "at": when})
+            items += stories(rss(q, hl, gl, ceid), seen, "New Mexico" if c == "MX" else None)
         items.sort(key=lambda x: x["at"] or "", reverse=True)
         out[c] = items[:15]
+        markets.append({"key": c, "name": WORLD[c][0], "kind": "country", "region": "Americas", "flag": c})
         log(f"  news {c}: {len(out[c])}")
-    return out
+    # Every other country on the World page
+    for c, (name, region, _) in WORLD.items():
+        if c in out or region == "Benchmark" or time.time() > DEADLINE:
+            continue
+        q = f'"{name}" ("housing market" OR "house prices" OR "home prices" OR "property market" OR "real estate market" OR mortgage)'
+        need = "|".join([re.escape(name), re.escape(name[:5])] + ([ALSO[c]] if c in ALSO else []))
+        items = stories(rss(q), set(), need=need)
+        items.sort(key=lambda x: x["at"] or "", reverse=True)
+        if items:
+            out[c] = items[:12]
+            markets.append({"key": c, "name": name, "kind": "country", "region": region, "flag": c})
+    # The biggest cities
+    cities = [m for m in us if m["id"] != "us"][:15] + [m for m in ca if m["id"] in ("ca-toronto", "ca-vancouver", "ca-calgary", "ca-montreal", "ca-edmonton")] \
+        + [m for m in mx if m["id"] in ("mx-ciudad-de-mexico", "mx-jalisco", "mx-nuevo-leon", "mx-quintana-roo")]
+    city_name = {"mx-ciudad-de-mexico": "Mexico City", "mx-jalisco": "Guadalajara", "mx-nuevo-leon": "Monterrey", "mx-quintana-roo": "Cancún"}
+    for m in cities:
+        if time.time() > DEADLINE:
+            break
+        name = city_name.get(m["id"]) or m["name"].split("-")[0].strip()
+        if name == "Washington":
+            name = "Washington DC"
+        gl, ceid = ("CA", "CA:en") if m["c"] == "CA" else ("US", "US:en")
+        region = (REGION_FULL.get(m["region"], "") if m["c"] != "MX" else m["name"])
+        need = "|".join(x for x in [re.escape(name.split()[0] if name != "Washington DC" else "Washington"), re.escape(region)] if x)
+        items = stories(rss(f'"{name}" ("housing market" OR "home prices" OR "real estate" OR "rent" OR "condo")', f"en-{gl}", gl, ceid), set(), need=need)
+        items.sort(key=lambda x: x["at"] or "", reverse=True)
+        if items:
+            out[m["id"]] = items[:10]
+            markets.append({"key": m["id"], "name": name, "kind": "city", "region": "North American cities", "flag": m["c"], "market": m["id"]})
+    log(f"  news: {len(out)} markets, {sum(len(v) for v in out.values())} stories")
+    return {"items": out, "markets": markets}
 
 
 # ---------------------------------------------------------------- main
@@ -1229,7 +1310,9 @@ def main():
         (hdir / f"{mid}.json").write_text(json.dumps(h, separators=(",", ":")))
     (OUT / "world_hist.json").write_text(json.dumps(world_hist, separators=(",", ":")))
     (OUT / "listings.json").write_text(json.dumps(listings, separators=(",", ":"), ensure_ascii=False))
-    (OUT / "news.json").write_text(json.dumps({"updated": NOW.isoformat(timespec="seconds"), "news": safe("news", news, {})},
+    nw = safe("news", lambda: news(us, ca, mx), {})
+    (OUT / "news.json").write_text(json.dumps({"updated": NOW.isoformat(timespec="seconds"), "news": nw.get("items", {}),
+                                               "markets": nw.get("markets", []), "topics": list(TOPICS)},
                                               separators=(",", ":"), ensure_ascii=False))
     log(f"Wrote {len(data['markets'])} markets, {len(listings['items'])} listings; failed parts: {errors or 'none'}")
 

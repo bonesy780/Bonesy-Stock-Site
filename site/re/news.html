@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../styles.css?v=__V__">
 <link rel="stylesheet" href="re.css?v=__V__">
+<link rel="stylesheet" href="world.css?v=__V__">
 </head>
 <body class="re">
 <header class="top">
@@ -26,11 +27,20 @@
 <main class="wrap">
   <section class="hero">
     <h1>Housing news</h1>
-    <p>The past week's stories on home prices, sales and mortgage rates in each country, gathered from Google News.</p>
+    <p>The past week's stories on home prices, sales, mortgage rates and rents in <span id="n-count">every market</span>: the US, Canada and Mexico, every country on the World page and the biggest North American cities, gathered from Google News.</p>
   </section>
-  <nav class="tabs" id="tabs" aria-label="Country"></nav>
+  <div class="n-controls">
+    <div class="seg" role="tablist" aria-label="Region" id="n-region"></div>
+    <label class="re-f">Market<select class="field" id="n-market"></select></label>
+    <label class="re-f">Search<input class="field" id="n-q" type="search" placeholder="Words in the headline…"></label>
+    <label class="re-f">Order<select class="field" id="n-sort"><option value="new">Newest first</option><option value="market">By market</option></select></label>
+  </div>
+  <div class="n-topics" id="n-topics" role="group" aria-label="Topics"></div>
+  <div class="n-chips" id="n-chips" aria-label="Markets"></div>
+  <p class="muted re-small" id="n-count-line"></p>
   <section id="news" class="news" aria-live="polite"></section>
-  <p class="disclaimer">Headlines link to the original publishers and are gathered automatically; they are not checked or endorsed by this site.</p>
+  <div class="re-more" id="n-more"></div>
+  <p class="disclaimer">Headlines link to the original publishers and are gathered automatically; they are not checked or endorsed by this site. Topics are tagged from words in each headline.</p>
 </main>
 
 <footer class="wrap foot">Data: <a href="https://www.zillow.com/research/data/">Zillow Research</a>, <a href="https://www.bis.org/statistics/pp.htm">BIS</a> house prices, <a href="https://www.freddiemac.com/pmms">Freddie Mac</a>, <a href="https://fred.stlouisfed.org/">FRED</a>, <a href="https://www.statcan.gc.ca/">Statistics Canada</a> and CMHC, <a href="https://www.bankofcanada.ca/">Bank of Canada</a>, <a href="https://www.gob.mx/shf">Sociedad Hipotecaria Federal</a>. Not financial advice.</footer>

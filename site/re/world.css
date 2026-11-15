@@ -75,3 +75,25 @@
   .w-filter { max-width: none; width: 100%; }
 }
 .w-controls .seg button, .re-region-tools .seg button, .w-chart-tools .seg button { white-space: nowrap; flex: none; }
+
+/* Housing news page */
+.n-controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin-bottom: 12px; }
+.n-controls .seg { overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.n-controls .seg button { white-space: nowrap; flex: none; }
+.n-controls select.field { min-width: 200px; }
+.n-topics, .n-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+.n-topics .muted { margin-right: 4px; }
+.n-chips { max-height: 92px; overflow-y: auto; }
+.n-chips .chip, .n-topics .chip { font-size: 13px; }
+.n-clear { color: var(--muted); }
+.n-story { flex-direction: column; gap: 10px; }
+.n-story .story-body { text-decoration: none; color: inherit; flex: 1; }
+.n-story .story-body:hover h3 { color: var(--accent); }
+.n-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.n-tags a.tag { text-decoration: none; }
+.n-topic { background: var(--surface-2); color: var(--muted); }
+.n-group { grid-column: 1 / -1; margin: 12px 0 0; font-size: 18px; }
+@media (max-width: 640px) {
+  .n-controls .re-f { flex: 1 1 100%; }
+  .n-controls select.field, .n-controls input.field { min-width: 0; width: 100%; }
+}
