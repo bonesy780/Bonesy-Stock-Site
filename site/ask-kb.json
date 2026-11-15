@@ -397,7 +397,7 @@
  {
   "id": "news",
   "title": "Where does the news come from?",
-  "page": "./",
+  "page": "news.html",
   "keys": [
    "news",
    "headline",

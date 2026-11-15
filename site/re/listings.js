@@ -11,6 +11,7 @@
   const real = items.filter((x) => !x.sample);
   const params = new URLSearchParams(location.search);
   const want = params.get("m") && D.byId[params.get("m")];
+  let showN = 24;
   const f = { c: want ? want.c : store.get("re-l-country", "ALL"), city: "", type: "", beds: 0, max: null, sort: "new", saved: false };
   // Match a market id to a listing city
   const cityOf = (x) => `${x.city}|${x.region}`;
@@ -61,7 +62,8 @@
     rows.sort((a, b) => (a.sample - b.sample) || sorters[f.sort](a, b));
     const nReal = rows.filter((x) => !x.sample).length;
     document.getElementById("l-count").textContent = `${rows.length} home${rows.length === 1 ? "" : "s"}${nReal && nReal < rows.length ? ` (${nReal} real, ${rows.length - nReal} samples)` : nReal ? "" : " (all samples)"}`;
-    list.innerHTML = rows.length ? rows.slice(0, 120).map(card).join("") : `<div class="panel empty">No homes match these filters.</div>`;
+    list.innerHTML = rows.length ? rows.slice(0, showN).map(card).join("") : `<div class="panel empty">No homes match these filters.</div>`;
+    document.getElementById("more").innerHTML = rows.length > showN ? `<button class="btn" type="button" id="more-btn">Show ${Math.min(24, rows.length - showN)} more of ${rows.length - showN}</button>` : "";
     // Links out for the cities shown
     const cities = [...new Map(rows.map((x) => [cityOf(x), x])).values()].slice(0, 12);
     const fallbacks = f.c === "ALL" ? [] : [];
@@ -77,6 +79,8 @@
   document.getElementById("l-max").addEventListener("input", (e) => { f.max = e.target.value ? +e.target.value : null; draw(); });
   document.getElementById("l-sort").addEventListener("change", (e) => { f.sort = e.target.value; draw(); });
   document.getElementById("l-saved").addEventListener("change", (e) => { f.saved = e.target.checked; draw(); });
+  document.getElementById("more").addEventListener("click", (e) => { if (e.target.closest("#more-btn")) { showN += 24; draw(); } });
+  document.querySelector(".re-filters").addEventListener("change", () => { showN = 24; }, true);
   fillCities();
   draw();
 

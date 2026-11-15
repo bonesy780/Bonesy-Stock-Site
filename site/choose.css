@@ -1,0 +1,27 @@
+/* Home page: stocks or real estate */
+.choose { min-height: 100vh; background: radial-gradient(1200px 500px at 50% -10%, var(--accent-soft), transparent 70%), var(--bg); }
+.choose-main { max-width: 1000px; padding-top: 56px; padding-bottom: 40px; }
+.choose-brand { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 24px; font-weight: 700; }
+.choose h1 { text-align: center; font-size: clamp(24px, 4vw, 34px); letter-spacing: -.02em; margin: 18px 0 28px; }
+.choose-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.choose-card { display: flex; flex-direction: column; overflow: hidden; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s, box-shadow .15s; }
+.choose-card:hover, .choose-card:focus-visible { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(16, 24, 40, .08); outline: none; }
+.choose-art { background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.choose-art svg { display: block; width: 100%; height: 150px; }
+.choose-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.choose-body h2 { margin: 0; font-size: 22px; }
+.choose-body p { margin: 0; color: var(--muted); }
+.choose-body .btn { align-self: flex-start; margin-top: auto; }
+.choose-live { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; min-height: 20px; }
+.choose-live b { font-weight: 600; }
+.choose-live i { font-style: normal; font-size: 12px; }
+.choose-live i.up { color: var(--up); } .choose-live i.down { color: var(--down); }
+.choose-remember { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 22px; font-size: 14px; color: var(--muted); }
+.choose-foot { text-align: center; color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+@media (max-width: 720px) {
+  .choose-main { padding-top: 28px; }
+  .choose-grid { grid-template-columns: 1fr; gap: 12px; }
+  .choose-art svg { height: 110px; }
+  .choose h1 { margin: 12px 0 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .choose-card { transition: none; } .choose-card:hover { transform: none; } }

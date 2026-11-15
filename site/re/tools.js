@@ -16,7 +16,7 @@
   };
   const seg = document.getElementById("t-country");
   const out = (label, value, extra = "", cls = "") => `<div class="calc-out ${extra}"><span>${esc(label)}</span><strong class="num ${cls}">${value}</strong></div>`;
-  const field = (id, label, v, step = "any", suffix = "") => `<label>${esc(label)}${suffix ? ` <span class="muted">(${suffix})</span>` : ""}<input class="field" id="${id}" type="number" step="${step}" value="${v}"></label>`;
+  const field = (id, label, v, step = "any", suffix = "") => `<label><span>${esc(label)}${suffix ? ` <span class="muted">(${esc(suffix)})</span>` : ""}</span><input class="field" id="${id}" type="number" step="${step}" value="${v}"></label>`;
   const val = (id) => { const x = parseFloat(document.getElementById(id).value); return Number.isFinite(x) ? x : 0; };
 
   function render() {
@@ -113,7 +113,7 @@
       out("If you buy: home equity after selling costs, plus savings", money(buyWorth, cur)),
       out("If you rent: invested down payment and savings", money(invested, cur)),
       out("Mortgage payment", money(pay, cur) + "/mo"),
-      lineChart(lines, (v) => (v >= 0 ? "+" : "") + short(v, cur), (x) => `Year ${x}`, true),
+      lineChart(lines, (v) => (v >= 0 ? "+" : "−") + short(Math.abs(v), cur), (x) => `Year ${x}`, true),
       `<p class="hint">Above the line, buying is ahead by that much; below it, renting is.</p>`,
     ].join("");
   }

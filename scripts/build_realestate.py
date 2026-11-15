@@ -49,6 +49,7 @@ NOW = datetime.now(timezone.utc)
 
 US_MARKETS = 150          # Zillow metros kept, by size
 HIST_YEARS = 20           # monthly history kept for charts
+DEADLINE = time.time() + 20 * 60   # stop fetching after this; whatever is in by then gets built
 
 
 def log(*a):
@@ -59,6 +60,9 @@ def get(url: str, tries: int = 3, timeout: int = 60, **kw) -> requests.Response 
     """GET with retries and a hard cap on total download time (a slow server can't stall the build)."""
     headers = {**UA, **kw.pop("headers", {})}
     for i in range(tries):
+        if time.time() > DEADLINE:
+            log(f"  skipped {url}: out of time")
+            return None
         t0 = time.time()
         try:
             with requests.get(url, headers=headers, timeout=(15, 30), stream=True, **kw) as r:
@@ -181,13 +185,13 @@ def zillow(key: str):
     folder = paths[0].split("/")[0]
     r = None
     for u in urls:
-        r = get(u, tries=2, timeout=120)
+        r = get(u, tries=1, timeout=90)
         if r:
             break
     if not r:
         for u in discover_zillow():
             if f"/{folder}/Metro_" in u and "_uc_sfrcondo" in u:
-                r = get(u, tries=2, timeout=120)
+                r = get(u, tries=1, timeout=90)
                 if r:
                     break
     if not r:
@@ -304,10 +308,9 @@ def geo_key(g: str) -> str:
 
 
 def province_of(g: str) -> str:
-    for p, code in PROVINCES.items():
-        if p in g:
-            return code
-    return ""
+    """Province code for a StatCan place name; the first one named wins (Ottawa-Gatineau, Ontario part)."""
+    hits = [(g.find(p), code) for p, code in PROVINCES.items() if p in g.split(",", 1)[-1]]
+    return min(hits)[1] if hits else ""
 
 
 def bank_of_canada(series: str):
@@ -360,6 +363,9 @@ def build_canada():
         city = "Canada" if is_ca else re.sub(r"\s*\(.*\)", "", geo.split(",")[0]).strip()
         rs = sorted(rents.get(geo_key(geo), []))
         mid = "ca" if is_ca else "ca-" + ascii_slug(city)
+        if " part" in geo:  # Ottawa-Gatineau is split into its Ontario and Quebec parts
+            part = geo.split(",")[1].strip()
+            city, mid = f"{city} ({part})", mid + "-" + province_of(geo).lower()
         m = {
             "id": mid, "c": "CA", "name": city, "full": geo, "region": "" if is_ca else province_of(geo), "cur": "CAD",
             "asof": s[-1][0].strftime("%Y-%m"),
@@ -515,7 +521,7 @@ SAMPLE_CITIES = [
     ("us-phoenix-az", "Phoenix", "AZ", "US", "USD", 450000), ("us-seattle-wa", "Seattle", "WA", "US", "USD", 760000),
     ("ca-toronto", "Toronto", "ON", "CA", "CAD", 1050000), ("ca-vancouver", "Vancouver", "BC", "CA", "CAD", 1180000),
     ("ca-calgary", "Calgary", "AB", "CA", "CAD", 590000), ("ca-montreal", "Montréal", "QC", "CA", "CAD", 560000),
-    ("ca-ottawa-gatineau", "Ottawa", "ON", "CA", "CAD", 650000),
+    ("ca-ottawa-gatineau-on", "Ottawa", "ON", "CA", "CAD", 650000),
     ("mx-ciudad-de-mexico", "Mexico City", "CDMX", "MX", "MXN", 4285135), ("mx-jalisco", "Guadalajara", "JAL", "MX", "MXN", 2107232),
     ("mx-nuevo-leon", "Monterrey", "NL", "MX", "MXN", 2042664), ("mx-quintana-roo", "Cancún", "QROO", "MX", "MXN", 1991230),
     ("mx-queretaro", "Querétaro", "QRO", "MX", "MXN", 2381522),

@@ -198,7 +198,8 @@
   function chart(el, series, opts = {}) {
     series = series.filter((s) => s.pts && s.pts.length > 1);
     if (!series.length) { el.innerHTML = `<div class="empty">No history to chart yet.</div>`; return; }
-    const W = 760, H = opts.height || 280, L = 8, R = 64, T = 12, B = 26;
+    // Draw at the box's real width so the axis text stays at its normal size
+    const W = Math.max(300, Math.round(el.clientWidth || 760)), H = opts.height || (W < 500 ? 220 : 300), L = 8, R = 62, T = 12, B = 26;
     const labels = [...new Set(series.flatMap((s) => s.pts.map((p) => p[0])))].sort();
     const xi = Object.fromEntries(labels.map((l, i) => [l, i]));
     const vals = series.flatMap((s) => s.pts.map((p) => p[1])).filter((v) => v != null);
@@ -213,8 +214,9 @@
     const step = niceStep((hi - lo) / 4);
     for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
     const years = labels.filter((l, i) => i === 0 || l.slice(0, 4) !== labels[i - 1].slice(0, 4));
-    const every = Math.max(1, Math.ceil(years.length / 8));
-    const xt = years.filter((_, i) => i % every === 0);
+    const every = Math.max(1, Math.ceil(years.length / Math.max(3, Math.floor(W / 90))));
+    const xt = [];
+    for (const l of years.filter((_, i) => i % every === 0)) if (!xt.length || x(xi[l]) - x(xi[xt.at(-1)]) > 44) xt.push(l);
     const path = (s) => s.pts.filter((p) => p[1] != null).map((p, i) => `${i ? "L" : "M"}${x(xi[p[0]]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
     el.innerHTML = `<div class="chart re-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(opts.label || "Chart")}">
       ${ticks.map((v) => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text class="axis" x="${W - R + 6}" y="${y(v) + 4}">${esc(fmt(v))}</text>`).join("")}
