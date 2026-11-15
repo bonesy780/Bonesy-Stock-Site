@@ -159,3 +159,6 @@ a.card:hover { border-color: var(--accent); }
   .re-own-row { grid-template-columns: 1fr; }
   .menu .menu-switch { margin-left: 0; }
 }
+.re-f { text-align: left; }
+.re-cmp td:nth-child(2), .re-cmp th:nth-child(2) { text-align: right; }
+.re-cmp td:first-child { white-space: nowrap; }
