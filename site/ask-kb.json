@@ -571,6 +571,28 @@
   "answer": "The real estate pages use free public statistics. US metro areas: Zillow Research's monthly CSVs (typical home value, rent, homes for sale, new listings, days to pending, price cuts, sale-to-list ratio, market heat and Zillow's 12-month forecast). Canada: Statistics Canada's New Housing Price Index by city (new homes only, because the CREA MLS resale index is licensed) and CMHC's average two-bedroom rent, plus the Bank of Canada's 5-year mortgage rate. Mexico: Sociedad Hipotecaria Federal's quarterly prices by state, entered by hand because SHF only publishes PDF and Excel. FRED supplies US mortgage rates, exchange rates and the BIS house price index for all three countries. The build runs with the stock data."
  },
  {
+  "id": "realestate-world",
+  "title": "How are the world housing markets ranked?",
+  "page": "re/world.html",
+  "keys": [
+   "world",
+   "global",
+   "international",
+   "country",
+   "countries",
+   "bis",
+   "oecd",
+   "investor",
+   "score",
+   "top",
+   "europe",
+   "asia",
+   "abroad",
+   "foreign"
+  ],
+  "answer": "The World page covers about 60 countries from the BIS residential property price database: price change before and after inflation, the change in US dollars (what a US-based investor gained, currency moves included), the central bank policy rate and, for about 25 countries, the OECD price-to-income ratio against the country's own long-run average. The investor score (0 to 100) ranks each country against the others on real price momentum (30%), 10-year real growth (20%), value (25%), the change in interest rates over the year (15%) and the currency against the US dollar (10%). Countries whose figures are more than 18 months old are left out unless you tick the box, and countries under sanctions are shown but not scored. Figures are quarterly national statistics, not live prices, and leave out rents, costs, taxes and foreign-buyer rules."
+ },
+ {
   "id": "realestate-listings",
   "title": "Are the home listings real?",
   "page": "re/listings.html",

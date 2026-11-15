@@ -13,6 +13,10 @@ Every source is free to use with credit:
   - Bank of Canada Valet API: 5-year conventional mortgage rate, policy rate.
   - Sociedad Hipotecaria Federal (Mexico): state house prices, kept by hand in
     data/realestate/mexico_shf.csv because SHF publishes PDF and Excel only.
+  - BIS data portal: residential property prices (nominal and real) for every
+    country it covers, central bank policy rates and US dollar exchange rates;
+    OECD house price database: price-to-income and price-to-rent ratios.
+    Zillow state files: typical home value and rent by US state.
   - RentCast API (optional, US only): real active for-sale listings, when the
     RENTCAST_API_KEY secret is set. Its free plan allows 50 requests a month, so
     listings are fetched once a week and saved in data/realestate/listings.json.
@@ -308,6 +312,9 @@ ZMETRICS = {
     "stl": ["mean_sale_to_list/Metro_mean_sale_to_list_uc_sfrcondo_sm_month.csv", "mean_sale_to_list/Metro_mean_sale_to_list_uc_sfrcondo_month.csv"],
     "heat": ["market_temp_index/Metro_market_temp_index_uc_sfrcondo_month.csv", "market_temp_index/Metro_market_temp_index_uc_sfrcondo_sm_month.csv"],
     "fc": ["zhvf_growth/Metro_zhvf_growth_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"],
+    # State level, for the by-state chart
+    "st_zhvi": ["zhvi/State_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"],
+    "st_zori": ["zori/State_zori_uc_sfrcondomfr_sm_month.csv", "zori/State_zori_uc_sfrcondomfr_sm_sa_month.csv"],
 }
 _discovered: list[str] | None = None
 
@@ -326,7 +333,8 @@ def zillow(key: str):
     """{RegionID: {name, type, state, rank, series: [(date, v)], cols}} for one metric."""
     paths = ZMETRICS[key]
     urls = [ZILLOW + p for p in paths]
-    folder = paths[0].split("/")[0]
+    folder, fname = paths[0].split("/")
+    level = fname.split("_")[0]  # Metro or State
     r = None
     for u in urls:
         r = get(u, tries=1, timeout=90)
@@ -334,7 +342,7 @@ def zillow(key: str):
             break
     if not r:
         for u in discover_zillow():
-            if f"/{folder}/Metro_" in u and "_uc_sfrcondo" in u:
+            if f"/{folder}/{level}_" in u and "_uc_sfrcondo" in u:
                 r = get(u, tries=1, timeout=90)
                 if r:
                     break
@@ -374,7 +382,7 @@ def thin(series, years=HIST_YEARS):
 
 
 def build_us():
-    Z = {k: zillow(k) for k in ZMETRICS}
+    Z = {k: zillow(k) for k in ZMETRICS if not k.startswith("st_")}
     zhvi = Z.get("zhvi") or {}
     markets, hist = [], {}
     nation = None
@@ -471,6 +479,9 @@ def bank_of_canada(series: str):
     return out
 
 
+PROVINCE_ROWS: list[dict] = []
+
+
 def build_canada():
     markets, hist = [], {}
     nhpi = statcan_table("18100205")
@@ -503,6 +514,15 @@ def build_canada():
             continue
         is_ca = geo == "Canada"
         if not is_ca and (geo in PROVINCES or geo in (ATLANTIC, PRAIRIE)):
+            if geo in PROVINCES:  # kept for the by-province chart
+                v = s[-1][1]
+                rs = sorted(rents.get(geo_key(geo), []))
+                PROVINCE_ROWS.append({
+                    "code": PROVINCES[geo], "name": geo, "asof": s[-1][0].strftime("%Y-%m"), "idx": rnd(v, 1),
+                    "v1y": rnd(pct(v, at(s, 12))), "v5y": rnd(pct(v, at(s, 60))), "offPeak": rnd(pct(v, max(x for _, x in s))),
+                    "rent": rnd(rs[-1][1], 0) if rs else None,
+                    "rent1y": rnd(pct(rs[-1][1], rs[-2][1])) if len(rs) >= 2 else None,
+                })
             continue
         v = s[-1][1]
         city = "Canada" if is_ca else re.sub(r"\s*\(.*\)", "", geo.split(",")[0]).strip()
@@ -553,6 +573,294 @@ def build_mexico():
                 m["metroYoy"] = {"name": z["name"], "yoy": z["yoy"]}
     log(f"Mexico markets: {len(markets)}")
     return [nat] + markets, meta
+
+
+# ---------------------------------------------------------------- US states (for the by-state chart)
+US_STATES = {"Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR", "California": "CA", "Colorado": "CO",
+             "Connecticut": "CT", "Delaware": "DE", "District of Columbia": "DC", "Florida": "FL", "Georgia": "GA", "Hawaii": "HI",
+             "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA", "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA",
+             "Maine": "ME", "Maryland": "MD", "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS",
+             "Missouri": "MO", "Montana": "MT", "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ",
+             "New Mexico": "NM", "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK",
+             "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC", "South Dakota": "SD",
+             "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT", "Virginia": "VA", "Washington": "WA",
+             "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY"}
+
+
+def build_states():
+    """Typical home value and rent for every US state, from Zillow's state files."""
+    zh, zr = zillow("st_zhvi"), zillow("st_zori")
+    rent_by = {z["name"]: z["series"] for z in zr.values()}
+    out = []
+    for z in zh.values():
+        code = US_STATES.get(z["name"])
+        s = z["series"]
+        if not code or len(s) < 13:
+            continue
+        v = s[-1][1]
+        rs = rent_by.get(z["name"]) or []
+        rent = rs[-1][1] if rs else None
+        out.append({
+            "code": code, "name": z["name"], "asof": s[-1][0].strftime("%Y-%m"), "v": rnd(v, 0),
+            "v1y": rnd(pct(v, at(s, 12))), "v5y": rnd(pct(v, at(s, 60))), "v10y": rnd(pct(v, at(s, 120))),
+            "offPeak": rnd(pct(v, max(x for _, x in s))),
+            "rent": rnd(rent, 0), "rent1y": rnd(pct(rent, at(rs, 12))) if rs else None,
+            "yield": rnd(rent * 12 / v * 100) if rent and v else None,
+            "spark": [rnd(x, 0) for _, x in s[-24:]],
+        })
+    log(f"US states: {len(out)}")
+    return sorted(out, key=lambda x: x["name"])
+
+
+# ---------------------------------------------------------------- world house prices (BIS, with OECD valuations)
+# ISO code: (name, region, ISO3). Aggregates are kept as benchmarks only.
+WORLD = {
+    "US": ("United States", "Americas", "USA"), "CA": ("Canada", "Americas", "CAN"), "MX": ("Mexico", "Americas", "MEX"),
+    "BR": ("Brazil", "Americas", "BRA"), "CL": ("Chile", "Americas", "CHL"), "CO": ("Colombia", "Americas", "COL"),
+    "PE": ("Peru", "Americas", "PER"), "AR": ("Argentina", "Americas", "ARG"),
+    "GB": ("United Kingdom", "Europe", "GBR"), "IE": ("Ireland", "Europe", "IRL"), "FR": ("France", "Europe", "FRA"),
+    "DE": ("Germany", "Europe", "DEU"), "NL": ("Netherlands", "Europe", "NLD"), "BE": ("Belgium", "Europe", "BEL"),
+    "LU": ("Luxembourg", "Europe", "LUX"), "CH": ("Switzerland", "Europe", "CHE"), "AT": ("Austria", "Europe", "AUT"),
+    "IT": ("Italy", "Europe", "ITA"), "ES": ("Spain", "Europe", "ESP"), "PT": ("Portugal", "Europe", "PRT"),
+    "GR": ("Greece", "Europe", "GRC"), "MT": ("Malta", "Europe", "MLT"), "CY": ("Cyprus", "Europe", "CYP"),
+    "DK": ("Denmark", "Europe", "DNK"), "SE": ("Sweden", "Europe", "SWE"), "NO": ("Norway", "Europe", "NOR"),
+    "FI": ("Finland", "Europe", "FIN"), "IS": ("Iceland", "Europe", "ISL"), "EE": ("Estonia", "Europe", "EST"),
+    "LV": ("Latvia", "Europe", "LVA"), "LT": ("Lithuania", "Europe", "LTU"), "PL": ("Poland", "Europe", "POL"),
+    "CZ": ("Czechia", "Europe", "CZE"), "SK": ("Slovakia", "Europe", "SVK"), "SI": ("Slovenia", "Europe", "SVN"),
+    "HU": ("Hungary", "Europe", "HUN"), "HR": ("Croatia", "Europe", "HRV"), "RO": ("Romania", "Europe", "ROU"),
+    "BG": ("Bulgaria", "Europe", "BGR"), "RS": ("Serbia", "Europe", "SRB"), "MK": ("North Macedonia", "Europe", "MKD"),
+    "RU": ("Russia", "Europe", "RUS"), "TR": ("Türkiye", "Europe", "TUR"),
+    "JP": ("Japan", "Asia-Pacific", "JPN"), "KR": ("South Korea", "Asia-Pacific", "KOR"), "CN": ("China", "Asia-Pacific", "CHN"),
+    "HK": ("Hong Kong", "Asia-Pacific", "HKG"), "TW": ("Taiwan", "Asia-Pacific", "TWN"), "SG": ("Singapore", "Asia-Pacific", "SGP"),
+    "MY": ("Malaysia", "Asia-Pacific", "MYS"), "TH": ("Thailand", "Asia-Pacific", "THA"), "ID": ("Indonesia", "Asia-Pacific", "IDN"),
+    "PH": ("Philippines", "Asia-Pacific", "PHL"), "IN": ("India", "Asia-Pacific", "IND"), "AU": ("Australia", "Asia-Pacific", "AUS"),
+    "NZ": ("New Zealand", "Asia-Pacific", "NZL"),
+    "IL": ("Israel", "Middle East & Africa", "ISR"), "AE": ("United Arab Emirates", "Middle East & Africa", "ARE"),
+    "SA": ("Saudi Arabia", "Middle East & Africa", "SAU"), "ZA": ("South Africa", "Middle East & Africa", "ZAF"),
+    "MA": ("Morocco", "Middle East & Africa", "MAR"),
+    "XM": ("Euro area", "Benchmark", None),
+}
+ISO3 = {v[2]: k for k, v in WORLD.items() if v[2]}
+# Shown in the tables but left out of the investor score
+NOT_INVESTABLE = {"RU": "Under international sanctions: most foreign investors can't buy or move money out"}
+
+
+def sdmx_csv(url: str, timeout=120) -> list[dict]:
+    r = get(url, tries=2, timeout=timeout, headers=BROWSER)
+    if not r:
+        return []
+    rows = list(csv.DictReader(io.StringIO(r.content.decode("utf-8-sig"))))
+    log(f"  {len(rows)} rows, columns {list(rows[0].keys())[:12] if rows else []}")
+    return rows
+
+
+def qdate(p: str) -> date | None:
+    m = re.match(r"(\d{4})-Q(\d)$", p or "")
+    if m:
+        return date(int(m.group(1)), int(m.group(2)) * 3 - 2, 1)
+    m = re.match(r"(\d{4})-(\d{2})", p or "")
+    return date(int(m.group(1)), int(m.group(2)), 1) if m else None
+
+
+def bis_bulk(flow: str, key: str, start: str, dims: list[str]) -> dict[tuple, list]:
+    """{(dim values...): [(date, v)]} for a whole BIS dataflow in one request, DBnomics as a backup."""
+    out: dict[tuple, list] = {}
+    rows = sdmx_csv(f"https://stats.bis.org/api/v1/data/{flow}/{key}/all?detail=dataonly&format=csv&startPeriod={start}")
+    for row in rows:
+        k = tuple(row.get(d, "") for d in dims)
+        d, v = qdate(row.get("TIME_PERIOD", "")), num(row.get("OBS_VALUE"))
+        if d and v is not None and all(k):
+            out.setdefault(k, []).append((d, v))
+    if not out:
+        log(f"  BIS {flow} empty, trying DBnomics")
+        offset = 0
+        while offset < 5000 and time.time() < DEADLINE:
+            r = get(f"https://api.db.nomics.world/v22/series/BIS/{flow}?observations=1&format=json&limit=500&offset={offset}", tries=2, timeout=120)
+            docs = (((r.json() if r else {}).get("series") or {}).get("docs")) or []
+            for doc in docs:
+                code = doc.get("series_code", "")
+                parts = code.split(".")
+                want = key.split(".")
+                if len(parts) != len(want) or any(w and p not in w.split("+") for p, w in zip(parts, want)):
+                    continue
+                k = tuple(parts[1:1 + len(dims) - 1]) if False else tuple(dict(zip(["FREQ"] + dims[1:], parts)).get(d, "") for d in dims)
+                for p, v in zip(doc.get("period") or [], doc.get("value") or []):
+                    d, v = qdate(str(p)), num(v)
+                    if d and v is not None and str(p) >= start[:4]:
+                        out.setdefault(k, []).append((d, v))
+            if len(docs) < 500:
+                break
+            offset += 500
+    for k in out:
+        out[k].sort()
+    log(f"  BIS {flow}: {len(out)} series")
+    return out
+
+
+def oecd_valuation() -> dict[str, dict]:
+    """Price-to-income and price-to-rent ratios against each country's long-run average (100 = average),
+    from the OECD's analytical house price database."""
+    rows = sdmx_csv("https://sdmx.oecd.org/public/rest/data/OECD.ECO.MPD,DSD_AN_HOUSE_PRICES@DF_HOUSE_PRICES,1.0/all"
+                    "?startPeriod=2018-Q1&dimensionAtObservation=AllDimensions&format=csvfilewithlabels", timeout=150)
+    seen, out = {}, {}
+    for row in rows:
+        meas = row.get("MEASURE", "")
+        seen[meas] = row.get("Measure", "")
+        c = ISO3.get(row.get("REF_AREA", ""))
+        d, v = qdate(row.get("TIME_PERIOD", "")), num(row.get("OBS_VALUE"))
+        if not c or not d or v is None or (row.get("FREQ") and row.get("FREQ") != "Q"):
+            continue
+        # The standardised ratios compare today with each country's own long-run average (= 100)
+        key = "pti" if meas == "HPI_YDH_AVG" else "ptr" if meas == "HPI_RPI_AVG" else None
+        if key:
+            out.setdefault(c, {}).setdefault(key, []).append((d, v))
+    log(f"  OECD measures: {seen}")
+    res = {}
+    for c, m in out.items():
+        res[c] = {}
+        for k, s in m.items():
+            s.sort()
+            res[c][k] = rnd(s[-1][1], 1)
+            res[c][k + "At"] = f"{s[-1][0].year}-Q{(s[-1][0].month - 1) // 3 + 1}"
+    log(f"  OECD valuations for {len(res)} countries")
+    return res
+
+
+def qat(s, quarters_back):
+    """Value quarters_back quarters before the last point of a quarterly series."""
+    return at(s, quarters_back * 3)
+
+
+def cagr(a, b, years):
+    return None if a is None or not b or a <= 0 or b <= 0 else ((a / b) ** (1 / years) - 1) * 100
+
+
+def build_world():
+    """Every country in the BIS residential property price database, with real prices, prices in US dollars,
+    central bank rates and (where the OECD has them) valuation ratios, plus an investor score."""
+    spp = bis_bulk("WS_SPP", "Q..N+R.628", "1990-Q1", ["FREQ", "REF_AREA", "VALUE", "UNIT_MEASURE"])
+    if not spp:
+        return None, {}
+    pol = bis_bulk("WS_CBPOL", "M.", "2012-01", ["FREQ", "REF_AREA"]) if time.time() < DEADLINE else {}
+    xru = bis_bulk("WS_XRU", "M...A", "1999-01", ["FREQ", "REF_AREA", "CURRENCY", "COLLECTION"]) if time.time() < DEADLINE else {}
+    val = safe_call(oecd_valuation, {}) if time.time() < DEADLINE else {}
+    # Policy rates: euro area members use the ECB rate
+    # A policy rate series that stopped updating (Croatia's after it joined the euro) is dropped
+    rate = {k[1]: s for k, s in pol.items() if s and (NOW.date() - s[-1][0]).days < 200}
+    euro = {"AT", "BE", "BG", "CY", "DE", "EE", "ES", "FI", "FR", "GR", "HR", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PT", "SI", "SK"}
+    # Exchange rates (national currency per US dollar): the series with the latest data for each country
+    fx = {}
+    for (f, c, cur, coll), s in xru.items():
+        if s and (c not in fx or s[-1][0] > fx[c][-1][0] or (s[-1][0] == fx[c][-1][0] and len(s) > len(fx[c]))):
+            fx[c] = s
+    countries, hist = [], {}
+    for (f, c, kind, unit), s in spp.items():
+        if kind != "N" or c not in WORLD:
+            continue
+        name, region, _ = WORLD[c]
+        sr = spp.get((f, c, "R", unit), [])
+        if len(s) < 9:
+            continue
+        v, vr = s[-1][1], (sr[-1][1] if sr else None)
+        last = s[-1][0]
+        # Prices in US dollars: the nominal index divided by the quarter's average exchange rate
+        usd = []
+        if c == "US":
+            usd = list(s)
+        elif c in fx or (c in euro and "XM" in fx):
+            fxq = {}
+            for d, x in fx.get(c) or fx.get("XM"):
+                fxq.setdefault(date(d.year, (d.month - 1) // 3 * 3 + 1, 1), []).append(x)
+            usd = [(d, x / (sum(fxq[d]) / len(fxq[d]))) for d, x in s if fxq.get(d)]
+        pr = (rate.get("XM") if c in euro else None) or rate.get(c) or []
+        stale = (NOW.date() - last).days > 550
+        row = {
+            "code": c, "name": name, "region": region, "asof": f"{last.year}-Q{(last.month - 1) // 3 + 1}", "stale": stale,
+            "note": NOT_INVESTABLE.get(c),
+            "agg": region == "Benchmark",
+            "n1y": rnd(pct(v, qat(s, 4))), "n5y": rnd(pct(v, qat(s, 20))), "n10y": rnd(pct(v, qat(s, 40))),
+            "r1y": rnd(pct(vr, qat(sr, 4))) if sr else None, "r5y": rnd(pct(vr, qat(sr, 20))) if sr else None,
+            "r10y": rnd(pct(vr, qat(sr, 40))) if sr else None,
+            "rCagr10": rnd(cagr(vr, qat(sr, 40), 10)) if sr else None,
+            "rOffPeak": rnd(pct(vr, max(x for _, x in sr))) if sr else None,
+            "nOffPeak": rnd(pct(v, max(x for _, x in s))),
+            "usd1y": rnd(pct(usd[-1][1], qat(usd, 4))) if len(usd) > 5 else None,
+            "usd5y": rnd(pct(usd[-1][1], qat(usd, 20))) if len(usd) > 21 else None,
+            "accel": rnd((pct(v, qat(s, 4)) or 0) - (pct(qat(s, 4), qat(s, 8)) or 0)) if qat(s, 8) else None,
+            "rate": rnd(pr[-1][1], 2) if pr else None, "rate1y": rnd(pr[-1][1] - (at(pr, 12) or pr[-1][1]), 2) if pr else None,
+            "fx1y": rnd(-pct(fx[c][-1][1], at(fx[c], 12))) if c in fx and at(fx[c], 12) else (0.0 if c == "US" else None),
+            "spark": [rnd(x, 1) for _, x in (sr or s)[-20:]],
+            **(val.get(c) or {}),
+        }
+        # Calendar-year real (or nominal) change for the heat table: last quarter of each year on the year before
+        yrs = {}
+        base = sr or s
+        by_year = {}
+        for d, x in base:
+            by_year[d.year] = x  # last quarter seen in each year
+        for y in range(last.year - 10, last.year + 1):
+            if y in by_year and y - 1 in by_year:
+                yrs[str(y)] = rnd(pct(by_year[y], by_year[y - 1]), 1)
+        row["years"] = yrs
+        row["yearsReal"] = bool(sr)
+        countries.append(row)
+        cut = date(2000, 1, 1)
+        hist[c] = {"n": [[d.strftime("%Y-%m"), rnd(x, 2)] for d, x in s if d >= cut],
+                   "r": [[d.strftime("%Y-%m"), rnd(x, 2)] for d, x in sr if d >= cut],
+                   "u": [[d.strftime("%Y-%m"), rnd(x, 4)] for d, x in usd if d >= cut]}
+    score_world(countries)
+    log(f"World: {len(countries)} countries")
+    return {"countries": sorted(countries, key=lambda x: -(x.get("score") or -1)), "updated": NOW.isoformat(timespec="seconds")}, hist
+
+
+def safe_call(fn, fallback):
+    try:
+        return fn()
+    except Exception as e:  # noqa: BLE001
+        log(f"  {fn.__name__} failed: {e!r}")
+        return fallback
+
+
+def score_world(rows):
+    """Investor score, 0 to 100: where each country ranks on momentum, long-run growth, value, rates and currency,
+    against the other countries with current data. Missing parts are left out and the rest reweighted."""
+    live = [r for r in rows if not r["stale"] and not r["agg"] and not r.get("note")]
+    parts = [
+        ("momentum", 0.30, lambda r: r.get("r1y"), 1, "Real prices rising"),
+        ("growth", 0.20, lambda r: r.get("rCagr10"), 1, "Strong 10-year real growth"),
+        ("value", 0.25, lambda r: r.get("pti") if r.get("pti") is not None else r.get("rOffPeak"), 0, "Good value"),
+        ("rates", 0.15, lambda r: r.get("rate1y"), -1, "Interest rates falling"),
+        ("currency", 0.10, lambda r: r.get("fx1y"), 1, "Currency firming vs US$"),
+    ]
+    for key, w, fn, sign, why in parts:
+        if key == "value":
+            # Low price-to-income is good value; with no OECD ratio, prices well below their real peak count as value.
+            pti = sorted(r["pti"] for r in live if r.get("pti") is not None)
+            off = sorted(r["rOffPeak"] for r in live if r.get("rOffPeak") is not None)
+            for r in live:
+                if r.get("pti") is not None and len(pti) > 3:
+                    r.setdefault("_p", {})[key] = 1 - pti.index(r["pti"]) / (len(pti) - 1)
+                elif r.get("rOffPeak") is not None and len(off) > 3:
+                    r.setdefault("_p", {})[key] = 1 - off.index(r["rOffPeak"]) / (len(off) - 1)
+            continue
+        vals = sorted(fn(r) * sign for r in live if fn(r) is not None)
+        for r in live:
+            x = fn(r)
+            if x is not None and len(vals) > 3:
+                r.setdefault("_p", {})[key] = vals.index(x * sign) / (len(vals) - 1)
+    labels = {k: why for k, _, _, _, why in parts}
+    weights = {k: w for k, w, _, _, _ in parts}
+    for r in live:
+        p = r.pop("_p", {})
+        if len(p) < 2:
+            continue
+        tw = sum(weights[k] for k in p)
+        r["score"] = round(sum(weights[k] * v for k, v in p.items()) / tw * 100)
+        r["parts"] = {k: round(v * 100) for k, v in p.items()}
+        r["why"] = [labels[k] for k, v in sorted(p.items(), key=lambda kv: -kv[1]) if v >= 0.7][:3]
+        r["watch"] = [{"momentum": "Real prices falling", "growth": "Weak long-run growth", "value": "Expensive",
+                       "rates": "Rates rising", "currency": "Currency weakening vs US$"}[k]
+                      for k, v in sorted(p.items(), key=lambda kv: kv[1]) if v <= 0.25][:2]
 
 
 # ---------------------------------------------------------------- scores and picks
@@ -884,6 +1192,9 @@ def main():
     countries["MX"]["shf"] = mx_meta
 
     idea = safe("picks", lambda: picks(us, ca, mx), {})
+    log("US states and world markets")
+    states = safe("US states", build_states, [])
+    world, world_hist = safe("World", build_world, (None, {}))
 
     # Listings: real US ones when RentCast is set up, clearly marked samples otherwise
     rc = safe("RentCast", rentcast, None)
@@ -901,6 +1212,7 @@ def main():
         "updated": NOW.isoformat(timespec="seconds"),
         "countries": countries, "rates": rates, "fx": fx, "picks": idea,
         "markets": us + ca + mx, "errors": errors,
+        "regions": {"US": states, "CA": PROVINCE_ROWS}, "world": world,
     }
     (OUT / "data.json").write_text(json.dumps(data, separators=(",", ":"), ensure_ascii=False))
     # History: national series in hist.json, and one small file per market in hist/ (loaded only when charted)
@@ -915,6 +1227,7 @@ def main():
         old.unlink()
     for mid, h in {**us_hist, **ca_hist}.items():
         (hdir / f"{mid}.json").write_text(json.dumps(h, separators=(",", ":")))
+    (OUT / "world_hist.json").write_text(json.dumps(world_hist, separators=(",", ":")))
     (OUT / "listings.json").write_text(json.dumps(listings, separators=(",", ":"), ensure_ascii=False))
     (OUT / "news.json").write_text(json.dumps({"updated": NOW.isoformat(timespec="seconds"), "news": safe("news", news, {})},
                                               separators=(",", ":"), ensure_ascii=False))
