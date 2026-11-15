@@ -125,18 +125,56 @@ def parse_date(s: str) -> date | None:
 
 
 # ---------------------------------------------------------------- FRED
+BROWSER = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+           "Accept": "text/csv,application/json,text/plain,*/*"}
+_fred_down = False
+
+
 def fred(series_id: str) -> list[tuple[date, float]]:
-    r = get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}")
-    if not r:
-        log("  FRED failed", series_id)
-        return []
-    rows = list(csv.reader(io.StringIO(r.text)))
+    """A FRED series. Uses the FRED API when FRED_API_KEY is set (free key); otherwise the public CSV link,
+    which sometimes stalls for cloud servers, so after one failure the rest are skipped."""
+    global _fred_down
+    key = os.environ.get("FRED_API_KEY", "").strip()
     out = []
-    for row in rows[1:]:
+    if key:
+        r = get(f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={key}&file_type=json",
+                tries=2, timeout=40)
+        for o in (r.json().get("observations", []) if r else []):
+            d, v = parse_date(o.get("date", "")), num(o.get("value"))
+            if d and v is not None:
+                out.append((d, v))
+        if out:
+            return out
+    if _fred_down:
+        return []
+    r = get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}", tries=1, timeout=40, headers=BROWSER)
+    if not r:
+        log("  FRED not answering; skipping its other series this run")
+        _fred_down = True
+        return []
+    for row in list(csv.reader(io.StringIO(r.text)))[1:]:
         if len(row) >= 2:
             d, v = parse_date(row[0]), num(row[1])
             if d and v is not None:
                 out.append((d, v))
+    return out
+
+
+def dbnomics(code: str) -> list[tuple[date, float]]:
+    """A series from DBnomics (free mirror of BIS and other agencies), e.g. BIS/WS_SPP/Q.US.N.628."""
+    r = get(f"https://api.db.nomics.world/v22/series/{code}?observations=1&format=json", tries=2, timeout=40)
+    if not r:
+        return []
+    docs = ((r.json().get("series") or {}).get("docs")) or []
+    if not docs:
+        return []
+    doc = docs[0]
+    days = doc.get("period_start_day") or doc.get("period") or []
+    out = []
+    for d, v in zip(days, doc.get("value") or []):
+        d, v = parse_date(str(d)[:10]), num(v)
+        if d and v is not None:
+            out.append((d, v))
     return out
 
 
@@ -658,9 +696,17 @@ def main():
     us30, us15 = series(fred, "MORTGAGE30US", monthly=True), series(fred, "MORTGAGE15US", monthly=True)
     ca5, capol = series(bank_of_canada, "V80691335", monthly=True), series(bank_of_canada, "V39079", monthly=True)
     mxpol = series(fred, "IRSTCI01MXM156N")
-    cad, mxn = series(fred, "DEXCAUS", monthly=True), series(fred, "DEXMXUS", monthly=True)
-    bis = {c: series(fred, sid) for c, sid in (("US", "QUSN628BIS"), ("CA", "QCAN628BIS"), ("MX", "QMXN628BIS"))}
-    bisr = {c: series(fred, sid) for c, sid in (("US", "QUSR628BIS"), ("CA", "QCAR628BIS"), ("MX", "QMXR628BIS"))}
+    # Exchange rates from the Bank of Canada (USD/CAD, and MXN through CAD)
+    usdcad, mxncad = series(bank_of_canada, "FXUSDCAD", monthly=True), series(bank_of_canada, "FXMXNCAD", monthly=True)
+    cad = usdcad
+    mxc = dict(mxncad)
+    mxn = [(d, v / mxc[d]) for d, v in usdcad if mxc.get(d)]
+    # BIS house price indexes: DBnomics first (fast), FRED as a backup
+    def bis_series(c, kind):
+        s = series(dbnomics, f"BIS/WS_SPP/Q.{c}.{kind}.628")
+        return s or series(fred, f"Q{c}{kind}628BIS")
+    bis = {c: bis_series(c, "N") for c in ("US", "CA", "MX")}
+    bisr = {c: bis_series(c, "R") for c in ("US", "CA", "MX")}
     cs, mspus, houst = series(fred, "CSUSHPINSA"), series(fred, "MSPUS"), series(fred, "HOUST")
     rvac, own = series(fred, "RRVRUSQ156N"), series(fred, "RHORUSQ156N")
 

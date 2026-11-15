@@ -44,6 +44,7 @@ jobs:
       - name: Gather housing market data and listings for the real estate pages
         env:
           RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python scripts/build_realestate.py || echo "::warning::real estate step failed, real estate pages may be stale"
       - name: Give the live service the Ask page's notes
         run: cp site/ask-kb.json worker/ask-kb.json
