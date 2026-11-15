@@ -192,15 +192,18 @@ def dbnomics(code: str) -> list[tuple[date, float]]:
     return out
 
 
-def xlsx_rows(content: bytes) -> list[list]:
-    """Rows of the first sheet of an .xlsx file, without extra packages: strings and numbers by column."""
+def xlsx_rows(content: bytes, which: int = 0) -> list[list]:
+    """Rows of one sheet of an .xlsx file, without extra packages: strings and numbers by column."""
     ns = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
     with zipfile.ZipFile(io.BytesIO(content)) as z:
         shared = []
         if "xl/sharedStrings.xml" in z.namelist():
             for si in ET.fromstring(z.read("xl/sharedStrings.xml")).findall("m:si", ns):
                 shared.append("".join(t.text or "" for t in si.iter(f"{{{ns['m']}}}t")))
-        sheet = sorted(n for n in z.namelist() if n.startswith("xl/worksheets/sheet"))[0]
+        sheets = sorted((n for n in z.namelist() if re.match(r"xl/worksheets/sheet\d+\.xml$", n)), key=lambda n: int(re.findall(r"\d+", n)[-1]))
+        if which >= len(sheets):
+            return []
+        sheet = sheets[which]
         rows = []
         for row in ET.fromstring(z.read(sheet)).iter(f"{{{ns['m']}}}row"):
             out = {}
@@ -231,40 +234,45 @@ def colname(i: int) -> str:
 
 
 def freddie_mac() -> tuple[list, list]:
-    """Weekly 30- and 15-year fixed mortgage rates from Freddie Mac's survey (the source FRED copies)."""
+    """Weekly 30- and 15-year fixed mortgage rates from Freddie Mac's survey (the source FRED copies).
+    The workbook's layout has changed over the years, so the sheet with the latest dates is used, and the
+    rate columns are told apart by their values: the 30-year is the highest rate, the 15-year the next."""
     r = get("https://www.freddiemac.com/pmms/docs/historicalweeklydata.xlsx", tries=2, timeout=60, headers=BROWSER)
     if not r:
         return [], []
-    rows = xlsx_rows(r.content)
-    c30 = c15 = None
-    for row in rows[:12]:
-        for i, cell in enumerate(row):
-            t = str(cell or "").lower()
-            if "30" in t and ("yr" in t or "year" in t) and "fees" not in t and c30 is None:
-                c30 = i
-            elif "15" in t and ("yr" in t or "year" in t) and "fees" not in t and c15 is None:
-                c15 = i
-    c30 = 1 if c30 is None else c30
-    s30, s15 = [], []
-    for row in rows:
-        if not row or row[0] is None:
-            continue
-        d = row[0]
-        if isinstance(d, float) and 20000 < d < 80000:   # Excel day number
-            d = date(1899, 12, 30) + timedelta(days=int(d))
-        elif isinstance(d, str):
-            d = parse_date(d) or next((datetime.strptime(d.strip(), f).date() for f in ("%m/%d/%Y", "%m/%d/%y") if _ok(d, f)), None)
-        else:
-            continue
-        if not d:
-            continue
-        v30 = row[c30] if c30 < len(row) else None
-        v15 = row[c15] if c15 is not None and c15 < len(row) else None
-        if isinstance(v30, float):
-            s30.append((d, v30))
-        if isinstance(v15, float):
-            s15.append((d, v15))
-    log(f"  Freddie Mac: {len(s30)} weeks")
+    best = None
+    for k in range(8):
+        rows = xlsx_rows(r.content, k)
+        if not rows and k:
+            break
+        dated = []
+        for row in rows:
+            d = row[0] if row else None
+            if isinstance(d, float) and 20000 < d < 80000:   # Excel day number
+                d = date(1899, 12, 30) + timedelta(days=int(d))
+            elif isinstance(d, str):
+                d = next((datetime.strptime(d.strip(), f).date() for f in ("%m/%d/%Y", "%m/%d/%y", "%Y-%m-%d") if _ok(d, f)), None)
+            else:
+                d = None
+            if d:
+                dated.append((d, row))
+        if dated and (best is None or max(dated)[0] > max(best)[0]):
+            best = dated
+    if not best:
+        return [], []
+    best.sort(key=lambda x: x[0])
+    recent = best[-52:]
+    width = max(len(row) for _, row in recent)
+    def avg(i):
+        v = [row[i] for _, row in recent if i < len(row) and isinstance(row[i], float) and 1.5 < row[i] < 25]
+        return sum(v) / len(v) if len(v) > len(recent) / 2 else None
+    cols = sorted((i for i in range(1, width) if avg(i) is not None), key=lambda i: -avg(i))
+    if not cols:
+        return [], []
+    pick = lambda i: [(d, row[i]) for d, row in best if i < len(row) and isinstance(row[i], float) and 0 < row[i] < 25]
+    s30 = pick(cols[0])
+    s15 = pick(cols[1]) if len(cols) > 1 else []
+    log(f"  Freddie Mac: {len(s30)} weeks, latest {s30[-1] if s30 else None}")
     return s30, s15
 
 
@@ -736,8 +744,9 @@ NEWS = {
            ('"mercado inmobiliario" OR "precios de vivienda" OR "crédito hipotecario" México', "es-419", "MX", "MX:es-419")],
 }
 # A headline must mention housing to be kept (search results drift off topic)
-ON_TOPIC = re.compile(r"hous|home|mortgage|real estate|realtor|rent|condo|property|propert|apartment|landlord|buyer|seller|listing|CMHC|CREA|"
-                      r"vivienda|inmobiliari|hipotec|casa|departamento|renta|bienes ra", re.I)
+ON_TOPIC = re.compile(r"\bhousing\b|\bhomes?\b|home ?(buyer|owner|sale|price|value|builder)|mortgage|real estate|realtor|\brent(s|al|ers?)?\b|"
+                      r"\bcondos?\b|propert(y|ies)|apartment|landlord|listings?\b|CMHC|CREA|"
+                      r"vivienda|inmobiliari|hipotec|\bcasas?\b|departamento|\brentas?\b|bienes ra", re.I)
 
 
 def news():

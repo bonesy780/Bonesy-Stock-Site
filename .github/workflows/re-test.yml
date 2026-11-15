@@ -18,7 +18,7 @@ jobs:
       - run: python -u scripts/build_realestate.py
       - name: Save the output for review
         run: |
-          mkdir -p re-test-output && cp -r site/re/*.json site/re/hist re-test-output/ && rm -f re-test-output/hist/us-[n-z]*.json re-test-output/hist/us-[d-m]*.json
+          mkdir -p re-test-output && cp -r site/re/*.json site/re/hist re-test-output/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f re-test-output
