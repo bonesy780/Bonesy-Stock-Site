@@ -11,6 +11,17 @@
     ["news.html", "News"],
   ];
   const COUNTRY = { US: "United States", CA: "Canada", MX: "Mexico" };
+  // Full state and province names, so a search for "Hawaii" or "Ontario" finds markets listed as HI or ON
+  const REGION_NAMES = { AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California", CO: "Colorado", CT: "Connecticut",
+    DE: "Delaware", DC: "District of Columbia Washington DC", FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana",
+    IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland", MA: "Massachusetts", MI: "Michigan",
+    MN: "Minnesota", MS: "Mississippi", MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+    NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania",
+    RI: "Rhode Island", SC: "South Carolina", SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont", VA: "Virginia",
+    WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming", PR: "Puerto Rico" };
+  const PROVINCE_NAMES = { NL: "Newfoundland and Labrador", PE: "Prince Edward Island", NS: "Nova Scotia", NB: "New Brunswick", QC: "Quebec",
+    ON: "Ontario", MB: "Manitoba", SK: "Saskatchewan", AB: "Alberta", BC: "British Columbia", YT: "Yukon", NT: "Northwest Territories", NU: "Nunavut" };
+  const regionName = (m) => String(m.region || "").split("-").map((r) => (m.c === "CA" ? PROVINCE_NAMES : m.c === "US" ? REGION_NAMES : {})[r] || "").join(" ");
   const FLAG = { US: "🇺🇸", CA: "🇨🇦", MX: "🇲🇽" };
   const SYM = { USD: "$", CAD: "C$", MXN: "MX$" };
 
@@ -108,8 +119,8 @@
     const d = await data();
     const scored = [];
     for (const m of d.markets) {
-      const nm = norm(m.name), full = norm(m.full + " " + (m.region || "") + " " + COUNTRY[m.c]);
-      const s = nm === t ? 0 : nm.startsWith(t) ? 1 : nm.split(" ").some((w) => w.startsWith(t)) ? 2 : full.includes(t) ? 3 : -1;
+      const nm = norm(m.name), full = norm(m.full + " " + (m.region || "") + " " + regionName(m) + " " + COUNTRY[m.c]);
+      const s = nm === t ? 0 : nm.startsWith(t) ? 1 : nm.split(" ").some((w) => w.startsWith(t)) ? 2 : norm(regionName(m)).split(" ").includes(t) || norm(regionName(m)) === t ? 3 : full.includes(t) ? 4 : -1;
       if (s >= 0) scored.push([s, m.rank || 999, m]);
     }
     return scored.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, n).map((x) => x[2]);
