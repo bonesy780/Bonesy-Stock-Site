@@ -275,6 +275,69 @@
     return b ? pts.map((p) => [p[0], p[1] == null ? null : p[1] / b[1] * 100]) : pts;
   };
 
+  // ---- growth views and statistics for [["YYYY-MM", v]] price series (quarterly or monthly)
+  const mon = (l) => +l.slice(0, 4) * 12 + +l.slice(5, 7) - 1;
+  const GROWTH_VIEWS = [
+    ["index", "Index", "Prices rebased to 100 at the start of the period."],
+    ["cum", "% change", "Total change in price since the start of the period."],
+    ["yoy", "Yearly growth", "Change on the same quarter a year earlier, at each point in time."],
+    ["qoq", "Each quarter", "Change on the quarter before (or month before, for monthly figures)."],
+    ["dd", "Below peak", "How far prices sit below their highest level so far."],
+  ];
+  // Change on the point a year earlier, keyed by label
+  function yoySeries(pts) {
+    const at = Object.fromEntries(pts.filter((p) => p[1] != null).map((p) => [mon(p[0]), p[1]]));
+    return pts.map((p) => { const b = at[mon(p[0]) - 12]; return [p[0], p[1] != null && b ? (p[1] / b - 1) * 100 : null]; });
+  }
+  function growthView(full, mode, years) {
+    full = (full || []).filter((p) => p[1] != null);
+    if (mode === "index") return rebase(since(full, years));
+    if (mode === "cum") return rebase(since(full, years)).map((p) => [p[0], p[1] - 100]);
+    if (mode === "yoy") return since(yoySeries(full), years).filter((p) => p[1] != null);
+    if (mode === "qoq") return since(full.map((p, i) => [p[0], i ? (p[1] / full[i - 1][1] - 1) * 100 : null]), years).filter((p) => p[1] != null);
+    if (mode === "dd") { let hi = -Infinity; return since(full.map((p) => { hi = Math.max(hi, p[1]); return [p[0], (p[1] / hi - 1) * 100]; }), years); }
+    return full;
+  }
+  function growthStats(full, years) {
+    full = (full || []).filter((p) => p[1] != null);
+    const p = since(full, years);
+    if (p.length < 3) return null;
+    const a = p[0][1], b = p.at(-1)[1];
+    const span = (mon(p.at(-1)[0]) - mon(p[0][0])) / 12;
+    const step = mon(p.at(-1)[0]) - mon(p.at(-2)[0]) || 3;
+    const chg = p.slice(1).map((x, i) => x[1] / p[i][1] - 1);
+    const mean = chg.reduce((s, x) => s + x, 0) / chg.length;
+    const sd = Math.sqrt(chg.reduce((s, x) => s + (x - mean) ** 2, 0) / Math.max(1, chg.length - 1));
+    const yo = since(yoySeries(full), years).filter((x) => x[1] != null);
+    let best = null, worst = null;
+    for (const x of yo) { if (!best || x[1] > best[1]) best = x; if (!worst || x[1] < worst[1]) worst = x; }
+    let hi = -Infinity, dd = 0, ddAt = null;
+    for (const x of p) { hi = Math.max(hi, x[1]); const d = (x[1] / hi - 1) * 100; if (d < dd) { dd = d; ddAt = x[0]; } }
+    const peak = Math.max(...full.map((x) => x[1]));
+    const yoyAll = yoySeries(full).filter((x) => x[1] != null);
+    return {
+      from: p[0][0], to: p.at(-1)[0], years: span,
+      total: (b / a - 1) * 100,
+      cagr: span > 0.9 ? ((b / a) ** (1 / span) - 1) * 100 : null,
+      last1y: yoyAll.length ? yoyAll.at(-1)[1] : null,
+      lastQ: chg.length ? chg.at(-1) * 100 : null,
+      best, worst, maxDrop: dd, maxDropAt: ddAt,
+      offPeak: (b / peak - 1) * 100,
+      vol: sd * Math.sqrt(12 / step) * 100,
+      up: chg.filter((x) => x > 0).length / chg.length * 100,
+    };
+  }
+  // Labels like "2024-07" as "Q3 2024" (quarterly) or "Jul 2024"
+  const periodName = (l, quarterly = true) => !l ? "" : quarterly ? `Q${Math.floor((+l.slice(5, 7) - 1) / 3) + 1} ${l.slice(0, 4)}`
+    : new Date(l + "-15").toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  // Download rows as a CSV file
+  function csv(name, rows) {
+    const text = rows.map((r) => r.map((v) => v == null ? "" : typeof v === "number" ? +v.toFixed(4) : `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+    a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
   // Monthly mortgage payment
   function payment(principal, ratePct, years, country = "US") {
     if (principal <= 0) return 0;
@@ -331,5 +394,5 @@
     return [["Inmuebles24", `https://www.inmuebles24.com/casas-en-venta-q-${q}.html`], ["Lamudi", `https://www.lamudi.com.mx/`], ["Vivanuncios", `https://www.vivanuncios.com.mx/`]];
   };
 
-  window.RE = { esc, money, short, pct, fixed, int, spark, store, load, data, marketUrl, place, headline, sideCls, Saved, star, search, picker, table, chart, since, rebase, payment, COUNTRY, FLAG, SYM, searchLinks, PAGES, flag, REGION_NAMES, PROVINCE_NAMES };
+  window.RE = { esc, money, short, pct, fixed, int, spark, store, load, data, marketUrl, place, headline, sideCls, Saved, star, search, picker, table, chart, since, rebase, payment, GROWTH_VIEWS, growthView, growthStats, periodName, csv, COUNTRY, FLAG, SYM, searchLinks, PAGES, flag, REGION_NAMES, PROVINCE_NAMES };
 })();

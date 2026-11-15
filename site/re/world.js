@@ -1,6 +1,6 @@
 // World housing markets: top 10 with toggles, price chart, momentum-vs-peak map, year-by-year heat table, full table.
 (async function () {
-  const { esc, pct, fixed, spark, store, table, chart, since, rebase, flag } = RE;
+  const { esc, pct, fixed, spark, store, table, chart, since, rebase, flag, GROWTH_VIEWS, growthView, growthStats, periodName, csv } = RE;
   let D;
   try { D = await RE.data(); } catch { D = null; }
   const W = D && D.world;
@@ -34,6 +34,7 @@
   const S = {
     rank: store.get("w-rank", "score"), region: store.get("w-region", "World"), n: store.get("w-n", 10), stale: store.get("w-stale", false),
     kind: store.get("w-kind", "r"), range: store.get("w-range", 10), picked: null,
+    view: store.get("w-view", "index"), median: store.get("w-median", false),
   };
   if (!RANKS.find((r) => r[0] === S.rank)) S.rank = "score";
   const rankSel = document.getElementById("w-rank"), regionSeg = document.getElementById("w-region"), nSeg = document.getElementById("w-n");
@@ -101,18 +102,102 @@
     S.picked = Array.isArray(saved) && saved.length ? saved.filter((c) => byCode[c]) : [...ALL.filter((c) => !c.stale && c.score != null).sort((a, b) => b.score - a.score).slice(0, 4).map((c) => c.code)];
     if (!saved && !S.picked.includes("US") && byCode.US) S.picked.push("US");
   }
-  const kindSeg = document.getElementById("w-kind"), rangeSeg = document.getElementById("w-range"), chips = document.getElementById("w-chips");
+  const kindSeg = document.getElementById("w-kind"), rangeSeg = document.getElementById("w-range"), chips = document.getElementById("w-chips"),
+    viewSeg = document.getElementById("w-view"), presetsEl = document.getElementById("w-presets");
+  if (!GROWTH_VIEWS.find((v) => v[0] === S.view)) S.view = "index";
+  const KINDS = [["n", "Price"], ["r", "After inflation"], ["u", "In US dollars"]];
+  const RANGES = [[3, "3 yrs"], [5, "5 yrs"], [10, "10 yrs"], [20, "20 yrs"], [0, "Since 2000"]];
+  const G7 = ["US", "CA", "GB", "FR", "DE", "IT", "JP"];
+  const live = () => ALL.filter((c) => !c.stale);
+  const topBy = (fn, dir, n = 5) => live().filter((c) => fn(c) != null).sort((a, b) => (fn(b) - fn(a)) * dir).slice(0, n).map((c) => c.code);
+  const PRESETS = [
+    ["Top 5 by score", () => topBy((c) => c.score, 1)],
+    ["G7", () => G7.filter((c) => byCode[c])],
+    ["Rising fastest", () => topBy((c) => c.r1y, 1)],
+    ["Falling fastest", () => topBy((c) => c.r1y, -1)],
+    ["Furthest below peak", () => topBy((c) => c.rOffPeak, -1)],
+    ["Best value", () => topBy((c) => c.pti, -1)],
+    ["Rates falling most", () => topBy((c) => c.rate1y, -1)],
+    ["North America", () => ["US", "CA", "MX"]],
+  ];
+  const sgn = (v, nd = 1) => { if (v == null) return "–"; const r = +v.toFixed(nd) || 0; return `${r > 0 ? "+" : ""}${r.toFixed(nd)}%`; };
+  // Median of every country with current data, worked out on the chosen view
+  function medianSeries() {
+    const per = {};
+    for (const c of live()) {
+      const pts = growthView((H[c.code] || {})[S.kind], S.view, S.range);
+      for (const [l, v] of pts) if (v != null) (per[l] ||= []).push(v);
+    }
+    const n = Math.max(0, ...Object.values(per).map((a) => a.length));
+    return Object.keys(per).sort().filter((l) => per[l].length >= n * 0.6).map((l) => {
+      const a = per[l].sort((x, y) => x - y), m = a.length >> 1;
+      return [l, a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2];
+    });
+  }
+  let last = [];
   async function drawChart() {
-    kindSeg.innerHTML = [["n", "Price"], ["r", "After inflation"], ["u", "In US dollars"]].map(([v, l]) => `<button role="tab" aria-selected="${v === S.kind}" data-k="${v}">${l}</button>`).join("");
-    rangeSeg.innerHTML = [[5, "5 years"], [10, "10 years"], [20, "20 years"]].map(([v, l]) => `<button role="tab" aria-selected="${v === S.range}" data-r="${v}">${l}</button>`).join("");
+    viewSeg.innerHTML = GROWTH_VIEWS.map(([v, l, t]) => `<button role="tab" aria-selected="${v === S.view}" data-v="${v}" title="${esc(t)}">${l}</button>`).join("");
+    kindSeg.innerHTML = KINDS.map(([v, l]) => `<button role="tab" aria-selected="${v === S.kind}" data-k="${v}">${l}</button>`).join("");
+    rangeSeg.innerHTML = RANGES.map(([v, l]) => `<button role="tab" aria-selected="${v === S.range}" data-r="${v}">${l}</button>`).join("");
+    presetsEl.innerHTML = `<span class="muted re-small">Quick picks</span>` + PRESETS.map(([l], i) => `<button class="chip" type="button" data-p="${i}">${esc(l)}</button>`).join("")
+      + `<label class="re-check re-small"><input type="checkbox" id="w-median" ${S.median ? "checked" : ""}> Median of all countries</label>`;
     const opts = ALL.filter((c) => !S.picked.includes(c.code)).sort((a, b) => a.name.localeCompare(b.name));
     chips.innerHTML = S.picked.map((code, i) => `<span class="chip"><i class="dot" style="background:${COLORS[i % COLORS.length]}"></i>${flag(code)} ${esc((byCode[code] || {}).name || code)}<button class="x" type="button" data-rm="${code}" aria-label="Remove ${esc((byCode[code] || {}).name || code)}">✕</button></span>`).join("")
-      + (S.picked.length < 7 ? `<select class="field w-add-sel" id="w-add" aria-label="Add a country"><option value="">+ Add a country</option>${opts.map((c) => `<option value="${c.code}">${esc(c.name)}</option>`).join("")}${bench && !S.picked.includes("XM") ? `<option value="XM">Euro area (benchmark)</option>` : ""}</select>` : "");
+      + (S.picked.length < 7 ? `<select class="field w-add-sel" id="w-add" aria-label="Add a country"><option value="">+ Add a country</option>${opts.map((c) => `<option value="${c.code}">${esc(c.name)}</option>`).join("")}${bench && !S.picked.includes("XM") ? `<option value="XM">Euro area (benchmark)</option>` : ""}</select>` : "")
+      + (S.picked.length ? `<button class="chip n-clear" type="button" data-clear="1">Clear</button>` : "");
+    const view = GROWTH_VIEWS.find((v) => v[0] === S.view);
+    const kindName = { n: "before inflation, in local currency", r: "after inflation, in local currency", u: "in US dollars, before inflation" }[S.kind];
+    document.getElementById("w-view-note").textContent = `${view[2]} House prices ${kindName}.`;
     const box = document.getElementById("w-chart");
     try { H ||= await RE.load("world_hist.json"); } catch { box.innerHTML = `<div class="empty">No history yet.</div>`; return; }
-    const series = S.picked.map((code, i) => ({ name: (byCode[code] || {}).name || code, color: COLORS[i % COLORS.length], pts: rebase(since((H[code] || {})[S.kind] || [], S.range)) }));
-    chart(box, series, { fmt: (v) => v.toFixed(0), base: 100, label: "House prices rebased to 100" });
+    const series = S.picked.map((code, i) => ({ code, name: (byCode[code] || {}).name || code, color: COLORS[i % COLORS.length], pts: growthView((H[code] || {})[S.kind], S.view, S.range) }));
+    if (S.median) series.push({ code: "median", name: "Median of all countries", color: "var(--muted)", dash: true, pts: medianSeries() });
+    last = series;
+    const isIdx = S.view === "index";
+    chart(box, series, { fmt: isIdx ? (v) => v.toFixed(0) : (v) => sgn(v, Math.abs(v) < 10 ? 1 : 0), base: isIdx ? 100 : 0, label: `House prices: ${view[1]}` });
+    drawStats();
   }
+
+  // ---- the numbers for each picked country over the chosen period
+  const sstate = { key: "total", dir: -1 };
+  function drawStats() {
+    document.getElementById("w-stats-title").textContent = `The numbers, ${S.range ? `past ${S.range} years` : "since 2000"} (${{ n: "price", r: "after inflation", u: "in US dollars" }[S.kind]})`;
+    const rows = S.picked.map((code, i) => {
+      const h = H[code] || {};
+      const st = growthStats(h[S.kind], S.range);
+      if (!st) return null;
+      const tot = (k) => { const x = growthStats(h[k], S.range); return x ? x.total : null; };
+      const n = tot("n"), r = tot("r"), u = tot("u");
+      return {
+        code, name: (byCode[code] || {}).name || code, color: COLORS[i % COLORS.length], ...st,
+        infl: n != null && r != null ? ((1 + n / 100) / (1 + r / 100) - 1) * 100 : null,
+        fxEff: n != null && u != null ? ((1 + u / 100) / (1 + n / 100) - 1) * 100 : null,
+      };
+    }).filter(Boolean);
+    const cell = (v, nd = 1) => `<span class="num ${v == null ? "" : v >= 0 ? "up" : "down"}">${sgn(v, nd)}</span>`;
+    const cols = [
+      { key: "name", label: "Country", left: true, sm: true, val: (c) => c.name, html: (c) => `<span class="co"><span class="nm"><i class="dot" style="background:${c.color}"></i> ${flag(c.code)} ${esc(c.name)}</span><span class="tk">${esc(periodName(c.from))} to ${esc(periodName(c.to))}</span></span>` },
+      { key: "total", label: "Total change", sm: true, val: (c) => c.total, html: (c) => cell(c.total, Math.abs(c.total) < 100 ? 1 : 0), title: "Price change from the start to the end of the period" },
+      { key: "cagr", label: "Yearly average", sm: true, val: (c) => c.cagr, html: (c) => cell(c.cagr), title: "Compound growth per year over the period" },
+      { key: "last1y", label: "Last 12 months", sm: true, val: (c) => c.last1y, html: (c) => cell(c.last1y) },
+      { key: "lastQ", label: "Last quarter", val: (c) => c.lastQ, html: (c) => cell(c.lastQ) },
+      { key: "best", label: "Best 12 months", val: (c) => c.best && c.best[1], html: (c) => c.best ? `${cell(c.best[1])}<span class="tk muted re-small"> ${esc(periodName(c.best[0]))}</span>` : "–" },
+      { key: "worst", label: "Worst 12 months", val: (c) => c.worst && c.worst[1], html: (c) => c.worst ? `${cell(c.worst[1])}<span class="tk muted re-small"> ${esc(periodName(c.worst[0]))}</span>` : "–" },
+      { key: "maxDrop", label: "Biggest drop", val: (c) => c.maxDrop, html: (c) => `<span class="num ${c.maxDrop < -0.05 ? "down" : ""}">${c.maxDrop < -0.05 ? c.maxDrop.toFixed(1) + "%" : "None"}</span>`, title: "Largest fall from a high within the period" },
+      { key: "offPeak", label: "Below peak now", val: (c) => c.offPeak, html: (c) => `<span class="num">${c.offPeak > -0.05 ? "At peak" : c.offPeak.toFixed(1) + "%"}</span>`, title: "Compared with the highest level since 2000" },
+      { key: "vol", label: "Swings", val: (c) => c.vol, html: (c) => `<span class="num">${c.vol.toFixed(1)}%</span>`, title: "Yearly standard deviation of quarterly changes: higher means a bumpier ride" },
+      { key: "up", label: "Rising quarters", val: (c) => c.up, html: (c) => `<span class="num">${c.up.toFixed(0)}%</span>`, title: "Share of quarters when prices rose" },
+      { key: "infl", label: "Inflation", val: (c) => c.infl, html: (c) => `<span class="num">${sgn(c.infl, 0)}</span>`, title: "Consumer price inflation over the period, worked out from the price and after-inflation series" },
+      { key: "fxEff", label: "Currency effect", val: (c) => c.fxEff, html: (c) => cell(c.fxEff, 0), title: "What the currency's move against the US dollar added to or took from a US investor's return" },
+    ];
+    table(document.getElementById("w-stats"), cols, rows, sstate, { empty: "Pick a country to see its numbers.", cls: "w-stats-table" });
+  }
+  document.getElementById("w-csv").addEventListener("click", () => {
+    if (!last.length) return;
+    const labels = [...new Set(last.flatMap((s) => s.pts.map((p) => p[0])))].sort();
+    const maps = last.map((s) => Object.fromEntries(s.pts));
+    csv(`house-prices-${S.view}-${S.kind}.csv`, [["Quarter", ...last.map((s) => s.name)], ...labels.map((l) => [l, ...maps.map((m) => m[l])])]);
+  });
   function setPicked(p) { S.picked = p; store.set("w-picked", p); drawChart(); drawTop(); drawScatter(); }
 
   // ---- momentum vs peak map
@@ -205,7 +290,13 @@
   document.getElementById("w-stale").addEventListener("change", (e) => { S.stale = e.target.checked; store.set("w-stale", S.stale); drawTop(); drawScatter(); });
   kindSeg.addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (!b) return; S.kind = b.dataset.k; store.set("w-kind", S.kind); drawChart(); });
   rangeSeg.addEventListener("click", (e) => { const b = e.target.closest("[data-r]"); if (!b) return; S.range = +b.dataset.r; store.set("w-range", S.range); drawChart(); });
-  chips.addEventListener("click", (e) => { const b = e.target.closest("[data-rm]"); if (b) setPicked(S.picked.filter((c) => c !== b.dataset.rm)); });
+  viewSeg.addEventListener("click", (e) => { const b = e.target.closest("[data-v]"); if (!b) return; S.view = b.dataset.v; store.set("w-view", S.view); drawChart(); });
+  presetsEl.addEventListener("click", (e) => { const b = e.target.closest("[data-p]"); if (b) setPicked(PRESETS[+b.dataset.p][1]().slice(0, 7)); });
+  presetsEl.addEventListener("change", (e) => { if (e.target.id === "w-median") { S.median = e.target.checked; store.set("w-median", S.median); drawChart(); } });
+  chips.addEventListener("click", (e) => {
+    if (e.target.closest("[data-clear]")) return setPicked([]);
+    const b = e.target.closest("[data-rm]"); if (b) setPicked(S.picked.filter((c) => c !== b.dataset.rm));
+  });
   chips.addEventListener("change", (e) => { if (e.target.id === "w-add" && e.target.value) setPicked([...S.picked, e.target.value]); });
   const toggle = (code) => setPicked(S.picked.includes(code) ? S.picked.filter((c) => c !== code) : [...S.picked, code].slice(-7));
   topEl.addEventListener("click", (e) => { const b = e.target.closest("[data-add]"); if (b) toggle(b.dataset.add); });
