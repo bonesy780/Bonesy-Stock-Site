@@ -106,7 +106,7 @@
 .w-view-note { margin: 0 0 8px; }
 .w-stats-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 0 8px; }
 .w-stats-head h3 { margin: 0; font-size: 16px; }
-.w-stats-table td, .w-stats-table th { white-space: nowrap; }
+.w-stats-table td { white-space: nowrap; }
 .w-stats-table .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; }
 .w-stats-table .tk.muted { display: block; font-size: 11px; }
 .w-stats-note { margin-top: 8px; max-width: 900px; }
