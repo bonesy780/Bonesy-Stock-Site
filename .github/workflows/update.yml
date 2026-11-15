@@ -91,6 +91,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/constituents
           [ -f data/realestate/listings.json ] && git add data/realestate/listings.json
+          [ -f data/realestate/rentcast_usage.json ] && git add data/realestate/rentcast_usage.json
           git diff --cached --quiet && exit 0
           git commit -m "Refresh index member lists"
           # main may have moved during the build; rebase and retry, and never hold up the deploy.

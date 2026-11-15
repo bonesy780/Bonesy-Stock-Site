@@ -674,23 +674,45 @@ TYPES = ["Single Family", "Condo", "Townhouse"]
 STREETS = ["Maple", "Oak", "Cedar", "Lakeview", "Park", "Hillside", "River", "Sunset", "Willow", "Birch", "Elm", "Harbour"]
 
 
+RENTCAST_MONTHLY_CAP = 40  # free plan allows 50 a month; stay well under so it never bills
+
+
 def rentcast():
+    """Real US listings from RentCast, at most once a week and never more than RENTCAST_MONTHLY_CAP
+    requests in a calendar month. Every request is counted in rentcast_usage.json before it is sent,
+    whether it succeeds or not, and that file is committed back so the count survives between runs."""
     key = os.environ.get("RENTCAST_API_KEY", "").strip()
     saved = SRC / "listings.json"
     old = json.loads(saved.read_text()) if saved.exists() else None
     if not key:
         return old
-    if old and old.get("fetched"):
-        age = NOW - datetime.fromisoformat(old["fetched"])
-        if age < timedelta(days=6, hours=12):
-            log(f"  RentCast: keeping listings from {old['fetched']} (free plan, fetched weekly)")
-            return old
+    ledger_file = SRC / "rentcast_usage.json"
+    try:
+        ledger = json.loads(ledger_file.read_text())
+    except (OSError, ValueError):
+        ledger = {}
+    month = NOW.strftime("%Y-%m")
+    if ledger.get("month") != month:
+        ledger = {"month": month, "used": 0, "last_try": ledger.get("last_try")}
+    last = ledger.get("last_try") or (old or {}).get("fetched")
+    if last and NOW - datetime.fromisoformat(last) < timedelta(days=6, hours=12):
+        log(f"  RentCast: last fetched {last}; waiting a week between fetches (used {ledger['used']}/{RENTCAST_MONTHLY_CAP} this month)")
+        return old
+    if ledger["used"] + len(LISTING_CITIES) > RENTCAST_MONTHLY_CAP:
+        log(f"  RentCast: {ledger['used']} requests used this month; skipping to stay under {RENTCAST_MONTHLY_CAP}")
+        return old
+    ledger["last_try"] = NOW.isoformat(timespec="seconds")
     items = []
-    for city, st in LISTING_CITIES:
+    for n, (city, st) in enumerate(LISTING_CITIES):
+        ledger["used"] += 1
+        ledger_file.write_text(json.dumps(ledger))
         r = get(f"https://api.rentcast.io/v1/listings/sale?city={quote_plus(city)}&state={st}&status=Active&limit=40",
                 tries=1, headers={"X-Api-Key": key, "Accept": "application/json"})
         if not r:
             log("  RentCast failed", city)
+            if n == 0:
+                log("  RentCast: first request failed (bad key or service down); not trying the other cities")
+                break
             continue
         for x in r.json():
             if not x.get("price"):
@@ -704,6 +726,7 @@ def rentcast():
                 "lat": x.get("latitude"), "lon": x.get("longitude"),
                 "office": (x.get("listingOffice") or {}).get("name"), "mls": x.get("mlsName"), "sample": False,
             })
+    log(f"  RentCast: {ledger['used']}/{RENTCAST_MONTHLY_CAP} requests used this month")
     if not items:
         return old
     data = {"fetched": NOW.isoformat(timespec="seconds"), "source": "RentCast", "items": items}
