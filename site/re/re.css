@@ -162,3 +162,25 @@ a.card:hover { border-color: var(--accent); }
 .re-f { text-align: left; }
 .re-cmp td:nth-child(2), .re-cmp th:nth-child(2) { text-align: right; }
 .re-cmp td:first-child { white-space: nowrap; }
+
+/* Wide tables: headings wrap so more columns fit, and a table taller than the screen scrolls inside its own
+   box, so its sideways scrollbar is always on screen instead of below the last row. The headings stay on top. */
+.re .grid-table th { white-space: normal; vertical-align: bottom; }
+.re .grid-table th .sort { line-height: 1.25; }
+.re .table-wrap { overflow-x: auto; }
+@media (min-width: 641px) {
+  .re .table-wrap:has(> .grid-table) { max-height: min(78vh, 900px); overflow: auto; overscroll-behavior-x: contain; }
+  .re .table-wrap:has(> .grid-table) thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+}
+@media (max-width: 640px) {
+  .re .table-wrap { overflow-x: auto; }
+}
+/* A soft shadow on the side that has more columns to scroll to */
+.re .table-wrap:has(> table) {
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent) left center / 32px 100% no-repeat local,
+    linear-gradient(to left, var(--surface) 30%, transparent) right center / 32px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, .22), transparent) left center / 12px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, .22), transparent) right center / 12px 100% no-repeat scroll,
+    var(--surface);
+}
