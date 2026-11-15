@@ -56,15 +56,28 @@ def log(*a):
 
 
 def get(url: str, tries: int = 3, timeout: int = 60, **kw) -> requests.Response | None:
+    """GET with retries and a hard cap on total download time (a slow server can't stall the build)."""
+    headers = {**UA, **kw.pop("headers", {})}
     for i in range(tries):
+        t0 = time.time()
         try:
-            r = requests.get(url, headers={**UA, **kw.pop("headers", {})}, timeout=timeout, **kw)
-            if r.status_code == 200:
+            with requests.get(url, headers=headers, timeout=(15, 30), stream=True, **kw) as r:
+                if r.status_code in (403, 404, 410):
+                    log(f"  {r.status_code} {url}")
+                    return None
+                if r.status_code != 200:
+                    raise requests.RequestException(f"HTTP {r.status_code}")
+                buf = bytearray()
+                for chunk in r.iter_content(1 << 16):
+                    buf += chunk
+                    if time.time() - t0 > timeout:
+                        raise requests.RequestException(f"took over {timeout}s")
+                r._content = bytes(buf)
+                r._content_consumed = True
+                log(f"  got {url} ({len(buf) // 1024} KB, {time.time() - t0:.1f}s)")
                 return r
-            if r.status_code in (403, 404, 410):
-                return None
         except requests.RequestException as e:
-            log("  retry", url, e)
+            log(f"  retry {i + 1} {url}: {e}")
         time.sleep(2 * (i + 1))
     return None
 

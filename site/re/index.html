@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TopTicker Homes · Real Estate Across North America</title>
+<meta name="description" content="Home prices, rents, mortgage rates and the hottest and coolest housing markets across the United States, Canada and Mexico.">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css?v=__V__">
+<link rel="stylesheet" href="re.css?v=__V__">
+</head>
+<body class="re">
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="../" title="Home: choose stocks or real estate"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><path d="M6 16.5 16 8l10 8.5" fill="none" stroke="#22c55e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 15v10h13V15" fill="#22c55e" fill-opacity=".85"/><rect x="14" y="19" width="4" height="6" rx=".8" fill="#0b1330"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker <span class="brand-tag">Homes</span></span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a market…" aria-label="Go to a market" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading data…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Housing markets across North America</h1>
+    <p>Home prices, rents, supply and mortgage rates for <span id="count">the biggest</span> markets in the United States, Canada and Mexico, with the top 10 lists, buy ideas and markets to watch. Updated with the stock data.</p>
+  </section>
+
+  <section class="re-countries" id="countries" aria-label="Countries"></section>
+
+  <section class="re-rates" id="rates" aria-label="Mortgage rates"></section>
+
+  <section>
+    <div class="section-head">
+      <h2>Top 10 markets</h2>
+      <p id="top-note">The leaders on each measure among the 100 biggest US metro areas, every Canadian city in the new home price index and every Mexican state.</p>
+    </div>
+    <div class="toolbar re-top-tools">
+      <div class="seg" role="tablist" aria-label="Country" id="top-country"></div>
+    </div>
+    <nav class="tabs" id="top-tabs" aria-label="List"></nav>
+    <p class="muted re-list-note" id="top-desc"></p>
+    <div class="panel table-wrap" id="top"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Buy ideas</h2>
+      <p>US markets where buyers have the upper hand right now: plenty of price cuts, homes sitting longer, supply rising, decent rent cover and Zillow's own forecast not pointing down.</p>
+    </div>
+    <div class="cards" id="ideas"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Markets to watch</h2>
+      <p>Where the trend is turning: prices speeding up or slowing compared with the past year, or the number of homes for sale jumping.</p>
+    </div>
+    <div class="watch" id="watch"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Prices across three countries</h2>
+      <p>The BIS residential property price index for each country, rebased to 100 at the start of the period, so the three lines show growth side by side.</p>
+    </div>
+    <div class="toolbar"><div class="seg" role="tablist" aria-label="Period" id="bis-range"></div><div class="seg" role="tablist" aria-label="Measure" id="bis-kind"></div></div>
+    <div class="panel pad-h" id="bis"></div>
+  </section>
+
+  <section id="mexico">
+    <div class="section-head">
+      <h2>Mexico by state</h2>
+      <p id="mx-note">Average and middle prices of homes valued for a mortgage, from Sociedad Hipotecaria Federal.</p>
+    </div>
+    <div class="re-mx" id="mx"></div>
+  </section>
+
+  <section class="method">
+    <div class="section-head"><h2>How this works</h2></div>
+    <ul>
+      <li><b>United States:</b> Zillow's typical home value (ZHVI, middle third of homes), rents (ZORI), homes for sale, new listings, days to pending, price cuts, sale-to-list ratio, market heat index and 12-month forecast, for the 150 biggest metro areas.</li>
+      <li><b>Canada:</b> Statistics Canada's New Housing Price Index for each city (new homes only; Canada's resale MLS® figures are licensed and can't be republished), CMHC's average two-bedroom rent, and the Bank of Canada's 5-year mortgage rate.</li>
+      <li><b>Mexico:</b> Sociedad Hipotecaria Federal's quarterly house prices by state. SHF only publishes PDF and Excel tables, so these are entered by hand each quarter.</li>
+      <li><b>Who has the upper hand:</b> a score from −100 (buyer's market) to +100 (seller's market) that averages Zillow's heat index, sale-to-list ratio, share of price cuts, days to pending, supply change and 3-month price trend.</li>
+      <li><b>Gross rent yield:</b> a year of typical rent divided by the typical home value, before costs. A rough guide to whether owning pays.</li>
+    </ul>
+  </section>
+
+  <p class="disclaimer">Market figures are monthly or quarterly statistics from public agencies and Zillow Research, not live prices. Buy ideas and market labels are worked out by fixed rules from those figures. They are not advice: talk to a licensed agent, lender or adviser before you buy.</p>
+</main>
+
+<footer class="wrap foot">Data: <a href="https://www.zillow.com/research/data/">Zillow Research</a>, <a href="https://fred.stlouisfed.org/">FRED</a> (incl. BIS house prices), <a href="https://www.statcan.gc.ca/">Statistics Canada</a> and CMHC, <a href="https://www.bankofcanada.ca/">Bank of Canada</a>, <a href="https://www.gob.mx/shf">Sociedad Hipotecaria Federal</a>. Not financial advice.</footer>
+
+<script src="re-common.js?v=__V__"></script>
+<script src="home.js?v=__V__"></script>
+</body>
+</html>

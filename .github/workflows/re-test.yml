@@ -8,13 +8,14 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install requests
-      - run: python scripts/build_realestate.py
+      - run: python -u scripts/build_realestate.py
       - name: Save the output for review
         run: |
           mkdir -p re-test-output && cp site/re/*.json re-test-output/
