@@ -445,7 +445,8 @@ PRAIRIE = "Prairie Region"
 
 
 def statcan_table(pid: str):
-    r = get(f"https://www150.statcan.gc.ca/n1/tbl/csv/{pid}-eng.zip", timeout=180)
+    # StatCan sometimes stops answering for a minute or two, so try for longer than other sources
+    r = get(f"https://www150.statcan.gc.ca/n1/tbl/csv/{pid}-eng.zip", tries=5, timeout=180)
     if not r:
         log("  StatCan failed", pid)
         return []
@@ -811,6 +812,15 @@ def build_world():
     score_world(countries)
     log(f"World: {len(countries)} countries")
     return {"countries": sorted(countries, key=lambda x: -(x.get("score") or -1)), "updated": NOW.isoformat(timespec="seconds")}, hist
+
+
+LIVE = "https://www.topticker.ca"
+
+
+def last_published():
+    """The real estate data now on the live site, to fall back on when a source fails."""
+    r = get(f"{LIVE}/re/data.json?fresh={int(time.time())}", tries=2, timeout=60)
+    return r.json() if r else None
 
 
 def safe_call(fn, fallback):
@@ -1216,6 +1226,32 @@ def main():
     us, us_hist, us_nat = safe("US", build_us, ([], {}, None))
     ca, ca_hist, ca_nat = safe("Canada", build_canada, ([], {}, None))
     mx, mx_meta = safe("Mexico", build_mexico, ([], {}))
+    # A source that fails for a run (StatCan sometimes refuses GitHub's servers) would empty that country's pages,
+    # so keep the figures already on the live site until the next run gets fresh ones.
+    prev = None
+    for code, name in (("US", "US"), ("CA", "Canada"), ("MX", "Mexico")):
+        if {"US": us, "CA": ca, "MX": mx}[code]:
+            continue
+        if name not in errors:
+            errors.append(name)
+        prev = prev or safe_call(last_published, None)
+        if not prev:
+            continue
+        old = [m for m in prev.get("markets", []) if m.get("c") == code]
+        nat = ((prev.get("countries") or {}).get(code) or {}).get("nation")
+        hist = {}
+        for m in old if code != "MX" else []:
+            r = get(f"{LIVE}/re/hist/{m['id']}.json", tries=1, timeout=20)
+            if r:
+                hist[m["id"]] = r.json()
+        log(f"  {name}: kept {len(old)} markets and {len(hist)} histories from the live site")
+        if code == "US":
+            us, us_hist, us_nat = old, hist, nat
+        elif code == "CA":
+            ca, ca_hist, ca_nat = old, hist, nat
+            PROVINCE_ROWS[:] = (prev.get("regions") or {}).get("CA") or []
+        else:
+            mx = old
 
     log("Rates and national series")
     rates = {}

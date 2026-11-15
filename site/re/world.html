@@ -46,17 +46,26 @@
     <div class="w-top" id="w-top"></div>
   </section>
 
-  <section>
+  <section id="compare">
     <div class="section-head">
       <h2>Compare price growth</h2>
-      <p>House prices rebased to 100 at the start of the period. "After inflation" shows real buying power; "In US dollars" shows what a US investor would have made, currency moves included.</p>
+      <p>Pick up to 7 countries and look at their house prices in five ways. "After inflation" shows real buying power, and "In US dollars" shows what a US investor would have made, currency moves included. The table under the chart gives the numbers for the same period.</p>
     </div>
     <div class="toolbar w-chart-tools">
+      <div class="seg" role="tablist" aria-label="Show as" id="w-view"></div>
       <div class="seg" role="tablist" aria-label="Measure" id="w-kind"></div>
       <div class="seg" role="tablist" aria-label="Period" id="w-range"></div>
     </div>
+    <div class="w-presets" id="w-presets"></div>
     <div class="w-chips" id="w-chips"></div>
+    <p class="muted re-small w-view-note" id="w-view-note"></p>
     <div class="panel pad-h" id="w-chart"></div>
+    <div class="w-stats-head">
+      <h3 id="w-stats-title">The numbers</h3>
+      <button class="btn small" type="button" id="w-csv">Download CSV</button>
+    </div>
+    <div class="panel table-wrap" id="w-stats"></div>
+    <p class="muted re-small w-stats-note">Yearly average is the compound growth rate over the period. Best and worst 12 months are the biggest rise and fall on a year earlier within the period. Biggest drop is the largest fall from a high inside the period. Swings is how much prices move around, as a yearly standard deviation of quarterly changes. Inflation and currency show how much of the price change came from them: a rise in prices with high inflation can still mean a loss in real terms, and a weak currency can wipe out gains for a US investor.</p>
   </section>
 
   <section>
