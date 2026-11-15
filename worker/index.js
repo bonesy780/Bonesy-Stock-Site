@@ -31,7 +31,7 @@ const MAX_QUESTION = 600;          // characters
 const MAX_HISTORY = 6;             // earlier messages sent along for follow-up questions
 const PER_MINUTE = 6, PER_DAY = 60; // questions per visitor (per worker instance; a rough guard on cost)
 // Only the site itself (and local testing) may use it, so other websites can't run up the bill
-const ASK_ORIGINS = [/^https:\/\/bonesy780\.github\.io$/i, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
+const ASK_ORIGINS = [/^https:\/\/bonesy780\.github\.io$/i, /^https:\/\/(www\.)?topticker\.ca$/i, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
 const seen = new Map();
 
 const SYSTEM = `You answer questions from visitors to "TopTicker", a free stock market website, about how the site gets and works out its data. Below are the site's own notes, written from its code. Answer from these notes.
