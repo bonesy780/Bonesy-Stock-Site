@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../styles.css?v=__V__">
 <link rel="stylesheet" href="re.css?v=__V__">
+<link rel="stylesheet" href="world.css?v=__V__">
 </head>
 <body class="re">
 <header class="top">
@@ -32,6 +33,14 @@
   <section class="re-countries" id="countries" aria-label="Countries"></section>
 
   <section class="re-rates" id="rates" aria-label="Mortgage rates"></section>
+
+  <section id="world-teaser">
+    <div class="section-head">
+      <h2>Top world markets</h2>
+      <p>The five highest investor scores among about 60 countries: real price momentum, long-run growth, value, interest rates and currency. <a href="world.html">See the world rankings →</a></p>
+    </div>
+    <div class="re-world-mini" id="world-mini"></div>
+  </section>
 
   <section>
     <div class="section-head">
@@ -71,12 +80,13 @@
     <div class="panel pad-h" id="bis"></div>
   </section>
 
-  <section id="mexico">
+  <section id="regions">
     <div class="section-head">
-      <h2>Mexico by state</h2>
-      <p id="mx-note">Average and middle prices of homes valued for a mortgage, from Sociedad Hipotecaria Federal.</p>
+      <h2>By state and province</h2>
+      <p id="reg-note">Every US state, Canadian province and Mexican state on one measure at a time.</p>
     </div>
-    <div class="re-mx" id="mx"></div>
+    <div class="re-region-tools"><div class="seg" role="tablist" aria-label="Country" id="reg-country"></div><div class="seg" role="tablist" aria-label="Measure" id="reg-metric"></div></div>
+    <div class="re-mx" id="reg"></div>
   </section>
 
   <section class="method">
@@ -84,6 +94,7 @@
     <ul>
       <li><b>United States:</b> Zillow's typical home value (ZHVI, middle third of homes), rents (ZORI), homes for sale, new listings, days to pending, price cuts, sale-to-list ratio, market heat index and 12-month forecast, for the 150 biggest metro areas.</li>
       <li><b>Canada:</b> Statistics Canada's New Housing Price Index for each city (new homes only; Canada's resale MLS® figures are licensed and can't be republished), CMHC's average two-bedroom rent, and the Bank of Canada's 5-year mortgage rate.</li>
+      <li><b>States and provinces:</b> Zillow's typical home value and rent for each US state; Statistics Canada's New Housing Price Index and CMHC rents for each province.</li>
       <li><b>Mexico:</b> Sociedad Hipotecaria Federal's quarterly house prices by state. SHF only publishes PDF and Excel tables, so these are entered by hand each quarter.</li>
       <li><b>Who has the upper hand:</b> a score from −100 (buyer's market) to +100 (seller's market) that averages Zillow's heat index, sale-to-list ratio, share of price cuts, days to pending, supply change and 3-month price trend.</li>
       <li><b>Gross rent yield:</b> a year of typical rent divided by the typical home value, before costs. A rough guide to whether owning pays.</li>

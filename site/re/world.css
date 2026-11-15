@@ -1,0 +1,77 @@
+/* World housing markets page: builds on ../styles.css and re.css */
+.w-summary { margin-top: -20px; }
+.w-summary .re-rate b { font-size: 16px; font-weight: 600; }
+.w-controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin-bottom: 14px; }
+.w-controls .seg { overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.w-controls .re-check { padding-bottom: 8px; }
+.w-controls select.field { min-width: 220px; }
+
+.w-top { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 12px; }
+.w-card { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.w-card-top { display: flex; align-items: center; gap: 10px; }
+.w-metric-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.w-metric-row .spark { flex: none; margin-bottom: 4px; }
+.w-rank { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 600 13px "JetBrains Mono", ui-monospace, monospace; background: var(--accent-soft); color: var(--accent); }
+.w-flag { font-size: 26px; line-height: 1; flex: none; }
+.w-name { display: flex; flex-direction: column; min-width: 0; }
+.w-name b { font-size: 16px; line-height: 1.2; }
+.w-name .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w-metric { display: flex; flex-direction: column; gap: 2px; }
+.w-big { font-size: 26px; font-weight: 600; letter-spacing: -.02em; }
+.w-big .num { font-size: inherit; }
+.w-facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+.w-score { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.w-score i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--cmp-4), var(--up)); }
+.tag.w-good { background: var(--up-soft); color: var(--up); }
+.tag.w-bad { background: var(--down-soft); color: var(--down); }
+.w-add { align-self: flex-start; margin-top: auto; }
+
+.w-chart-tools { gap: 8px; }
+.w-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.w-chips .chip { display: inline-flex; align-items: center; gap: 4px; }
+.w-chips .dot { margin-right: 2px; }
+.w-add-sel { width: auto; min-width: 180px; }
+
+.w-scatter-box { padding: 12px 14px; }
+.w-scatter { display: block; width: 100%; height: auto; }
+.w-scatter .grid { stroke: var(--border); stroke-width: 1; }
+.w-scatter .base { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; }
+.w-scatter .axis { fill: var(--muted); font: 11px "JetBrains Mono", ui-monospace, monospace; }
+.w-scatter .w-sweet { fill: var(--up); fill-opacity: .06; }
+.w-quad { fill: var(--muted); font-size: 12px; font-style: italic; }
+.w-dot { cursor: pointer; }
+.w-dot circle { fill-opacity: .85; stroke: var(--surface); stroke-width: 1.5; transition: r .1s; }
+.w-dot.on circle { stroke: var(--text); stroke-width: 2; fill-opacity: 1; }
+.w-dot:hover circle, .w-dot:focus circle { stroke: var(--text); }
+.w-dot:focus { outline: none; }
+.w-lab { fill: var(--text); font: 600 10px "JetBrains Mono", ui-monospace, monospace; pointer-events: none; }
+
+.w-heat th, .w-heat td { text-align: center; }
+.w-heat th.left, .w-heat td.left { text-align: left; }
+.w-heat-cell { font-size: 12px; min-width: 40px; }
+.w-heat-name { white-space: nowrap; }
+.w-filter { max-width: 280px; }
+
+/* By-region chart on the overview */
+.re-region-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.re-region-tools .seg { overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.re-bar-row.is-static { cursor: default; }
+.re-bar-track i.neg { background: var(--down); }
+.re-bar-track i.pos { background: var(--up); }
+.re-world-mini { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.re-world-mini a { padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: inherit; transition: border-color .15s; }
+.re-world-mini a:hover { border-color: var(--accent); }
+.re-world-mini .w-flag { font-size: 22px; }
+.re-world-mini b { font-size: 14px; }
+
+@media (max-width: 900px) {
+  .re-world-mini { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .w-summary { margin-top: -28px; }
+  .w-controls select.field { min-width: 0; width: 100%; }
+  .w-controls .re-f { flex: 1 1 100%; }
+  .w-big { font-size: 22px; }
+  .w-filter { max-width: none; width: 100%; }
+}
+.w-controls .seg button, .re-region-tools .seg button, .w-chart-tools .seg button { white-space: nowrap; flex: none; }

@@ -3,6 +3,7 @@
 (function () {
   const PAGES = [
     ["./", "Overview", ["index.html", ""]],
+    ["world.html", "World"],
     ["markets.html", "All Markets"],
     ["market.html", "Market Lookup"],
     ["listings.html", "Listings"],
@@ -23,6 +24,8 @@
     ON: "Ontario", MB: "Manitoba", SK: "Saskatchewan", AB: "Alberta", BC: "British Columbia", YT: "Yukon", NT: "Northwest Territories", NU: "Nunavut" };
   const regionName = (m) => String(m.region || "").split("-").map((r) => (m.c === "CA" ? PROVINCE_NAMES : m.c === "US" ? REGION_NAMES : {})[r] || "").join(" ");
   const FLAG = { US: "🇺🇸", CA: "🇨🇦", MX: "🇲🇽" };
+  // Any country's flag from its two-letter code; the euro area gets the EU flag
+  const flag = (c) => c === "XM" ? "🇪🇺" : /^[A-Z]{2}$/.test(c || "") ? String.fromCodePoint(...[...c].map((ch) => 0x1f1a5 + ch.charCodeAt(0))) : "🌐";
   const SYM = { USD: "$", CAD: "C$", MXN: "MX$" };
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -328,5 +331,5 @@
     return [["Inmuebles24", `https://www.inmuebles24.com/casas-en-venta-q-${q}.html`], ["Lamudi", `https://www.lamudi.com.mx/`], ["Vivanuncios", `https://www.vivanuncios.com.mx/`]];
   };
 
-  window.RE = { esc, money, short, pct, fixed, int, spark, store, load, data, marketUrl, place, headline, sideCls, Saved, star, search, picker, table, chart, since, rebase, payment, COUNTRY, FLAG, SYM, searchLinks, PAGES };
+  window.RE = { esc, money, short, pct, fixed, int, spark, store, load, data, marketUrl, place, headline, sideCls, Saved, star, search, picker, table, chart, since, rebase, payment, COUNTRY, FLAG, SYM, searchLinks, PAGES, flag, REGION_NAMES, PROVINCE_NAMES };
 })();

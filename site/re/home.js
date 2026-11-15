@@ -1,4 +1,4 @@
-// Real estate overview: country cards, rates, top 10 lists, buy ideas, markets to watch, BIS chart, Mexico states.
+// Real estate overview: country cards, rates, world teaser, top 10 lists, buy ideas, markets to watch, BIS chart, states and provinces.
 (async function () {
   const { esc, short, money, pct, fixed, int, spark, marketUrl, place, headline, sideCls, star, table, chart, since, rebase, store, COUNTRY, FLAG } = RE;
   let D, H = null;
@@ -169,16 +169,67 @@
   kindSeg.addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (b) { bis.kind = b.dataset.k; drawBis(); } });
   drawBis();
 
-  // ---- Mexico states
+  // ---- by state and province, for all three countries
   const shf = (C.MX || {}).shf;
-  const states = M.filter((m) => m.c === "MX" && m.id !== "mx").sort((a, b) => b.v - a.v);
-  if (states.length) {
-    const max = states[0].v;
-    if (shf) document.getElementById("mx-note").innerHTML = `Average price of homes valued for a mortgage in ${esc(when(shf.period))}, from Sociedad Hipotecaria Federal${shf.national ? `. National average <b>${short(shf.national.avg_price, "MXN")}</b>, up ${shf.national.yoy}% on a year earlier` : ""}. <a href="${esc(shf.source_url)}">Source</a>.`;
-    document.getElementById("mx").innerHTML = `<div class="panel re-bars">${states.map((m) => `
-      <a class="re-bar-row" href="${marketUrl(m.id)}"><span class="re-bar-name">${esc(m.name)}</span>
-      <span class="re-bar-track"><i style="width:${(m.v / max * 100).toFixed(1)}%"></i></span><span class="num">${short(m.v, "MXN")}</span></a>`).join("")}</div>
-      ${shf && shf.municipalities ? `<div class="panel re-mx-side"><h3>Fastest rising towns</h3><ol>${shf.municipalities.map((x) => `<li><span>${esc(x.name)}</span>${pct(x.yoy)}</li>`).join("")}</ol>
-      ${shf.metros ? `<h3>Big metro areas</h3><ul>${shf.metros.map((x) => `<li><span>${esc(x.name)}</span>${pct(x.yoy)}</li>`).join("")}</ul>` : ""}<p class="muted re-small">Change in the SHF price index on a year earlier.</p></div>` : ""}`;
-  } else document.getElementById("mexico").hidden = true;
+  const RG = D.regions || {};
+  const REG = {
+    US: { rows: (RG.US || []).map((r) => ({ ...r, link: `markets.html?c=US&region=${r.code}` })), metrics: [
+      ["v", "Typical value", (v) => short(v), false], ["v1y", "1 year", (v) => pct(v), true], ["v5y", "5 years", (v) => pct(v, 0), true],
+      ["rent", "Rent", (v) => `<span class="num">${money(v)}</span>`, false], ["yield", "Rent yield", (v) => `<span class="num">${v.toFixed(1)}%</span>`, false]],
+      note: () => "Zillow's typical home value (middle third of homes) for each state. Tap a state to see its metro areas." },
+    CA: { rows: (RG.CA || []).map((r) => ({ ...r, link: `markets.html?c=CA&region=${r.code}` })), metrics: [
+      ["v1y", "New home prices, 1 year", (v) => pct(v), true], ["v5y", "5 years", (v) => pct(v, 0), true], ["offPeak", "From peak", (v) => pct(v), true],
+      ["rent", "2-bed rent", (v) => `<span class="num">${money(v, "CAD")}</span>`, false], ["rent1y", "Rent change", (v) => pct(v), true]],
+      note: () => "Statistics Canada's New Housing Price Index (new homes only; resale prices are licensed) and CMHC's average two-bedroom rent for each province." },
+    MX: { rows: M.filter((m) => m.c === "MX" && m.id !== "mx").map((m) => ({ ...m, link: marketUrl(m.id) })), metrics: [
+      ["v", "Average price", (v) => short(v, "MXN"), false], ["median", "Middle price", (v) => short(v, "MXN"), false], ["usd", "In US$", (v) => short(v), false],
+      ["v1y", "1 year", (v) => pct(v), true]],
+      note: () => shf ? `Average price of homes valued for a mortgage in ${esc(when(shf.period))}, from Sociedad Hipotecaria Federal${shf.national ? `. National average <b>${short(shf.national.avg_price, "MXN")}</b>, up ${shf.national.yoy}% on a year earlier` : ""}. <a href="${esc(shf.source_url)}">Source</a>.` : "Sociedad Hipotecaria Federal's average prices by state." },
+  };
+  const reg = { c: store.get("re-reg-country", "US"), m: {} };
+  const regCountry = document.getElementById("reg-country"), regMetric = document.getElementById("reg-metric");
+  function drawRegions() {
+    const have = ["US", "CA", "MX"].filter((c) => REG[c].rows.length);
+    if (!have.length) { document.getElementById("regions").hidden = true; return; }
+    if (!have.includes(reg.c)) reg.c = have[0];
+    const R0 = REG[reg.c];
+    const metrics = R0.metrics.filter(([k]) => R0.rows.some((r) => r[k] != null));
+    let key = reg.m[reg.c];
+    if (!metrics.find((x) => x[0] === key)) key = metrics[0][0];
+    const [, label, fmt, signed] = metrics.find((x) => x[0] === key);
+    regCountry.innerHTML = have.map((c) => `<button role="tab" aria-selected="${c === reg.c}" data-c="${c}">${FLAG[c]} ${COUNTRY[c]}</button>`).join("");
+    regMetric.innerHTML = metrics.map(([k, l]) => `<button role="tab" aria-selected="${k === key}" data-m="${k}">${esc(l)}</button>`).join("");
+    document.getElementById("reg-note").innerHTML = R0.note();
+    const rows = R0.rows.filter((r) => r[key] != null).sort((a, b) => b[key] - a[key]);
+    const max = Math.max(...rows.map((r) => Math.abs(r[key]))) || 1;
+    const bar = (r) => {
+      const v = r[key];
+      return `<a class="re-bar-row" href="${r.link}"><span class="re-bar-name" title="${esc(r.name)}">${esc(r.name)}</span>
+        <span class="re-bar-track"><i class="${signed ? (v >= 0 ? "pos" : "neg") : ""}" style="width:${(Math.abs(v) / max * 100).toFixed(1)}%"></i></span><span class="num">${fmt(v)}</span></a>`;
+    };
+    const ch = R0.rows.filter((r) => r.v1y != null).sort((a, b) => b.v1y - a.v1y);
+    const nm = (r) => esc(r.name);
+    let side = "";
+    if (reg.c === "MX" && shf && shf.municipalities) {
+      side = `<div class="panel re-mx-side"><h3>Fastest rising towns</h3><ol>${shf.municipalities.map((x) => `<li><span>${esc(x.name)}</span>${pct(x.yoy)}</li>`).join("")}</ol>
+      ${shf.metros ? `<h3>Big metro areas</h3><ul>${shf.metros.map((x) => `<li><span>${esc(x.name)}</span>${pct(x.yoy)}</li>`).join("")}</ul>` : ""}<p class="muted re-small">Change in the SHF price index on a year earlier.</p></div>`;
+    } else if (ch.length > 6) {
+      const what = reg.c === "CA" ? "New home prices" : "Typical home value";
+      side = `<div class="panel re-mx-side"><h3>Rising fastest</h3><ol>${ch.slice(0, 5).map((r) => `<li><span>${nm(r)}</span>${pct(r.v1y)}</li>`).join("")}</ol>
+        <h3>Weakest</h3><ol>${ch.slice(-5).reverse().map((r) => `<li><span>${nm(r)}</span>${pct(r.v1y)}</li>`).join("")}</ol>
+        <p class="muted re-small">${what}, change on a year earlier${R0.rows[0] && R0.rows[0].asof ? `, to ${esc(when(R0.rows[0].asof))}` : ""}.</p></div>`;
+    }
+    document.getElementById("reg").innerHTML = `<div class="panel re-bars" aria-label="${esc(label)}">${rows.map(bar).join("")}</div>${side}`;
+  }
+  regCountry.addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (!b) return; reg.c = b.dataset.c; store.set("re-reg-country", reg.c); drawRegions(); });
+  regMetric.addEventListener("click", (e) => { const b = e.target.closest("[data-m]"); if (!b) return; reg.m[reg.c] = b.dataset.m; drawRegions(); });
+  drawRegions();
+
+  // ---- top world markets teaser
+  const WW = ((D.world || {}).countries || []).filter((c) => !c.agg && !c.stale && c.score != null).sort((a, b) => b.score - a.score).slice(0, 5);
+  if (WW.length) {
+    document.getElementById("world-mini").innerHTML = WW.map((c, i) => `<a class="panel" href="world.html">
+      <span class="w-flag" aria-hidden="true">${RE.flag(c.code)}</span><b>${i + 1}. ${esc(c.name)}</b>
+      <span class="re-small">Score <b class="num">${c.score}</b> · real ${pct(c.r1y)}</span>${spark(c.spark, 120, 28)}</a>`).join("");
+  } else document.getElementById("world-teaser").hidden = true;
 })();

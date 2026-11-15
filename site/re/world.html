@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
+<title>TopTicker Homes · World Housing Markets</title>
+<meta name="description" content="The top housing markets in the world: house price growth, real returns, returns in US dollars, interest rates and value for 60 countries, ranked for investors.">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css?v=__V__">
+<link rel="stylesheet" href="re.css?v=__V__">
+<link rel="stylesheet" href="world.css?v=__V__">
+</head>
+<body class="re">
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="../" title="Home: choose stocks or real estate"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><path d="M6 16.5 16 8l10 8.5" fill="none" stroke="#22c55e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 15v10h13V15" fill="#22c55e" fill-opacity=".85"/><rect x="14" y="19" width="4" height="6" rx=".8" fill="#0b1330"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker <span class="brand-tag">Homes</span></span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a market…" aria-label="Go to a market" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading data…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>World housing markets</h1>
+    <p>House prices in <span id="w-count">about 60</span> countries from the Bank for International Settlements, with prices after inflation, prices in US dollars, interest rates and value, ranked for an investor looking for the strongest markets.</p>
+  </section>
+
+  <section class="w-summary" id="w-summary" aria-label="Summary"></section>
+
+  <section>
+    <div class="section-head">
+      <h2>Top 10 markets</h2>
+      <p id="w-rank-desc">Ranked by the investor score.</p>
+    </div>
+    <div class="w-controls">
+      <label class="re-f">Rank by<select class="field" id="w-rank"></select></label>
+      <div class="seg" role="tablist" aria-label="Region" id="w-region"></div>
+      <div class="seg" role="tablist" aria-label="How many" id="w-n"></div>
+      <label class="re-f re-check"><input type="checkbox" id="w-stale"> Include countries with old data</label>
+    </div>
+    <div class="w-top" id="w-top"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Compare price growth</h2>
+      <p>House prices rebased to 100 at the start of the period. "After inflation" shows real buying power; "In US dollars" shows what a US investor would have made, currency moves included.</p>
+    </div>
+    <div class="toolbar w-chart-tools">
+      <div class="seg" role="tablist" aria-label="Measure" id="w-kind"></div>
+      <div class="seg" role="tablist" aria-label="Period" id="w-range"></div>
+    </div>
+    <div class="w-chips" id="w-chips"></div>
+    <div class="panel pad-h" id="w-chart"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Where each market stands</h2>
+      <p>Price momentum against distance from the peak, both after inflation. Rising markets still below their old peak (bottom right) have the most room to run; markets falling from a peak (top left) are cooling. Tap a dot to add it to the chart.</p>
+    </div>
+    <div class="panel w-scatter-box" id="w-scatter"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Year by year</h2>
+      <p id="w-heat-note">House price change in each calendar year after inflation, for the countries in your list above.</p>
+    </div>
+    <div class="panel table-wrap" id="w-heat"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Every country</h2>
+      <p>Sort by any column. Countries whose latest figures are more than 18 months old are marked.</p>
+    </div>
+    <div class="toolbar"><input class="field w-filter" id="w-q" type="search" placeholder="Filter countries…" aria-label="Filter countries"></div>
+    <div class="panel table-wrap" id="w-table"></div>
+  </section>
+
+  <section class="method">
+    <div class="section-head"><h2>How this works</h2></div>
+    <ul>
+      <li><b>House prices:</b> the BIS residential property price index for each country, as published by its central bank or statistics office. Coverage differs by country (some are whole-country, some big cities, some new homes only), so compare changes, not levels.</li>
+      <li><b>After inflation:</b> the BIS real index, the price index divided by consumer prices.</li>
+      <li><b>In US dollars:</b> the nominal index divided by that quarter's average exchange rate against the US dollar (BIS). It is what a US-based investor gained or lost, before rent, costs and taxes.</li>
+      <li><b>Interest rate:</b> the central bank's policy rate (euro area countries use the ECB rate). Falling rates usually make mortgages cheaper and support prices.</li>
+      <li><b>Value:</b> the OECD price-to-income ratio against the country's own long-run average (100 = average, below 100 = cheaper than usual) where it exists, otherwise how far real prices sit below their all-time high.</li>
+      <li><b>Investor score (0 to 100):</b> where a country ranks against the others on five things: real price momentum (30%), 10-year real growth (20%), value (25%), the change in interest rates over the year (15%) and the currency against the US dollar (10%). A missing part is left out and the rest reweighted. Countries under international sanctions (Russia) are shown but not scored. It is a starting point for research, not a forecast.</li>
+    </ul>
+  </section>
+
+  <p class="disclaimer">These are quarterly national statistics, not live prices, and they don't include rents, buying costs, taxes or rules on foreign buyers, which vary a lot between countries. Not financial advice.</p>
+</main>
+
+<footer class="wrap foot">Data: <a href="https://data.bis.org/topics/RPP">BIS residential property prices</a>, <a href="https://data.bis.org/topics/CBPOL">BIS central bank policy rates</a> and <a href="https://data.bis.org/topics/XRU">exchange rates</a>, <a href="https://www.oecd.org/en/data/datasets/analytical-house-prices-indicators.html">OECD house price indicators</a>. Not financial advice.</footer>
+
+<script src="re-common.js?v=__V__"></script>
+<script src="world.js?v=__V__"></script>
+</body>
+</html>
