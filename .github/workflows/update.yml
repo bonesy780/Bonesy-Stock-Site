@@ -101,12 +101,19 @@ jobs:
           [ -f data/realestate/listings.json ] && git add data/realestate/listings.json
           [ -f data/realestate/rentcast_usage.json ] && git add data/realestate/rentcast_usage.json
           git diff --cached --quiet && exit 0
-          git commit -m "Refresh index member lists"
-          # main may have moved during the build; rebase and retry, and never hold up the deploy.
-          # If another run saved the same lists meanwhile, this run's (newer) lists win.
+          git commit -q -m "Refresh index member lists"
+          # main may have moved during the build. Put the commit on top of main in a separate folder, so the
+          # site being deployed is never touched: pulling here once merged newer pages into this build and
+          # left conflict markers in them. If another run saved the same lists meanwhile, this run's (newer) lists win.
+          C=$(git rev-parse HEAD)
           for i in 1 2 3; do
-            git pull --rebase --autostash -X theirs -q origin main && git push && exit 0
-            git rebase --abort 2>/dev/null || true
+            git fetch -q origin main
+            rm -rf /tmp/save && git worktree add -q --detach /tmp/save origin/main
+            if (cd /tmp/save && git cherry-pick -X theirs "$C" >/dev/null && git push -q origin HEAD:main); then
+              git worktree remove --force /tmp/save; exit 0
+            fi
+            (cd /tmp/save && git cherry-pick --abort 2>/dev/null || true)
+            git worktree remove --force /tmp/save
             sleep 5
           done
           echo "::warning::could not save the refreshed member lists this run"
