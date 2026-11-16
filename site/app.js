@@ -163,7 +163,7 @@
     $("markets").innerHTML = data.indexes.map((i) => `
       <button class="mkt ${i.id === current ? "on" : ""}" data-id="${i.id}">
         <span class="mkt-name">${esc(i.name.replace(/ \(.*\)/, ""))}</span>
-        ${(() => { const h = window.UI && UI.session(i.id); return h ? `<span class="mkt-hours ${h.open ? "open" : ""}" title="${esc(h.city)} time ${esc(h.local)}. Regular hours only; holidays not shown."><i></i>${h.open ? "Open" : "Closed"} · ${esc(h.label.replace(/ in /, " ").replace(/^./, (c) => c.toLowerCase()))}</span>` : ""; })()}
+        ${(() => { const h = window.UI && UI.session(i.id); return h ? `<span class="mkt-hours ${h.open ? "open" : ""}" title="${esc(h.city)} time ${esc(h.local)}. Regular trading hours${i.id === "kospi200" || i.id === "twse50" ? "; holidays not shown" : " and exchange holidays"}."><i></i>${h.open ? "Open" : "Closed"} · ${esc(h.label.replace(/ in /, " ").replace(/^(Opens|Closes|Lunch)/, (c) => c.toLowerCase()))}</span>` : ""; })()}
         <span class="num">${i.level ? i.level.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "–"}</span>
         ${pct(i.chg1d)}
       </button>`).join("");

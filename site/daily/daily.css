@@ -148,3 +148,6 @@
   .dn-story, .dn-big-card, .dn-tile, .dn-media img, .dn-g { transition: none; }
   .toast-host .toast { animation: none; }
 }
+/* the yellow tag is hard to read on a light page, so it's a deeper amber there */
+@media (prefers-color-scheme: light) and (min-width: 641px) { :root:not([data-theme="dark"]) .brand-tag { color: #8a5a00; } }
+:root[data-theme="light"] .brand-tag { color: #8a5a00; }
