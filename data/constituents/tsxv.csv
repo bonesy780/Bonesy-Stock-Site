@@ -12,10 +12,10 @@ OGG,Osisko Gold Group Inc
 MTA,Metalla Royalty And Streaming L
 NCX,Northisle Copper And Gold Inc
 MKO,Mako Mining Corp
-SGML,Sigma Lithium Corporation
 GORO,Goldgroup Mining Inc
-SLG,San Lorenzo Gold Corp
 GRZ,Gold Reserve Ltd
+SLG,San Lorenzo Gold Corp
+SGML,Sigma Lithium Corporation
 BYN,Banyan Gold Corp
 GSKR,Goldsky Resources Corp
 THX,Thor Explorations Ltd.
@@ -23,229 +23,229 @@ TAU,Thesis Gold And Silver Inc
 RML,Rusoro Mining Ltd
 AVTS,Aventus Capital Inc
 REG,Regulus Resources Inc
-FISH,Sailfish Royalty Corp
-AMX,Amex Gold Mining Inc
 ZDC,Zedcor Inc
+AMX,Amex Gold Mining Inc
+FISH,Sailfish Royalty Corp
 ITR,Integra Resources Corp
-AUXX,Gold X2 Mining Inc
+PAIN,Vector Science And Therapeutics
 ALDE,Aldebaran Resources Inc
 CAD,Colonial Coal International Cor
-SLI,Standard Lithium Ltd
-CBR,Cabral Gold Inc
-RDS,Radisson Mining Resources Inc.
+AUXX,Gold X2 Mining Inc
 MOON,Blue Moon Metals Inc
+SLI,Standard Lithium Ltd
+RDS,Radisson Mining Resources Inc.
 SICO,Silverco Mining Ltd
-PAIN,Vector Science And Therapeutics
-WSTR,Wellstar Technologies Corp
-KRY,Koryx Copper S A
 CEI,Coelacanth Energy Inc
-CDPR,Cerro De Pasco Resources Inc
+KRY,Koryx Copper S A
+CBR,Cabral Gold Inc
 TTS,Tintina Mines Ltd
+WSTR,Wellstar Technologies Corp
+CDPR,Cerro De Pasco Resources Inc
+BIG,Hercules Metals Corp
 PCU,Pecoy Copper Corp
 QTWO,Q2 Metals Corp
-ASE,Asante Gold Corporation
-BIG,Hercules Metals Corp
 ECU,Element 29 Resources Inc
 LA,Los Andes Copper Limited
+NTLX,Neurothera Labs Inc
 PML,Panoro Minerals Ltd
 SIG,Sitka Gold Corp
 ALV,Alvopetro Energy Ltd
-UCU,Ucore Rare Metals Inc
 CUU,Copper Fox Metals Inc
-DBG,Doubleview Gold Corp
-SM,Sierra Madre Gold And Silver Lt
-IFOS,Itafos Inc
-HITI,High Tide Inc
-EOG,Eco Atlantic Oil And Gas Ltd
-WGO,White Gold Corp
-BRVO,Bravo Mining Corp
-GAL,Galantas Gold Corp.
-CERT,Cerrado Gold Inc
 SVRS,Silver Storm Mining Ltd
+UCU,Ucore Rare Metals Inc
+HITI,High Tide Inc
+SM,Sierra Madre Gold And Silver Lt
+EOG,Eco Atlantic Oil And Gas Ltd
+BRVO,Bravo Mining Corp
+WGO,White Gold Corp
+IFOS,Itafos Inc
+DBG,Doubleview Gold Corp
+CERT,Cerrado Gold Inc
 PGLD,P2 Gold Inc
-NTLX,Neurothera Labs Inc
-GQC,Goldquest Mining Corp.
 TUD,Tudor Gold Corp
+GAL,Galantas Gold Corp.
 SASK,Atha Energy Corp
-PALI,Palisades Goldcorp Ltd
-NEXG,Nexgold Mining Corp
 LUCA,Luca Mining Corp
+NEXG,Nexgold Mining Corp
 QNC,Quantum Emotion Corp
+PALI,Palisades Goldcorp Ltd
+CAMB,Cambria Gold Mines Inc
+MACK,Mackay Gold And Silver Corp
 ANDC,Andina Copper Corporation
 MMY,Monument Mining Limited
 AHR,Amarc Resources Ltd.
 HCH,Hot Chili Limited
-MACK,Mackay Gold And Silver Corp
-TNGD,Tiernan Gold Corp
-CAMB,Cambria Gold Mines Inc
 WI,The Western Investment Co Of Cd
-CAPT,Capitan Silver Corp
-OGN,Orogen Royalties Inc
+RECO,Reconnaissance Energy Africa Lt
+GQC,Goldquest Mining Corp.
+TNGD,Tiernan Gold Corp
 CNC,Canada Nickel Company Inc
+OGN,Orogen Royalties Inc
+CAPT,Capitan Silver Corp
 EM,Errington Metals Corp
 MFG,Mayfair Gold Corp
-RECO,Reconnaissance Energy Africa Lt
-GG,Golconda Gold Ltd
+ASE,Asante Gold Corporation
+LRA,Lara Exploration Ltd
 GMG,Graphene Manufacturing Group Lt
-SUGR,Sucro Limited
 PLSR,Pulsar Helium Inc
+PPX,Ppx Mining Corp
+SUGR,Sucro Limited
 SFR,Sandfire Resources America Inc
 MLP,Millennial Potash Corp
-LRA,Lara Exploration Ltd
-CGNT,Copper Giant Resources Corp
-RVG,Revival Gold Inc
+GG,Golconda Gold Ltd
 HME,Hemisphere Energy Corporation
-GOT,Goliath Resources Limited
-WRLG,West Red Lake Gold Mines Ltd
-PNPN,Power Metallic Mines Inc
-GSVR,Guanajuato Silver Company Ltd
-AXO,Axo Metals Corp
-CVW,Cvw Sustainable Royalties Inc
 TDG,Tdg Gold Corp
+GSVR,Guanajuato Silver Company Ltd
+GOT,Goliath Resources Limited
+PNPN,Power Metallic Mines Inc
+RX,Biosyent Inc.
+CVW,Cvw Sustainable Royalties Inc
+CGNT,Copper Giant Resources Corp
+AXO,Axo Metals Corp
+WRLG,West Red Lake Gold Mines Ltd
 TECT,Tectonic Metals Inc
+RVG,Revival Gold Inc
 HHH,Helius Minerals Limited
 AUMB,1911 Gold Corporation
-RX,Biosyent Inc.
-MOG,Mogotes Metals Inc
 LCX,Lycos Energy Inc
+SEI,Sintana Energy Inc
+AURO,Auro Metals Inc
+MOG,Mogotes Metals Inc
 SCOT,Scottie Resources Corp
+GSI,Gatekeeper Systems Inc
 AGX,Silver X Mining Corp
 KLD,Kenorland Minerals Ltd
-PPX,Ppx Mining Corp
-AURO,Auro Metals Inc
-BRAU,Big Ridge Gold Corp
-SEI,Sintana Energy Inc
 AXL,Arrow Exploration Corp
+ZNG,Group Eleven Resources Corp
 GGO,Galleon Gold Corp
+NURS,Hydreight Technologies Inc
+KTO,K2 Gold Corporation
+GLAD,Gladiator Metals Corp
+SVE,Silver One Resources Inc
+SALT,Atlas Salt Inc
+BLU,Bluenergies Ltd
+LTC,Lotus Creek Exploration Inc
+AAG,Aftermath Silver Ltd
+DE,Decisive Dividend Corporation
 KFR,Kingfisher Metals Corp
 KCP,King Copper Discovery Corp
-AMT,Ameritrust Financial Technologi
-ZNG,Group Eleven Resources Corp
-BMM,Black Mammoth Metals Corp
-GSI,Gatekeeper Systems Inc
-SVE,Silver One Resources Inc
-KTO,K2 Gold Corporation
-LTC,Lotus Creek Exploration Inc
-MGM,Maple Gold Mines Ltd
-BLU,Bluenergies Ltd
-FTZ,Fitzroy Minerals Inc
-SALT,Atlas Salt Inc
-NURS,Hydreight Technologies Inc
-GLAD,Gladiator Metals Corp
-DE,Decisive Dividend Corporation
-NRC,Nations Royalty Corp
-CKG,Chesapeake Gold Corp.
 PESO,Pesorama Inc
+BMM,Black Mammoth Metals Corp
+CKG,Chesapeake Gold Corp.
 HMT,Halmont Properties Corporation
-AAG,Aftermath Silver Ltd
+AMT,Ameritrust Financial Technologi
+BRAU,Big Ridge Gold Corp
 FLCN,Falcon Energy Materials Plc
-AE,American Eagle Gold Corp
 FEO,Oceanic Iron Ore Corp
+FTZ,Fitzroy Minerals Inc
+AE,American Eagle Gold Corp
+NRC,Nations Royalty Corp
+MGM,Maple Gold Mines Ltd
 FPC,Falco Resources Ltd
-EU,Encore Energy Corp
-ROCK,Trident Resources Corp
 SCMI,Selkirk Copper Mines Inc
-SKP,Strikepoint Gold Inc
-ENA,Enablence Technologies Inc
-NIM,Nicola Mining Inc
+ROCK,Trident Resources Corp
+EU,Encore Energy Corp
 SSV,Southern Silver Exploration Cor
+NIM,Nicola Mining Inc
 TUF,Honey Badger Silver Inc
-SURG,Surge Copper Corp
-LGC,Lavras Gold Corp
-PGDC,Patagonia Gold Corp
-GPH,Graphite One Inc
-GWM,Galway Metals Inc
-ARK,Arras Minerals Corp
-LIB,Libertystream Infrastructure Pa
-B,Bcm Resources Corporation
-CTH,Cotec Holdings Corp
+ENA,Enablence Technologies Inc
 LIXX,Lithium X2 Mining Inc
-ONYX,Onyx Gold Corp
 GHRT,Greenheart Gold Inc
-SPA,Spanish Mountain Gold Ltd
-SUM,Summit Royalties Ltd
-EMPR,Empress Royalty Corp
-GRSL,Gr Silver Mining Ltd
+LGC,Lavras Gold Corp
+GPH,Graphite One Inc
+B,Bcm Resources Corporation
+GWM,Galway Metals Inc
+SKP,Strikepoint Gold Inc
+ONYX,Onyx Gold Corp
+SURG,Surge Copper Corp
+ARK,Arras Minerals Corp
 EBM,Eastwood Bio Medical Canada Inc
 SGQ,Southgobi Resources Ltd
-LIFT,Li Ft Power Ltd
+SUM,Summit Royalties Ltd
 BILD,Builddirect.Com Technologies In
+EMPR,Empress Royalty Corp
 COV,Covalon Technologies Ltd
 SPRQ,Sparq Systems Inc
-WPG,West Point Gold Corp
-SERV,Elevate Service Group Inc
-ADY,Adyton Resources Corporation
-RET,Reitmans Canada Limited
-MGG,Minaurum Silver Inc
-MMET,Miata Metals Corp
-PKT,Parkit Enterprise Inc
-ARIC,Awale Resources Limited
-MJS,Majestic Gold Corp.
-LG,Lahontan Gold Corp
 TPL,Tethys Petroleum Limited
+MJS,Majestic Gold Corp.
+RET,Reitmans Canada Limited
+CTH,Cotec Holdings Corp
+ADY,Adyton Resources Corporation
+GRSL,Gr Silver Mining Ltd
+PGDC,Patagonia Gold Corp
+PKT,Parkit Enterprise Inc
+SPA,Spanish Mountain Gold Ltd
 AGA,Silver47 Exploration Corp
-SOI,Sirios Resources Inc.
-APGO,Apollo Silver Corp
+LIFT,Li Ft Power Ltd
+LIB,Libertystream Infrastructure Pa
+MMET,Miata Metals Corp
+MGG,Minaurum Silver Inc
 MTAU,Monteoro Minerals Ltd
 THM,Thunder Mountain Gold Inc
-ADE,Adex Mining Inc.
-EXN,Excellon Resources Inc
-BKM,Pacific Booker Minerals Inc.
+SERV,Elevate Service Group Inc
+ARIC,Awale Resources Limited
 PTF,Pender Growth Fund Inc
-OCO,Oroco Resource Corp.
-BOGO,Borealis Mining Company Limited
-FAN,First Atlantic Nickel And Cobal
-MMA,Midnight Sun Mining Corp
-AUUA,Aluula Composites Inc
+LG,Lahontan Gold Corp
+APGO,Apollo Silver Corp
+ADE,Adex Mining Inc.
+WPG,West Point Gold Corp
+SOI,Sirios Resources Inc.
+BKM,Pacific Booker Minerals Inc.
+EXN,Excellon Resources Inc
 WVM,West Vault Mining Inc
-NSE,New Stratus Energy Inc
-NAU,Nevgold Corp
+AUUA,Aluula Composites Inc
+OCO,Oroco Resource Corp.
 HI,Highland Copper Company Inc
+BOGO,Borealis Mining Company Limited
 BUFF,Buffalo Potash Corporation
-LTH,Lithium Ionic Corp
-TNR,Tnr Gold Corp
-SRL,Salazar Resources Limited
 AFE,Africa Energy Corp
 CAM,Cascadia Minerals Ltd
 SHL,Homeland Nickel Inc
-BRO,Barksdale Resources Corp
 BQE,Bqe Water Inc
-CANX,Canex Metals Inc
-SGLD,Scorpio Gold Corporation
-FL,Frontier Lithium Inc
+MMA,Midnight Sun Mining Corp
+SRL,Salazar Resources Limited
 FPX,Fpx Nickel Corp
-VCU,Vizsla Copper Corp
-PGE,Stillwater Critical Minerals Co
+NSE,New Stratus Energy Inc
+NAU,Nevgold Corp
+TNR,Tnr Gold Corp
 BRM,Biorem Inc.
-AGAG,Argenta Silver Corp
-PPP,Prospector Metals Corp
+FL,Frontier Lithium Inc
+LTH,Lithium Ionic Corp
 OMI,Orosur Mining Inc
-TUO,Teuton Resources Corp
-YGT,Gold Terra Resource Corp
-HAM,Highwood Asset Management Ltd
-INTR,Intrepid Metals Corp
-IRR,Irruptive Metals Corp
-NCAU,Newcore Gold Ltd
-LI,American Lithium Corp
-FMAN,Freeman Gold Corp
-PCRX,Pharmacorp Rx Inc
-ARGH,Argo Corporation
-KTN,Kootenay Silver Inc
-AGLD,Austral Gold Limited
-NKL,Nickel 28 Capital Corp
-SCD,Scandium Canada Ltd
-AEC,Anfield Energy Inc
-NXLV,Nexliving Communities Inc
-DMX,District Metals Corp
-ECR,Cartier Resources Inc.
-HAN,Hannan Metals Ltd
-IPT,Impact Silver Corp.
-DMGI,Dmg Blockchain Solutions Inc
-KLDC,Kirkland Lake Discoveries Corp
-RCK,Rock Tech Lithium Inc
-SOMA,Soma Gold Corp
 MSR,Minsud Resources Corp.
+PGE,Stillwater Critical Minerals Co
+NKL,Nickel 28 Capital Corp
+HAM,Highwood Asset Management Ltd
+AGAG,Argenta Silver Corp
+TUO,Teuton Resources Corp
 CCCM,C3 Metals Inc
-DB,Decibel Cannabis Company Inc
+PCRX,Pharmacorp Rx Inc
+PPP,Prospector Metals Corp
+NXLV,Nexliving Communities Inc
+FMAN,Freeman Gold Corp
+ARGH,Argo Corporation
+SGLD,Scorpio Gold Corporation
+FAN,First Atlantic Nickel And Cobal
+SCD,Scandium Canada Ltd
+VCU,Vizsla Copper Corp
+AEC,Anfield Energy Inc
+CANX,Canex Metals Inc
+KLDC,Kirkland Lake Discoveries Corp
+KTN,Kootenay Silver Inc
+RCK,Rock Tech Lithium Inc
+SUNV,Sun Valley Minerals Inc
+ZEN,Zentek Ltd
+IRR,Irruptive Metals Corp
+LI,American Lithium Corp
+YGT,Gold Terra Resource Corp
+NCAU,Newcore Gold Ltd
+INTR,Intrepid Metals Corp
+ECR,Cartier Resources Inc.
+KC,Kutcho Copper Corp
+BRO,Barksdale Resources Corp
+DMGI,Dmg Blockchain Solutions Inc
+AGLD,Austral Gold Limited
+IPT,Impact Silver Corp.
 KDK,Kodiak Copper Corp
+DB,Decibel Cannabis Company Inc
 ZIGY,Stardust Metal Corp
