@@ -946,3 +946,9 @@ body::before {
   .tape-run { animation: none; }
   .tape-set[aria-hidden] { display: none; }
 }
+
+/* page not found (404.html) */
+.nf-links { list-style: none; padding: 0; margin: 8px 0 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.nf-links a { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); text-decoration: none; box-shadow: var(--shadow); }
+.nf-links a:hover, .nf-links a:focus-visible { border-color: var(--accent); }
+.nf-links span { color: var(--muted); font-size: 14px; }
