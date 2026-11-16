@@ -39,6 +39,10 @@ Pages: `re/index.html` (overview: country cards, rates, top 10 lists, buy ideas,
 
 **Listings.** MLS, REALTOR.ca and Mexican portal listings are licensed and can't be copied onto the site, so the listings page links out to them. For real US listings, sign up for a free [RentCast](https://www.rentcast.io/api) API key and add it as the repo secret `RENTCAST_API_KEY`. The free plan allows 50 requests a month, so the build fetches 10 big US cities once a week and saves them in `data/realestate/listings.json`. Every request is logged in `data/realestate/rentcast_usage.json` before it is sent, and the build never makes more than 40 in any 31 days, whatever day RentCast's billing month starts, so the site can't go over the free limit even if runs fail, overlap or are started by hand; check RentCast's terms before making the site public with them. Without a key, and for Canada and Mexico, the page shows homes clearly marked **Sample**, priced from each market's real typical value.
 
+## Sharing and search
+
+Every page has share-preview tags (Open Graph and Twitter), so a link pasted into iMessage, Slack, X or Facebook shows a picture card: `site/img/share-stocks.png`, `share-homes.png`, `share-news.png` and `share-home.png`. `site/robots.txt` and `site/sitemap.xml` help search engines find the pages (add new pages to the sitemap), and `site/manifest.webmanifest` with the PNG icons lets phones add the site to the home screen. `site/404.html` is shown for any missing address; a link like `/AAPL` goes straight to that stock.
+
 ## Live prices
 
 GitHub Pages can only serve files, so live prices come from a small Cloudflare Worker in `worker/` that fetches quotes from Yahoo Finance and caches them for 20 seconds. The pages (`site/live.js`) ask it for fresh prices every 30 seconds (main page) or every minute (stock lookup) while the tab is open. Rankings, buy and sell ideas and longer price history still refresh with the daily build. Some exchanges' prices reach Yahoo up to 20 minutes late.
