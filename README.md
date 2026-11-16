@@ -41,7 +41,7 @@ Pages: `re/index.html` (overview: country cards, rates, top 10 lists, buy ideas,
 
 ## Sharing and search
 
-Every page has share-preview tags (Open Graph and Twitter), so a link pasted into iMessage, Slack, X or Facebook shows a picture card: `site/img/share-stocks.png`, `share-homes.png`, `share-news.png` and `share-home.png`. `site/robots.txt` and `site/sitemap.xml` help search engines find the pages (add new pages to the sitemap), and `site/manifest.webmanifest` with the PNG icons lets phones add the site to the home screen. `site/404.html` is shown for any missing address; a link like `/AAPL` goes straight to that stock.
+Every page has share-preview tags (Open Graph and Twitter), so a link pasted into iMessage, Slack, X or Facebook shows a picture card: `site/img/share-stocks.png`, `share-homes.png`, `share-news.png` and `share-home.png`. `site/robots.txt` and `site/sitemap.xml` help search engines find the pages (add new pages to the sitemap), and `site/manifest.webmanifest` with the PNG icons lets phones add the site to the home screen. On screens wider than a phone, a sun/moon button in the header (`site/theme.js`) switches between light and dark; the choice is saved in the browser, and phones stay dark. `site/404.html` is shown for any missing address; a link like `/AAPL` goes straight to that stock.
 
 ## Live prices
 
