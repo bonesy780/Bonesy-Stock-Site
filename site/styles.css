@@ -29,7 +29,7 @@
 }
 /* Dark theme: follows the device setting, and is always on for phone-size screens. */
 @media (prefers-color-scheme: dark), (max-width: 640px) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0e1116;
     --surface: #161a21;
     --surface-2: #1d222b;
@@ -58,6 +58,36 @@
     --shadow: none;
     color-scheme: dark;
   }
+}
+/* the theme button on wider screens (theme.js) */
+:root[data-theme="dark"] {
+  --bg: #0e1116;
+  --surface: #161a21;
+  --surface-2: #1d222b;
+  --border: #2a303b;
+  --text: #e8ebf0;
+  --muted: #98a2b3;
+  --accent: #7ea2ff;
+  --on-color: #0b1020;
+  --accent-soft: #1c2742;
+  --up: #45c27c;
+  --up-soft: #15291f;
+  --down: #ff6b74;
+  --down-soft: #331a1d;
+  --warn: #e0b04f;
+  --ind-a: #f5a524;
+  --ind-b: #b197fc;
+  --ind-c: #3fc6dd;
+  --ind-band: #8ea8e8;
+  --cmp-1: #f06595;
+  --cmp-2: #7ea2ff;
+  --cmp-3: #3fc6dd;
+  --cmp-4: #f5a524;
+  --cmp-5: #b197fc;
+  --cmp-6: #aab4c3;
+  --cmp-7: #d4a373;
+  --shadow: none;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -629,7 +659,8 @@ label.check { display: inline-flex; gap: 6px; align-items: center; }
 .safe.safe { background: var(--up-soft); color: var(--up); }
 .safe.risk { background: var(--down-soft); color: var(--down); }
 .safe.watch { background: color-mix(in srgb, #d99a00 18%, transparent); color: #a86f00; }
-@media (prefers-color-scheme: dark), (max-width: 640px) { .safe.watch { color: #f0b84a; } }
+@media (prefers-color-scheme: dark), (max-width: 640px) { :root:not([data-theme="light"]) .safe.watch { color: #f0b84a; } }
+:root[data-theme="dark"] .safe.watch { color: #f0b84a; }
 .num.strong { font-weight: 600; }
 .table-wrap .hint.pad { padding: 10px 14px; margin: 0; }
 .div-plan { padding: 18px 20px; margin: 24px 0; display: flex; flex-direction: column; gap: 12px; }
@@ -913,7 +944,8 @@ body::before {
   mask-image: linear-gradient(180deg, #000 0, #000 260px, transparent 720px);
 }
 :root { --grid: rgba(36, 86, 214, .05); }
-@media (prefers-color-scheme: dark), (max-width: 640px) { :root { --grid: rgba(126, 162, 255, .05); } }
+@media (prefers-color-scheme: dark), (max-width: 640px) { :root:not([data-theme="light"]) { --grid: rgba(126, 162, 255, .05); } }
+:root[data-theme="dark"] { --grid: rgba(126, 162, 255, .05); }
 
 /* ---- header: ticker tape, graph-paper bar and logo, the same on every page */
 .top {
@@ -977,3 +1009,9 @@ body::before {
 .recent-row .chip { text-decoration: none; color: var(--text); }
 .share-btn { display: inline-flex; align-items: center; gap: 2px; vertical-align: middle; color: var(--muted); }
 .share-btn svg { flex: none; }
+
+/* light/dark button in the header (theme.js); phones are always dark, so it's hidden there */
+.theme-btn { flex: none; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; }
+.theme-btn:hover { color: var(--text); border-color: var(--accent); }
+.theme-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (max-width: 640px) { .theme-btn { display: none; } }
