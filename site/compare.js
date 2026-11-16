@@ -25,7 +25,7 @@
   async function loadHist(t) {
     if (hist[t]) return;
     hist[t] = "loading";
-    try { hist[t] = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })).json(); }
+    try { hist[t] = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-cache" })).json(); }
     catch { hist[t] = { d: [] }; }
     render();
   }

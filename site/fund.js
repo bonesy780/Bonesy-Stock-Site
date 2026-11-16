@@ -107,7 +107,7 @@
   }
   async function ratings(t, cur, price) {
     let r = null;
-    try { const res = await fetch(`ratings/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" }); if (res.ok) r = await res.json(); } catch {}
+    try { const res = await fetch(`ratings/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-cache" }); if (res.ok) r = await res.json(); } catch {}
     const box = document.getElementById("rating-acts");
     if (showing !== t || !box || !r) return;
     box.innerHTML = actions(r, cur, price);
@@ -122,7 +122,7 @@
     if (s.index) { box.innerHTML = ""; return; }
     box.innerHTML = `<div class="panel fund"><div class="empty">Loading company facts…</div></div>`;
     let f = null, m = {};
-    try { f = await (await fetch(`fund/${encodeURIComponent(t)}.json`, { cache: "no-store" })).json(); } catch {}
+    try { f = await (await fetch(`fund/${encodeURIComponent(t)}.json`, { cache: "no-cache" })).json(); } catch {}
     let all = [];
     try { const mk = await UI.market(); m = mk.byTicker[t] || {}; all = mk.stocks; } catch {}
     if (showing !== t) return;

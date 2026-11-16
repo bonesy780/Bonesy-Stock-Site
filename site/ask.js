@@ -17,7 +17,7 @@
   $("updated").textContent = "";
   let KB = [];
   try {
-    KB = await (await fetch("ask-kb.json", { cache: "no-store" })).json();
+    KB = await (await fetch("ask-kb.json", { cache: "no-cache" })).json();
   } catch {
     $("log").innerHTML = `<div class="empty">The notes could not be loaded. Try reloading the page.</div>`;
     return;

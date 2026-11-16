@@ -15,13 +15,13 @@
 
   let stocks, details = {};
   try {
-    stocks = await (await fetch("stocks.json", { cache: "no-store" })).json();
+    stocks = await (await fetch("stocks.json", { cache: "no-cache" })).json();
   } catch (e) {
     $("updated").textContent = "Stock list could not be loaded.";
     return;
   }
   // Extra facts (market cap, analysts, dividends) for stocks the main page covers
-  fetch("data.json", { cache: "no-store" }).then((r) => r.json()).then((d) => {
+  fetch("data.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => {
     if (!$("updated").querySelector(".live-dot")) $("updated").textContent = "Updated " + new Date(d.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
     const all = d.indexes.flatMap((i) => i.top.concat(i.largest || [])).concat(d.buyIdeas, d.sellIdeas || [], d.watchlist);
     for (const s of all) details[s.ticker] = { ...details[s.ticker], ...s };
@@ -197,7 +197,7 @@
     cmpHist[t] = "loading";
     let h;
     try {
-      h = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })).json();
+      h = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-cache" })).json();
     } catch (e) {
       h = { d: [], i: [] };
     }
@@ -265,7 +265,7 @@
     renderQuote();
     if (window.renderFund) window.renderFund(t, s);
     try {
-      hist = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })).json();
+      hist = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-cache" })).json();
     } catch (e) {
       hist = { d: [], i: [] };
     }

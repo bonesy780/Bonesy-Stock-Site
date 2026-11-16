@@ -2,7 +2,7 @@
   const $ = (id) => document.getElementById(id);
   let data;
   try {
-    const res = await fetch("data.json", { cache: "no-store" });
+    const res = await fetch("data.json", { cache: "no-cache" });
     data = await res.json();
   } catch (e) {
     $("updated").textContent = "Data could not be loaded.";
