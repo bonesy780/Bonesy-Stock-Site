@@ -115,6 +115,23 @@
     }
   });
 
+  // A share button: the phone's share sheet where there is one, otherwise copy the link
+  const shareBtn = (label = "Share") => `<button class="star share-btn" type="button" data-share title="Share a link to this page"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${esc(label)}</span></button>`;
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-share]");
+    if (!b) return;
+    e.preventDefault();
+    const url = location.href, title = document.title;
+    if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+      try { await navigator.share({ title, url }); } catch {}
+      return;
+    }
+    const span = b.querySelector("span"), was = span.textContent;
+    try { await navigator.clipboard.writeText(url); span.textContent = "Link copied ✓"; }
+    catch { span.textContent = "Copy failed"; }
+    setTimeout(() => { span.textContent = was; }, 2000);
+  });
+
   // ---- stock search (stocks.json), shared by the header box and the pages
   const norm = (s) => s.toLowerCase().normalize("NFKD").replace(/[^\w ]/g, "");
   async function search(text, n = 8) {
@@ -501,5 +518,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tickerTape); else tickerTape();
 
-  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, Recent, star, Watch, table, Alerts, toast, session, countdown, PAGES };
+  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();
