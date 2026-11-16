@@ -83,7 +83,7 @@
   view.innerHTML = `
     <section class="re-mhead">
       <div class="quote-head">
-        <div><div class="muted">${FLAG[m.c]} ${esc(place(m))}</div><h1>${esc(m.name)} ${star("markets", m.id)}</h1></div>
+        <div><div class="muted">${FLAG[m.c]} ${esc(place(m))}</div><h1>${esc(m.name)} ${star("markets", m.id)} ${RE.shareBtn()}</h1></div>
         <div class="re-mhead-price"><div class="label">${esc(h.label)}${h.note ? ` (${h.note})` : ""}</div><div class="re-big">${h.html}</div><div class="muted">${esc(when(m.asof))}</div></div>
       </div>
       <div class="stats re-mstats">${stats.join("")}</div>

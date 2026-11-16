@@ -975,3 +975,5 @@ body::before {
 .recent-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 16px; font-size: 13px; }
 .recent-row[hidden] { display: none; }
 .recent-row .chip { text-decoration: none; color: var(--text); }
+.share-btn { display: inline-flex; align-items: center; gap: 2px; vertical-align: middle; color: var(--muted); }
+.share-btn svg { flex: none; }
