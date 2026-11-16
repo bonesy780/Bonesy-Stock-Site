@@ -1,6 +1,6 @@
 # TopTicker
 
-The home page (`site/index.html`) asks whether you want the **stock market** or **real estate**, and can remember the choice (the logo link always shows the choice again).
+The home page (`site/index.html`, `choose.css`, `choose.js`) offers the **stock market**, **real estate** and the **daily news**, in that order, each with its own animated art, logo and live figures (index moves from `tape.json`, U.S. home prices and mortgage rates from `re/data.json`, and rotating big stories from `daily/news.json`), under a scrolling ticker tape and above quick links into popular pages. It can remember the choice (the logo link always shows the choice again).
 
 The stock side is a static website showing the top 10 stocks in the S&P 500, Nasdaq-100, Dow Jones, TSX (S&P/TSX Composite), TSX Venture (the 250 largest Venture companies, from the Yahoo screener), Nikkei 225, KOSPI 200 and Taiwan 50, plus buy ideas and stocks to watch in the coming week.
 
