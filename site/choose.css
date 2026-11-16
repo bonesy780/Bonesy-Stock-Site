@@ -147,3 +147,4 @@
   .hm-card:hover, .hm-card:hover .hm-art svg { transform: none; }
   .hm-tape { overflow-x: auto; }
 }
+.home > .skip { position: absolute; z-index: 50; }

@@ -26,16 +26,17 @@
 <link rel="stylesheet" href="styles.css?v=__V__">
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="wrap top-inner">
-    <a class="brand" href="./"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker</span></a>
+    <a class="brand" href="./" aria-label="TopTicker home"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker</span></a>
     <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
     <div class="updated" id="updated">Loading…</div>
   </div>
   <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
 </header>
 
-<main class="wrap">
+<main id="main" class="wrap">
   <section class="hero">
     <h1>Options strategy builder</h1>
     <p>Combine calls, puts and shares into a strategy and see what it pays at expiry and today, where it breaks even, how likely it is to make money, and how it reacts to price, time and volatility. Premiums are estimated with the Black-Scholes model; replace them with real quotes from your broker.</p>
@@ -56,7 +57,7 @@
 
   <section class="panel table-wrap op-legs">
     <table class="op-table">
-      <thead><tr><th class="left">Buy / sell</th><th class="left">Type</th><th>Strike</th><th>Qty</th><th>Premium</th><th class="hide-sm">Est.</th><th class="hide-sm">Delta</th><th></th></tr></thead>
+      <thead><tr><th class="left">Buy / sell</th><th class="left">Type</th><th>Strike</th><th>Qty</th><th>Premium</th><th class="hide-sm">Est.</th><th class="hide-sm">Delta</th><th><span class="sr-only">Remove</span></th></tr></thead>
       <tbody id="legs"></tbody>
     </table>
     <div class="op-leg-tools"><button class="btn small" id="add-call">+ Call</button><button class="btn small" id="add-put">+ Put</button><button class="btn small" id="add-stock">+ Shares</button><button class="btn small" id="reprice">Use estimated premiums</button><span class="hint">Qty is contracts (100 shares each) for options and lots of 100 for shares.</span></div>
