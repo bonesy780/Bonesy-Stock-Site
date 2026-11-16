@@ -17,12 +17,12 @@
 
   let D;
   try {
-    const r = await fetch("news.json", { cache: "no-store" });
+    const r = await fetch("news.json", { cache: "no-cache" });
     if (!r.ok) throw new Error(r.status);
     D = await r.json();
   } catch {
     $("dn-sub").textContent = "";
-    feedEl.innerHTML = `<div class="panel empty">The news hasn't been gathered yet. It refreshes every morning and evening; check back soon.</div>`;
+    feedEl.innerHTML = `<div class="panel empty">The news hasn't been gathered yet. It refreshes every 15 minutes; check back soon.</div>`;
     $("updated").textContent = "";
     return;
   }
@@ -358,6 +358,25 @@
 
   // Footer: every outlet and how its stories were gathered
   $("dn-foot").innerHTML = `Outlets: ${D.outlets.filter((o) => o.n).map((o) => `<a href="https://${esc(o.site)}" target="_blank" rel="noopener">${esc(o.name.replace(" (via Google News)", ""))}</a>${o.how === "search" ? "*" : ""}`).join(", ")}. <br>* Headlines found through Google News because the outlet has no public feed. Not financial advice.`;
+
+  // While the page stays open, look for a newer copy of the headlines every 5 minutes and offer to show it
+  (function watchForNews(stamp) {
+    let shown = false;
+    const check = async () => {
+      if (shown || document.hidden) return;
+      try {
+        const d = await (await fetch("news.json", { cache: "no-cache" })).json();
+        if (!d.generated || d.generated === stamp) return;
+        shown = true;
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "fresh-pill"; b.textContent = "↻ New headlines, tap to refresh";
+        b.addEventListener("click", () => location.reload());
+        document.body.appendChild(b);
+      } catch {}
+    };
+    setInterval(check, 5 * 60e3);
+    document.addEventListener("visibilitychange", check);
+  })(D.generated);
 
   draw();
 })();

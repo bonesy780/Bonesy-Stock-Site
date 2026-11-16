@@ -19,7 +19,7 @@
   // S&P 500 level, to compare each portfolio with the market since it started
   let benchNow = null;
   try {
-    const h = await (await fetch("hist/_GSPC.json", { cache: "no-store" })).json();
+    const h = await (await fetch("hist/_GSPC.json", { cache: "no-cache" })).json();
     benchNow = h.d[h.d.length - 1][1];
   } catch {}
 

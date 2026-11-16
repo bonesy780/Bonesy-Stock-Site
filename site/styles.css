@@ -952,3 +952,9 @@ body::before {
 .nf-links a { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); text-decoration: none; box-shadow: var(--shadow); }
 .nf-links a:hover, .nf-links a:focus-visible { border-color: var(--accent); }
 .nf-links span { color: var(--muted); font-size: 14px; }
+
+/* "New headlines" button on the news pages when a newer copy is ready */
+.fresh-pill { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); z-index: 30; padding: 9px 16px; border-radius: 999px; border: 0; background: var(--accent); color: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); animation: fresh-in .3s ease-out; }
+.fresh-pill:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 2px; }
+@keyframes fresh-in { from { opacity: 0; transform: translate(-50%, -12px); } }
+@media (prefers-reduced-motion: reduce) { .fresh-pill { animation: none; } }

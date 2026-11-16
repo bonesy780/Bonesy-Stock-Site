@@ -5,7 +5,7 @@
   const chg = (v) => v == null ? "" : `<i class="${v >= 0 ? "up" : "down"}">${v >= 0 ? "▲" : "▼"} ${Math.abs(v).toFixed(2)}%</i>`;
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (id) => document.getElementById(id);
-  const get = (f) => fetch(f, { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null);
+  const get = (f) => fetch(f, { cache: "no-cache" }).then((r) => r.ok ? r.json() : null).catch(() => null);
   if (still) document.querySelectorAll("animate, animateMotion").forEach((a) => a.remove());
   if (still) document.querySelectorAll(".nw-sat").forEach((a) => a.remove());
 

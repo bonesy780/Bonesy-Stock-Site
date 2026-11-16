@@ -39,7 +39,7 @@
   const hist = {};
   async function loadHist(t) {
     if (!hist[t]) {
-      hist[t] = fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })
+      hist[t] = fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-cache" })
         .then((r) => r.json()).then((j) => j.d || []).catch(() => []);
     }
     return hist[t];

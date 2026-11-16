@@ -59,7 +59,7 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   };
   const cache = {};
-  const load = (file) => (cache[file] ||= fetch(file, { cache: "no-store" }).then((r) => {
+  const load = (file) => (cache[file] ||= fetch(file, { cache: "no-cache" }).then((r) => {
     if (!r.ok) throw new Error(file + " " + r.status);
     return r.json();
   }));

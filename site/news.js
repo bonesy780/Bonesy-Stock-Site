@@ -2,7 +2,7 @@
   const $ = (id) => document.getElementById(id);
   let data;
   try {
-    const res = await fetch("news.json", { cache: "no-store" });
+    const res = await fetch("news.json", { cache: "no-cache" });
     data = await res.json();
   } catch (e) {
     $("updated").textContent = "News could not be loaded.";
@@ -88,4 +88,23 @@
     render();
   });
   render();
+
+  // While the page stays open, look for a newer copy of the headlines every 5 minutes and offer to show it
+  (function watchForNews(stamp) {
+    let shown = false;
+    const check = async () => {
+      if (shown || document.hidden) return;
+      try {
+        const d = await (await fetch("news.json", { cache: "no-cache" })).json();
+        if (!d.generated || d.generated === stamp) return;
+        shown = true;
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "fresh-pill"; b.textContent = "↻ New headlines, tap to refresh";
+        b.addEventListener("click", () => location.reload());
+        document.body.appendChild(b);
+      } catch {}
+    };
+    setInterval(check, 5 * 60e3);
+    document.addEventListener("visibilitychange", check);
+  })(data.generated);
 })();
