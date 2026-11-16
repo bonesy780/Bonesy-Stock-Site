@@ -312,41 +312,100 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", header); else header();
 
-  // ---- trading hours of the eight markets (regular sessions; exchange holidays aren't known here)
+  // ---- trading hours of the eight markets (regular sessions), with New York, Toronto and Tokyo exchange holidays
   const HOURS = {
-    tsx: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto" },
-    tsxv: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto" },
-    sp500: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
-    nasdaq100: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
-    dow: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
-    nikkei225: { tz: "Asia/Tokyo", s: [["09:00", "11:30"], ["12:30", "15:30"]], name: "Tokyo" },
+    tsx: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto", hol: "ca" },
+    tsxv: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto", hol: "ca" },
+    sp500: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York", hol: "us" },
+    nasdaq100: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York", hol: "us" },
+    dow: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York", hol: "us" },
+    nikkei225: { tz: "Asia/Tokyo", s: [["09:00", "11:30"], ["12:30", "15:30"]], name: "Tokyo", hol: "jp" },
     kospi200: { tz: "Asia/Seoul", s: [["09:00", "15:30"]], name: "Seoul" },
     twse50: { tz: "Asia/Taipei", s: [["09:00", "13:30"]], name: "Taipei" },
   };
-  // { open, label, local } for a market id, e.g. { open: true, label: "Closes in 2h 10m", local: "11:20 AM" }
-  function session(id, now = new Date()) {
+  // Full-day closures (exchange's local date) and early closes, from the NYSE, TMX and JPX calendars.
+  // Add the next year's dates each autumn; Seoul and Taipei follow the lunar calendar and aren't listed.
+  const HOLIDAYS = {
+    us: {
+      closed: {
+        "2026-01-01": "New Year's Day", "2026-01-19": "Martin Luther King Jr. Day", "2026-02-16": "Presidents' Day", "2026-04-03": "Good Friday",
+        "2026-05-25": "Memorial Day", "2026-06-19": "Juneteenth", "2026-07-03": "Independence Day", "2026-09-07": "Labor Day",
+        "2026-11-26": "Thanksgiving", "2026-12-25": "Christmas",
+        "2027-01-01": "New Year's Day", "2027-01-18": "Martin Luther King Jr. Day", "2027-02-15": "Presidents' Day", "2027-03-26": "Good Friday",
+        "2027-05-31": "Memorial Day", "2027-06-18": "Juneteenth", "2027-07-05": "Independence Day", "2027-09-06": "Labor Day",
+        "2027-11-25": "Thanksgiving", "2027-12-24": "Christmas",
+      },
+      early: { "2026-11-27": "13:00", "2026-12-24": "13:00", "2027-11-26": "13:00" },
+    },
+    ca: {
+      closed: {
+        "2026-01-01": "New Year's Day", "2026-02-16": "Family Day", "2026-04-03": "Good Friday", "2026-05-18": "Victoria Day",
+        "2026-07-01": "Canada Day", "2026-08-03": "Civic Holiday", "2026-09-07": "Labour Day", "2026-10-12": "Thanksgiving",
+        "2026-12-25": "Christmas", "2026-12-28": "Boxing Day",
+        "2027-01-01": "New Year's Day", "2027-02-15": "Family Day", "2027-03-26": "Good Friday", "2027-05-24": "Victoria Day",
+        "2027-07-01": "Canada Day", "2027-08-02": "Civic Holiday", "2027-09-06": "Labour Day", "2027-10-11": "Thanksgiving",
+        "2027-12-27": "Christmas", "2027-12-28": "Boxing Day",
+      },
+    },
+    jp: {
+      closed: {
+        "2026-01-01": "New Year", "2026-01-02": "New Year", "2026-01-12": "Coming of Age Day", "2026-02-11": "National Foundation Day",
+        "2026-02-23": "Emperor's Birthday", "2026-03-20": "Vernal Equinox Day", "2026-04-29": "Showa Day", "2026-05-04": "Greenery Day",
+        "2026-05-05": "Children's Day", "2026-05-06": "Constitution Day (observed)", "2026-07-20": "Marine Day", "2026-08-11": "Mountain Day",
+        "2026-09-21": "Respect for the Aged Day", "2026-09-22": "National holiday", "2026-09-23": "Autumnal Equinox Day", "2026-10-12": "Sports Day",
+        "2026-11-03": "Culture Day", "2026-11-23": "Labor Thanksgiving Day", "2026-12-31": "Year-end holiday",
+        "2027-01-01": "New Year", "2027-01-11": "Coming of Age Day", "2027-02-11": "National Foundation Day", "2027-02-23": "Emperor's Birthday",
+        "2027-03-22": "Vernal Equinox Day (observed)", "2027-04-29": "Showa Day", "2027-05-03": "Constitution Day", "2027-05-04": "Greenery Day",
+        "2027-05-05": "Children's Day", "2027-07-19": "Marine Day", "2027-08-11": "Mountain Day", "2027-09-20": "Respect for the Aged Day",
+        "2027-09-23": "Autumnal Equinox Day", "2027-10-11": "Sports Day", "2027-11-03": "Culture Day", "2027-11-23": "Labor Thanksgiving Day",
+        "2027-12-31": "Year-end holiday",
+      },
+    },
+  };
+  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const toS = (t) => +t.slice(0, 2) * 3600 + +t.slice(3) * 60;
+  // A market's sessions on a local calendar date (y, m, d), or [] when it's shut: weekends and listed holidays
+  function sessionsOn(h, y, m, d) {
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    const wd = dt.getUTCDay();
+    if (wd === 0 || wd === 6) return [];
+    const key = dt.toISOString().slice(0, 10), cal = HOLIDAYS[h.hol];
+    if (cal && cal.closed[key]) return [];
+    const early = cal && cal.early && cal.early[key];
+    return early ? h.s.filter(([a]) => toS(a) < toS(early)).map(([a, b]) => [a, toS(b) > toS(early) ? early : b]) : h.s;
+  }
+  // Where a market stands now: { open, secs to the next open or close, next: "open" | "reopen" | "close",
+  // day and at (the next open's weekday and time), holiday (today's holiday name), early (today's early close) }
+  function clock(id, now = new Date()) {
     const h = HOURS[id];
     if (!h) return null;
-    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: h.tz, weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-      .formatToParts(now).map((p) => [p.type, p.value]));
-    const mins = +parts.hour * 60 + +parts.minute;
-    const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday);
-    const toMin = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
-    const fmt = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`);
-    const local = now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" });
-    const weekday = day >= 1 && day <= 5;
-    if (weekday) {
-      for (const [a, b] of h.s) {
-        if (mins >= toMin(a) && mins < toMin(b)) return { open: true, label: `Closes in ${fmt(toMin(b) - mins)}`, local, city: h.name };
-      }
-      const next = h.s.find(([a]) => toMin(a) > mins);
-      if (next) return { open: false, label: h.s.length > 1 && mins >= toMin(h.s[0][1]) ? `Lunch break, reopens in ${fmt(toMin(next[0]) - mins)}` : `Opens in ${fmt(toMin(next[0]) - mins)}`, local, city: h.name };
+    const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: h.tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })
+      .formatToParts(now).map((x) => [x.type, x.value]));
+    const y = +p.year, mo = +p.month, d = +p.day;
+    const secs = +p.hour * 3600 + +p.minute * 60 + +p.second;
+    const key = `${p.year}-${p.month}-${p.day}`, cal = HOLIDAYS[h.hol];
+    const extra = { holiday: (cal && cal.closed[key]) || null, early: (cal && cal.early && cal.early[key]) || null };
+    const today = sessionsOn(h, y, mo, d);
+    for (const [a, b] of today) if (secs >= toS(a) && secs < toS(b)) return { open: true, secs: toS(b) - secs, next: "close", ...extra };
+    const nx = today.find(([a]) => toS(a) > secs);
+    if (nx) return { open: false, secs: toS(nx[0]) - secs, next: today.length > 1 && secs >= toS(today[0][1]) ? "reopen" : "open", day: null, at: nx[0], ...extra };
+    for (let add = 1; add < 15; add++) {
+      const ses = sessionsOn(h, y, mo, d + add);
+      if (ses.length) return { open: false, secs: add * 86400 - secs + toS(ses[0][0]), next: "open", day: DAYS[new Date(Date.UTC(y, mo - 1, d + add)).getUTCDay()], at: ses[0][0], ...extra };
     }
-    // Next weekday's open
-    let add = 1;
-    while (![1, 2, 3, 4, 5].includes((day + add) % 7)) add++;
-    const wait = add * 1440 - mins + toMin(h.s[0][0]);
-    return { open: false, label: wait < 1440 ? `Opens in ${fmt(wait)}` : `Opens ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][(day + add) % 7]} ${h.s[0][0]}`, local, city: h.name };
+    return { open: false, secs: 0, next: "open", ...extra };
+  }
+  // { open, label, local } for a market id, e.g. { open: true, label: "Closes in 2h 10m", local: "11:20 AM" }
+  function session(id, now = new Date()) {
+    const h = HOURS[id], c = clock(id, now);
+    if (!c) return null;
+    const m = Math.round(c.secs / 60);
+    const fmt = (v) => (v >= 60 ? `${Math.floor(v / 60)}h ${v % 60}m` : `${v}m`);
+    const local = now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" });
+    const label = c.open ? `Closes in ${fmt(m)}${c.early ? " (early close)" : ""}`
+      : c.next === "reopen" ? `Lunch break, reopens in ${fmt(m)}`
+      : (c.holiday ? `${c.holiday}, ` : "") + (m < 1440 ? `${c.holiday ? "opens" : "Opens"} in ${fmt(m)}` : `${c.holiday ? "opens" : "Opens"} ${c.day} ${c.at}`);
+    return { open: c.open, label, local, city: h.name, holiday: c.holiday };
   }
 
   // ---- price alerts, kept in this browser and checked on every page while it's open
@@ -411,23 +470,7 @@
   });
 
   // Seconds until the next open or close for a market id: { open, secs, next: "close" | "open" | "reopen" }
-  function countdown(id, now = new Date()) {
-    const h = HOURS[id];
-    if (!h) return null;
-    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: h.tz, weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })
-      .formatToParts(now).map((p) => [p.type, p.value]));
-    const secs = +parts.hour * 3600 + +parts.minute * 60 + +parts.second;
-    const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday);
-    const toS = (t) => +t.slice(0, 2) * 3600 + +t.slice(3) * 60;
-    if (day >= 1 && day <= 5) {
-      for (const [a, b] of h.s) if (secs >= toS(a) && secs < toS(b)) return { open: true, secs: toS(b) - secs, next: "close" };
-      const nx = h.s.find(([a]) => toS(a) > secs);
-      if (nx) return { open: false, secs: toS(nx[0]) - secs, next: h.s.length > 1 && secs >= toS(h.s[0][1]) ? "reopen" : "open" };
-    }
-    let add = 1;
-    while (![1, 2, 3, 4, 5].includes((day + add) % 7)) add++;
-    return { open: false, secs: add * 86400 - secs + toS(h.s[0][0]), next: "open" };
-  }
+  const countdown = (id, now = new Date()) => clock(id, now);
 
   // ---- market clock strip under the menu on every page, one toggle per market
   const CLOCKS = [["tsx", "TSX"], ["tsxv", "TSXV"], ["sp500", "S&P 500"], ["nasdaq100", "Nasdaq"], ["dow", "Dow"], ["nikkei225", "Nikkei"], ["kospi200", "KOSPI"], ["twse50", "Taiwan"]];
@@ -452,7 +495,7 @@
         const c = countdown(id, now), h = HOURS[id];
         const shown = on.has(id);
         const what = c.next === "close" ? "Closes in" : c.next === "reopen" ? "Reopens in" : "Opens in";
-        const tip = `${name}: ${c.open ? "open" : "closed"}. ${h.name} time ${now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" })}. Regular hours only; exchange holidays aren't included. Tap to ${shown ? "hide" : "show"} the timer.`;
+        const tip = `${name}: ${c.open ? "open" : "closed"}. ${c.holiday ? `Closed today for ${c.holiday}. ` : ""}${c.early ? `Closes early today, at ${c.early}. ` : ""}${h.name} time ${now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" })}. Regular hours${h.hol ? " and exchange holidays" : "; exchange holidays aren't included"}. Tap to ${shown ? "hide" : "show"} the timer.`;
         return `<button type="button" class="mc ${c.open ? "open" : ""} ${shown ? "on" : ""}" data-mc="${id}" aria-pressed="${shown}" title="${esc(tip)}">
           <i aria-hidden="true"></i><b>${esc(name)}</b>${shown ? `<span class="mc-t">${what} <span class="num">${dur(c.secs)}</span></span>` : ""}</button>`;
       }).join("");

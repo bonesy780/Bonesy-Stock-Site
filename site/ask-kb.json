@@ -530,7 +530,7 @@
    "session",
    "timezone"
   ],
-  "answer": "From a fixed table of each exchange's regular trading hours in its own time zone (for example Toronto and New York 9:30 to 16:00 local time). The clocks don't know about holidays or half days, so they may say a market is open when it's closed for a holiday."
+  "answer": "From a fixed table of each exchange's regular trading hours in its own time zone (for example Toronto and New York 9:30 to 16:00 local time). They also know the exchange holidays for New York, Toronto and Tokyo (and New York's early 1 p.m. closes), from each exchange's published calendar. Seoul and Taipei holidays follow the lunar calendar and aren't included, so on those days the KOSPI and Taiwan clocks may say the market is open when it's closed."
  },
  {
   "id": "compare",
