@@ -976,6 +976,7 @@ def picks(us, ca, mx):
 LISTING_CITIES = [  # one RentCast request each, once a week
     ("New York", "NY"), ("Los Angeles", "CA"), ("Chicago", "IL"), ("Dallas", "TX"), ("Houston", "TX"),
     ("Miami", "FL"), ("Atlanta", "GA"), ("Phoenix", "AZ"), ("Seattle", "WA"), ("Denver", "CO"),
+    ("Honolulu", "HI"),
 ]
 SAMPLE_CITIES = [
     # (market id, city, region, country, currency, typical price, link-out search sites)
@@ -1018,16 +1019,24 @@ def rentcast():
     reqs = [t for t in reqs if NOW - datetime.fromisoformat(t) < RENTCAST_WINDOW]
     ledger = {"requests": reqs, "cap": RENTCAST_CAP, "window_days": RENTCAST_WINDOW.days}
     last = max(reqs) if reqs else (old or {}).get("fetched")
+    # Cities already asked for (older saved files don't list them, so take them from the listings)
+    asked = {tuple(c) for c in (old or {}).get("cities") or []} or {(x.get("city"), x.get("region")) for x in (old or {}).get("items", [])}
+    missing = [(c, st) for c, st in LISTING_CITIES if (c, st) not in asked]
+    cities, top_up = LISTING_CITIES, False
     if last and NOW - datetime.fromisoformat(last) < timedelta(days=6, hours=12):
-        log(f"  RentCast: last fetched {last}; waiting a week between fetches ({len(reqs)}/{RENTCAST_CAP} in the last 31 days)")
-        ledger_file.write_text(json.dumps(ledger))
-        return old
-    if len(reqs) + len(LISTING_CITIES) > RENTCAST_CAP:
+        if not missing or not old:
+            log(f"  RentCast: last fetched {last}; waiting a week between fetches ({len(reqs)}/{RENTCAST_CAP} in the last 31 days)")
+            ledger_file.write_text(json.dumps(ledger))
+            return old
+        # A city added to the list since the last fetch: ask for just that one now, one request each
+        cities, top_up = missing, True
+        log(f"  RentCast: adding {', '.join(c for c, _ in missing)} to this week's listings")
+    if len(reqs) + len(cities) > RENTCAST_CAP:
         log(f"  RentCast: {len(reqs)} requests in the last 31 days; skipping to stay under {RENTCAST_CAP}")
         ledger_file.write_text(json.dumps(ledger))
         return old
     items = []
-    for n, (city, st) in enumerate(LISTING_CITIES):
+    for n, (city, st) in enumerate(cities):
         ledger["requests"].append(NOW.isoformat(timespec="seconds"))
         ledger_file.write_text(json.dumps(ledger))
         r = get(f"https://api.rentcast.io/v1/listings/sale?city={quote_plus(city)}&state={st}&status=Active&limit=40",
@@ -1051,9 +1060,18 @@ def rentcast():
                 "office": (x.get("listingOffice") or {}).get("name"), "mls": x.get("mlsName"), "sample": False,
             })
     log(f"  RentCast: {len(ledger['requests'])}/{RENTCAST_CAP} requests in the last 31 days")
+    done = sorted(asked | set(cities)) if top_up else list(cities)
+    if top_up:
+        # Keep the week's other listings; the next full fetch waits a week from this one
+        if old is not None:
+            old["cities"] = [list(c) for c in done]
+            old["items"] = [x for x in old.get("items", []) if (x.get("city"), x.get("region")) not in set(cities)] + items
+            saved.write_text(json.dumps(old, separators=(",", ":")))
+            log(f"  RentCast: {len(items)} listings added")
+        return old
     if not items:
         return old
-    data = {"fetched": NOW.isoformat(timespec="seconds"), "source": "RentCast", "items": items}
+    data = {"fetched": NOW.isoformat(timespec="seconds"), "source": "RentCast", "items": items, "cities": [list(c) for c in done]}
     saved.write_text(json.dumps(data, separators=(",", ":")))
     log(f"  RentCast: {len(items)} listings")
     return data
