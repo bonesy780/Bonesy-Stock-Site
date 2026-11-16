@@ -131,6 +131,18 @@
     return scored.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, n).map((x) => x[2]);
   }
 
+  // ---- stocks this reader looked up lately (newest first), kept in this browser
+  const Recent = {
+    list() { const v = store.get("recentStocks", []); return Array.isArray(v) ? v.filter((t) => typeof t === "string") : []; },
+    add(t) { store.set("recentStocks", [t, ...Recent.list().filter((x) => x !== t)].slice(0, 8)); },
+    async stocks(n = 6, skip) {
+      const l = Recent.list().filter((t) => t !== skip);
+      if (!l.length) return [];
+      const by = new Map((await load("stocks.json")).map((s) => [s.t, s]));
+      return l.map((t) => by.get(t)).filter(Boolean).slice(0, n);
+    },
+  };
+
   // A search box with a drop-down of matches; onPick gets the stocks.json entry
   function picker(input, onPick) {
     const wrap = input.parentElement;
@@ -144,11 +156,11 @@
     input.setAttribute("aria-controls", list.id);
     input.setAttribute("aria-expanded", "false");
     input.autocomplete = "off";
-    let matches = [], active = -1, seq = 0;
+    let matches = [], active = -1, seq = 0, recent = false;
     const show = () => {
       list.hidden = !matches.length;
       input.setAttribute("aria-expanded", String(matches.length > 0));
-      list.innerHTML = matches.map((s, n) => `
+      list.innerHTML = (recent && matches.length ? `<li role="presentation" class="res-head">Recently viewed</li>` : "") + matches.map((s, n) => `
         <li role="option" id="${list.id}-${n}" aria-selected="${n === active}" data-n="${n}">
           <span class="nm">${esc(s.n)}</span>
           <span class="tk">${esc(s.t)} · ${esc(s.index ? s.region : s.ix.join(", "))}</span>
@@ -160,7 +172,15 @@
       const mine = ++seq;
       const m = await search(input.value).catch(() => []);
       if (mine !== seq) return;
-      matches = m; active = m.length ? 0 : -1; show();
+      recent = false; matches = m; active = m.length ? 0 : -1; show();
+    });
+    // An empty box lists the stocks looked up lately
+    input.addEventListener("focus", async () => {
+      if (input.value.trim()) return;
+      const mine = ++seq;
+      const m = await Recent.stocks(6).catch(() => []);
+      if (mine !== seq || input.value.trim() || document.activeElement !== input) return;
+      recent = true; matches = m; active = -1; show();
     });
     input.addEventListener("keydown", (e) => {
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -176,7 +196,7 @@
       }
     });
     list.addEventListener("mousedown", (e) => {
-      const li = e.target.closest("li");
+      const li = e.target.closest("li[data-n]");
       if (li) { e.preventDefault(); choose(matches[+li.dataset.n]); }
     });
     input.addEventListener("blur", () => setTimeout(() => { matches = []; show(); }, 100));
@@ -481,5 +501,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tickerTape); else tickerTape();
 
-  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, star, Watch, table, Alerts, toast, session, countdown, PAGES };
+  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, Recent, star, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();

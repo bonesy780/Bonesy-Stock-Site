@@ -44,17 +44,21 @@
     }
     return scored.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, 8).map((x) => x[2]);
   }
+  let showingRecent = false;
+  const recentList = () => (window.UI ? UI.Recent.list() : []).filter((t) => !current || t !== current.t)
+    .map((t) => stocks.find((x) => x.t === t)).filter(Boolean).slice(0, 6);
   function showResults() {
     list.hidden = !matches.length;
     q.setAttribute("aria-expanded", String(matches.length > 0));
-    list.innerHTML = matches.map((s, n) => `
+    list.innerHTML = (showingRecent && matches.length ? `<li role="presentation" class="res-head">Recently viewed</li>` : "") + matches.map((s, n) => `
       <li role="option" id="opt${n}" aria-selected="${n === active}" data-t="${esc(s.t)}">
         <span class="nm">${esc(s.n)}</span>
         <span class="tk">${esc(s.s)} · ${esc(s.index ? s.region : s.ix.join(", "))}</span>
       </li>`).join("");
     if (active >= 0) q.setAttribute("aria-activedescendant", "opt" + active); else q.removeAttribute("aria-activedescendant");
   }
-  q.addEventListener("input", () => { matches = search(q.value); active = matches.length ? 0 : -1; showResults(); });
+  q.addEventListener("input", () => { showingRecent = false; matches = search(q.value); active = matches.length ? 0 : -1; showResults(); });
+  q.addEventListener("focus", () => { if (q.value.trim()) return; showingRecent = true; matches = recentList(); active = -1; showResults(); });
   q.addEventListener("keydown", (e) => {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       if (!matches.length) return;
@@ -69,7 +73,7 @@
     }
   });
   list.addEventListener("pointerdown", (e) => {
-    const li = e.target.closest("li");
+    const li = e.target.closest("li[data-t]");
     if (li) { e.preventDefault(); pick(li.dataset.t); }
   });
   q.addEventListener("blur", () => { matches = []; showResults(); });
@@ -253,6 +257,22 @@
   const loadDraw = (t) => { try { const v = JSON.parse(localStorage.getItem(drawKey(t))); return Array.isArray(v) ? v : []; } catch { return []; } };
   const saveDraw = () => { try { localStorage.setItem(drawKey(current.t), JSON.stringify(drawings)); } catch {} };
 
+  // Chips under the search box for the stocks looked up lately
+  function renderRecent() {
+    const el = $("recent");
+    if (!el) return;
+    const l = recentList();
+    el.hidden = !l.length;
+    el.innerHTML = l.length ? `<span class="muted">Recent:</span>` + l.map((x) => `<a class="chip" href="?t=${encodeURIComponent(x.t)}" data-t="${esc(x.t)}">${esc(x.s)}</a>`).join("") : "";
+  }
+  $("recent")?.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-t]");
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    pick(a.dataset.t);
+    window.scrollTo({ top: 0 });
+  });
+
   async function pick(t, push = true) {
     const s = stocks.find((x) => x.t === t);
     if (!s) return;
@@ -262,6 +282,9 @@
     drawings = loadDraw(t);
     if (push) history.replaceState(null, "", "?t=" + encodeURIComponent(t));
     document.title = `${s.s} · Stock Lookup · TopTicker`;
+    // the default stock shown on a bare visit doesn't count as looked up
+    if (window.UI && (push || new URLSearchParams(location.search).get("t") === t)) UI.Recent.add(t);
+    renderRecent();
     renderQuote();
     if (window.renderFund) window.renderFund(t, s);
     try {
