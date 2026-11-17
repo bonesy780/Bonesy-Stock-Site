@@ -12,10 +12,98 @@
   }
   $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
-  const PERIODS = [["d1", "Day", 3], ["w1", "Week", 6], ["m1", "Month", 10], ["m3", "3 months", 20], ["ytd", "YTD", 30]];
+  const PERIODS = [["d1", "Day", 3], ["w1", "Week", 6], ["m1", "Month", 10], ["m3", "3 months", 20], ["ytd", "YTD", 30], ["cx", "Custom", 10]];
   const state = { market: "sp500", period: "d1", ...store.get("heatmap", {}) };
   if (!M.indexes.some((i) => i.id === state.market)) state.market = M.indexes[0].id;
   if (!PERIODS.some((p) => p[0] === state.period)) state.period = "d1";
+
+  // ---- custom date range: each stock's move between the close before `from` and the close on or before `to`,
+  // read from monthly files of daily closes (closes/<market>/<YYYY-MM>.json) so only a few small files load
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  const isoOf = (d) => d.toISOString().slice(0, 10);
+  const shiftDays = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return isoOf(d); };
+  const monthOf = (iso) => iso.slice(0, 7);
+  const prevMonth = (iso) => { const d = new Date(iso.slice(0, 7) + "-01T00:00:00Z"); d.setUTCMonth(d.getUTCMonth() - 1); return isoOf(d).slice(0, 7); };
+  const nice = (iso) => new Date(iso + "T00:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  const fileCache = {};
+  const getJson = (f) => (fileCache[f] ||= fetch(f, { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+  let spans = null; // first and last saved date for each market
+  const custom = { key: "", ready: false, base: null, end: null, cap: 10, err: "" };
+
+  // Color strength grows with the length of the range, like the preset periods
+  const capFor = (days) => (days <= 3 ? 3 : days <= 8 ? 6 : days <= 35 ? 10 : days <= 100 ? 20 : days <= 400 ? 30 : days <= 1100 ? 50 : 80);
+
+  async function loadCustom() {
+    const ix = state.market;
+    spans ||= (await getJson("closes/index.json")) || {};
+    const span = spans[ix];
+    if (!span) { custom.err = "Custom dates aren't available for this market yet. They appear after the next full data refresh."; return; }
+    let { from, to } = state;
+    if (!ISO.test(from || "")) from = shiftDays(span.to, -30);
+    if (!ISO.test(to || "")) to = span.to;
+    if (from > to) [from, to] = [to, from];
+    from = from < span.from ? span.from : from > span.to ? span.to : from;
+    to = to > span.to ? span.to : to < span.from ? span.from : to;
+    state.from = from; state.to = to;
+    const key = `${ix}|${from}|${to}`;
+    if (custom.key === key && custom.ready) return;
+    custom.key = key; custom.ready = false; custom.err = "";
+    const months = [...new Set([prevMonth(from), monthOf(from), prevMonth(to), monthOf(to)])].sort();
+    const files = await Promise.all(months.map((m) => getJson(`closes/${ix}/${m}.json`)));
+    if (custom.key !== key) return; // a newer choice took over
+    // Every saved day across the loaded months, oldest first, as [date, {ticker: close}]
+    const days = [];
+    for (const f of files) {
+      if (!f) continue;
+      f.d.forEach((d, i) => { const row = {}; f.t.forEach((t, j) => { if (f.c[i][j] != null) row[t] = f.c[i][j]; }); days.push([d, row]); });
+    }
+    days.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+    const lastBefore = (t, lim, strict) => {
+      for (let i = days.length - 1; i >= 0; i--) {
+        const [d, row] = days[i];
+        if ((strict ? d < lim : d <= lim) && row[t] != null) return [d, row[t]];
+      }
+      return null;
+    };
+    const firstFrom = (t, lim) => { const x = days.find(([d, row]) => d >= lim && monthOf(d) === monthOf(lim) && row[t] != null); return x ? [x[0], x[1][t]] : null; };
+    // The dates most stocks were measured between, to say so under the date boxes
+    const baseN = {}, endN = {};
+    const most = (n) => Object.entries(n).sort((x, y) => y[1] - x[1])[0]?.[0] || null;
+    for (const s of M.stocks) {
+      if (!s.ix.includes(ix)) continue;
+      // At the very start of the saved history there is no earlier close, so start from the first one
+      const a = lastBefore(s.t, from, true) || (from <= span.from ? firstFrom(s.t, from) : null);
+      const b = lastBefore(s.t, to, false);
+      s.cx = a && b && a[0] < b[0] && a[1] > 0 ? (b[1] / a[1] - 1) * 100 : null;
+      if (s.cx != null) { baseN[a[0]] = (baseN[a[0]] || 0) + 1; endN[b[0]] = (endN[b[0]] || 0) + 1; }
+    }
+    if (!days.length) custom.err = "No saved prices for those dates.";
+    custom.base = most(baseN); custom.end = most(endN);
+    custom.cap = capFor((new Date(to) - new Date(from)) / 864e5 + 1);
+    custom.ready = true;
+  }
+
+  function rangeBar() {
+    const bar = $("range"), on = state.period === "cx";
+    bar.hidden = !on;
+    if (!on) return;
+    const span = spans && spans[state.market];
+    for (const id of ["from", "to"]) {
+      const inp = $(id);
+      if (span) { inp.min = span.from; inp.max = span.to; }
+      if (state[id] && inp.value !== state[id]) inp.value = state[id];
+    }
+    $("range-note").textContent = custom.err ? custom.err
+      : !custom.ready ? "Loading prices for those dates…"
+      : custom.base && custom.end ? `Change from the close on ${nice(custom.base)} to the close on ${nice(custom.end)}.` : "";
+  }
+
+  async function showCustom() {
+    rangeBar();
+    await loadCustom();
+    rangeBar();
+    if (custom.ready || custom.err) render();
+  }
 
   // ---- squarified treemap: lays out items (with .w weights) in the box x, y, w, h
   function squarify(items, x, y, w, h) {
@@ -64,7 +152,9 @@
     store.set("heatmap", state);
     $("markets").innerHTML = M.indexes.map((i) => `<button class="tab" role="tab" aria-selected="${i.id === state.market}" data-id="${i.id}">${esc(i.name)}</button>`).join("");
     $("periods").innerHTML = PERIODS.map(([k, l]) => `<button role="tab" aria-selected="${k === state.period}" data-p="${k}">${l}</button>`).join("");
-    const [k, , cap] = PERIODS.find((p) => p[0] === state.period);
+    rangeBar();
+    const k = state.period;
+    const cap = k === "cx" ? custom.cap : PERIODS.find((p) => p[0] === k)[2];
     $("legend").innerHTML = [-cap, -cap / 2, 0, cap / 2, cap].map((v) =>
       `<span style="background:${color(v, cap)}">${v > 0 ? "+" : ""}${v}%</span>`).join("");
 
@@ -105,7 +195,7 @@
 
     UI.table($("sectors"), [
       { key: "name", label: "Sector", left: true, sm: true, val: (r) => r.name, html: (r) => `<strong>${esc(r.name)}</strong>` },
-      { key: "chg", label: PERIODS.find((p) => p[0] === k)[1], sm: true, val: (r) => r.chg, html: (r) => pct(r.chg, 2) },
+      { key: "chg", label: k === "cx" ? "Custom" : PERIODS.find((p) => p[0] === k)[1], sm: true, val: (r) => r.chg, html: (r) => pct(r.chg, 2) },
       { key: "n", label: "Stocks", val: (r) => r.stocks.length, html: (r) => `<span class="num">${r.stocks.length}</span>` },
       { key: "w", label: "Mkt cap (USD)", val: (r) => r.w, html: (r) => `<span class="num">${big(r.w)}</span>` },
       { key: "best", label: "Best", html: (r) => r.best ? `<a class="co-link" href="${stockUrl(r.best.t)}">${esc(r.best.s)}</a> ${pct(r.best[k])}` : "–" },
@@ -123,12 +213,13 @@
       return w ? moved.reduce((a, s) => a + s[k] * s.mcapUsd, 0) / w : null;
     };
     const all = sectors.flatMap((x) => x.stocks);
-    const rows = sectors.map((x) => ({ name: x.name, v: SPANS.map(([k]) => avg(x.stocks, k)) }));
+    const cols = state.period === "cx" && custom.ready ? SPANS.concat([["cx", "Custom", custom.cap]]) : SPANS;
+    const rows = sectors.map((x) => ({ name: x.name, v: cols.map(([k]) => avg(x.stocks, k)) }));
     rows.sort((a, b) => (b.v[3] ?? -1e9) - (a.v[3] ?? -1e9));
-    rows.push({ name: "Whole market", v: SPANS.map(([k]) => avg(all, k)), total: true });
+    rows.push({ name: "Whole market", v: cols.map(([k]) => avg(all, k)), total: true });
     const cell = (v, cap) => `<td class="rot-cell" style="background:${color(v, cap)}">${v == null ? "–" : (v >= 0 ? "+" : "") + v.toFixed(1) + "%"}</td>`;
-    $("rotation").innerHTML = `<table class="rot-table"><thead><tr><th class="left">Sector</th>${SPANS.map(([, l]) => `<th>${l}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map((r) => `<tr class="${r.total ? "total" : ""}"><td class="left">${esc(r.name)}</td>${r.v.map((v, i) => cell(v, SPANS[i][2])).join("")}</tr>`).join("")}</tbody></table>`;
+    $("rotation").innerHTML = `<table class="rot-table"><thead><tr><th class="left">Sector</th>${cols.map(([, l]) => `<th>${l}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map((r) => `<tr class="${r.total ? "total" : ""}"><td class="left">${esc(r.name)}</td>${r.v.map((v, i) => cell(v, cols[i][2])).join("")}</tr>`).join("")}</tbody></table>`;
   }
   const sectorSort = { key: "chg", dir: -1 };
 
@@ -141,6 +232,7 @@
     tip.innerHTML = `<strong>${esc(s.n)}</strong> <span class="tk">${esc(s.s)}</span><br>
       <span class="tk">${esc(b.sec)}${s.industry ? " · " + esc(s.industry) : ""}</span><br>
       ${money(s.p, s.cur)} · Day ${pct(s.d1, 2)} · 1W ${pct(s.w1)} · YTD ${pct(s.ytd)}<br>
+      ${state.period === "cx" && custom.ready && custom.base ? `<span class="tk">${nice(custom.base)} – ${nice(custom.end)}</span> ${pct(s.cx, 2)}<br>` : ""}
       <span class="tk">Mkt cap ${big(s.mcapUsd)}${s.pe ? " · P/E " + s.pe.toFixed(1) : ""}</span>`;
     tip.hidden = false;
     const r = tip.getBoundingClientRect();
@@ -151,9 +243,36 @@
   });
   $("heat").addEventListener("mouseleave", () => { tip.hidden = true; });
 
-  $("markets").addEventListener("click", (e) => { const b = e.target.closest(".tab"); if (b) { state.market = b.dataset.id; render(); } });
-  $("periods").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { state.period = b.dataset.p; render(); } });
+  $("markets").addEventListener("click", (e) => {
+    const b = e.target.closest(".tab");
+    if (!b) return;
+    state.market = b.dataset.id;
+    render();
+    if (state.period === "cx") showCustom();
+  });
+  $("periods").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    state.period = b.dataset.p;
+    render();
+    if (state.period === "cx") showCustom();
+  });
+  for (const id of ["from", "to"]) $(id).addEventListener("change", (e) => {
+    if (!ISO.test(e.target.value)) return;
+    state[id] = e.target.value;
+    showCustom();
+  });
+  // Quick picks inside the custom range: a span ending on the latest saved day
+  $("range").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-back]");
+    const span = spans && spans[state.market];
+    if (!b || !span) return;
+    state.to = span.to;
+    state.from = shiftDays(span.to, -+b.dataset.back);
+    showCustom();
+  });
   let resize;
   window.addEventListener("resize", () => { clearTimeout(resize); resize = setTimeout(render, 150); });
   render();
+  if (state.period === "cx") showCustom();
 })();

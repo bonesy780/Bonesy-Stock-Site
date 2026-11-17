@@ -1021,3 +1021,15 @@ body::before {
 .to-top[hidden] { display: none; }
 .to-top:hover { border-color: var(--accent); }
 .to-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Heatmap custom date range */
+.heat-range { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: -4px 0 12px; }
+.heat-range[hidden] { display: none; }
+.heat-range label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
+.heat-range .field { padding: 6px 8px; }
+.heat-quick { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.heat-range .hint { flex: 1 0 100%; margin: 0; }
+@media (max-width: 640px) {
+  .heat-range label { flex: 1 1 140px; }
+  .heat-range .field { flex: 1; width: 100%; }
+}
