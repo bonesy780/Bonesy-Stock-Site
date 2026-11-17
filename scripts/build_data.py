@@ -261,11 +261,12 @@ def market_caps(tickers: list[str]) -> dict[str, float]:
 
 _div: dict[str, dict] = {}
 _saved: dict[str, dict] = {"caps": {}, "info": {}, "div": {}}
-if FAST:
-    try:
-        _saved.update(json.loads(SAVED.read_text()))
-    except (OSError, ValueError):
-        pass
+# A fast run reuses all of it. A full run uses the saved analyst data only for stocks Yahoo won't answer
+# for this time, so a bad spell on Yahoo's side doesn't wipe out the buy and sell ideas.
+try:
+    _saved.update(json.loads(SAVED.read_text()))
+except (OSError, ValueError):
+    pass
 FREQS = ((45, "Monthly", 12), (130, "Quarterly", 4), (240, "Semi-annual", 2), (400, "Annual", 1))
 
 
@@ -302,6 +303,7 @@ def dividends(rows: list[dict]) -> None:
 # ---------------------------------------------------------------- analyst data
 
 _info_cache: dict[str, dict] = {}
+_info_fails = 0
 
 
 def info(ticker: str) -> dict:
@@ -309,14 +311,32 @@ def info(ticker: str) -> dict:
         return _info_cache[ticker]
     if FAST and ticker in _saved["info"]:
         return _info_cache.setdefault(ticker, _saved["info"][ticker])
+    global _info_fails
     data = {}
-    for attempt in range(3):
+    # Once Yahoo has refused many in a row, try each stock only once, then pause a minute and test again
+    tries = 1 if _info_fails >= 25 else 4
+    for attempt in range(tries):
         try:
             data = yf.Ticker(ticker).info or {}
-            break
         except Exception as e:
             log(f"info {ticker} failed ({e}), retry {attempt + 1}")
-            time.sleep(2 * (attempt + 1))
+            data = {}
+        # Yahoo sometimes answers with an error (often "Invalid Crumb") instead of raising, leaving an almost
+        # empty dict, so check that real company data came back
+        if data.get("quoteType") or data.get("shortName") or data.get("marketCap"):
+            break
+        data = {}
+        time.sleep(3 * (attempt + 1))
+    if data:
+        _info_fails = 0
+    else:
+        _info_fails += 1
+        if _info_fails % 25 == 0:
+            log(f"Yahoo refused {_info_fails} lookups in a row, pausing a minute")
+            time.sleep(60)
+        if ticker in _saved["info"]:
+            log(f"info {ticker}: no answer, using the last saved analyst data")
+            data = dict(_saved["info"][ticker])
     _info_cache[ticker] = data
     return data
 
