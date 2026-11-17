@@ -50,6 +50,12 @@
     <span class="spacer"></span>
     <div class="heat-legend" id="legend" aria-hidden="true"></div>
   </div>
+  <div class="heat-range" id="range" hidden>
+    <label>From <input class="field" id="from" type="date"></label>
+    <label>To <input class="field" id="to" type="date"></label>
+    <span class="heat-quick" aria-label="Quick ranges"><button class="chip" type="button" data-back="182">6 months</button><button class="chip" type="button" data-back="365">1 year</button><button class="chip" type="button" data-back="1096">3 years</button><button class="chip" type="button" data-back="1826">5 years</button></span>
+    <p class="hint" id="range-note" role="status"></p>
+  </div>
 
   <div class="panel heat-wrap"><div class="heat" id="heat" role="img" aria-label="Heatmap of stocks by sector"></div></div>
   <div class="tip heat-tip" id="tip" hidden></div>

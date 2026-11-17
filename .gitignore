@@ -19,3 +19,4 @@ site/re/hist/
 .data-cache/
 site/daily/news.json
 site/daily/search-cache.json
+site/closes/

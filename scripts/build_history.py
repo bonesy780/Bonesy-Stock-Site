@@ -6,6 +6,10 @@ each as [time, close, volume], for the chart and its technical indicators.
 
 Prices are the actual closes people saw (adjusted for splits only, not for
 dividends), so old highs and lows match what the stock really traded at.
+Also writes site/closes/<index>/<YYYY-MM>.json: every member's daily close for
+each month of the last CLOSES_YEARS years, so the heatmap can color stocks by
+their move between any two dates while loading only the months it needs.
+
 Run after build_data.py:
     python scripts/build_history.py
 """
@@ -27,6 +31,8 @@ SITE = ROOT / "site"
 HIST = SITE / "hist"
 BATCH = 100
 DAILY_DAYS = 800
+CLOSES = SITE / "closes"
+CLOSES_YEARS = 10
 
 
 def log(*a):
@@ -136,6 +142,57 @@ def trends(f: pd.DataFrame) -> dict:
     return out
 
 
+def month_closes(daily: dict[str, pd.DataFrame]) -> None:
+    """One file per index and month: {"t": [tickers], "d": [dates], "c": [[close per ticker] per date]}.
+
+    Closes are rounded to 5 significant figures (well under 0.01% off), null where
+    a stock has no close that day. The heatmap's custom date range reads these.
+    """
+    cutoff = pd.Timestamp.now() - pd.DateOffset(years=CLOSES_YEARS)
+    months = {}
+    for ix in INDEXES:
+        cache = CONSTITUENTS / f"{ix['id']}.csv"
+        if not cache.exists():
+            continue
+        syms = pd.read_csv(cache, dtype=str, keep_default_na=False)["symbol"]
+        cols = {}
+        for t in sorted({to_yahoo(s, ix) for s in syms}):
+            d = daily.get(t)
+            if d is None or not len(d):
+                continue
+            c = d["c"].copy()
+            c.index = pd.DatetimeIndex(c.index).tz_localize(None).normalize()
+            c = c[c.index >= cutoff]
+            if len(c):
+                cols[t] = c[~c.index.duplicated(keep="last")]
+        if not cols:
+            continue
+        frame = pd.DataFrame(cols).sort_index()
+        out = CLOSES / ix["id"]
+        out.mkdir(parents=True, exist_ok=True)
+        keep = set()
+        for key, grp in frame.groupby(frame.index.strftime("%Y-%m")):
+            grp = grp.dropna(how="all")
+            if not len(grp):
+                continue
+            rows = [[None if v != v else float(f"{v:.5g}") for v in row] for row in grp.to_numpy(dtype=float)]
+            body = {"t": list(grp.columns), "d": [ts.strftime("%Y-%m-%d") for ts in grp.index], "c": rows}
+            (out / f"{key}.json").write_text(json.dumps(body, separators=(",", ":"), allow_nan=False))
+            keep.add(key)
+        for old in out.glob("*.json"):
+            if old.stem not in keep:
+                old.unlink()
+        months[ix["id"]] = sorted(keep)
+    # Which months exist for each index, so the page knows the earliest and latest dates
+    first_last = {}
+    for k, ms in months.items():
+        last = json.loads((CLOSES / k / f"{ms[-1]}.json").read_text())["d"][-1]
+        first = json.loads((CLOSES / k / f"{ms[0]}.json").read_text())["d"][0]
+        first_last[k] = {"from": first, "to": last}
+    (CLOSES / "index.json").write_text(json.dumps(first_last, separators=(",", ":")))
+    log(f"wrote monthly closes for {len(months)} indexes")
+
+
 def build():
     stocks: dict[str, dict] = {}
     for ix in INDEXES:
@@ -174,6 +231,10 @@ def build():
             lines[t] = trends(d)
         except Exception as e:  # a bad series shouldn't stop the build
             log(f"trend failed for {t} ({e})")
+    try:
+        month_closes(daily)
+    except Exception as e:  # the heatmap's custom range is a bonus; keep the rest of the build
+        log(f"monthly closes failed ({e})")
     (SITE / "trends.json").write_text(json.dumps(lines, separators=(",", ":")))
     (SITE / "stocks.json").write_text(json.dumps(listed, separators=(",", ":"), ensure_ascii=False))
     log(f"wrote {len(listed)} histories to {HIST}")
