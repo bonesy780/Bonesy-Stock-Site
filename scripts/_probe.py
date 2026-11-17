@@ -8,30 +8,17 @@ from build_data import INDEXES, load_constituents, to_yahoo
 
 def p(*a): print(*a, flush=True)
 
-# 1. Currency check on fields we use, for a sample of tickers likely to report in another currency
-SAMPLE = ["SHOP.TO","BN.TO","BAM.TO","TRI.TO","ABX.TO","WPM.TO","FNV.TO","AEM.TO","K.TO","TECK-B.TO","CNQ.TO","OVV.TO",
-          "MFC.TO","RY.TO","CSU.TO","LUN.TO","FM.TO","IMO.TO","NTR.TO","CCO.TO","QSR.TO","WCN.TO","TOU.TO","CP.TO",
-          "AAPL","MSFT","KO","7203.T","6758.T","9984.T","005930.KS","000660.KS","2330.TW","2317.TW"]
-p("=== field currencies")
-for t in SAMPLE:
-    try:
-        i = yf.Ticker(t).info
-    except Exception as e:
-        p(t, "ERR", e); continue
-    pr = i.get("currentPrice") or i.get("regularMarketPrice")
-    so = i.get("sharesOutstanding") or i.get("impliedSharesOutstanding")
-    try:
-        d = yf.Ticker(t).dividends
-        last4 = float(d.iloc[-4:].sum()) if len(d) else None
-        lastd = str(d.index[-1].date()) if len(d) else None
-    except Exception:
-        last4 = lastd = None
-    p(t, "cur", i.get("currency"), "fin", i.get("financialCurrency"), "price", pr, "tgt", i.get("targetMeanPrice"),
-      "tgtHi", i.get("targetHighPrice"), "tgtLo", i.get("targetLowPrice"),
-      "rec", i.get("recommendationMean"), "n", i.get("numberOfAnalystOpinions"),
-      "mcap", i.get("marketCap"), "px*so", (pr * so) if pr and so else None,
-      "divRate", i.get("dividendRate"), "trailDiv", i.get("trailingAnnualDividendRate"), "divYld", i.get("dividendYield"),
-      "trailYld", i.get("trailingAnnualDividendYield"), "last4divs", last4, lastd)
+# 1. Dividend yields as the screener will now compute them
+from build_market import ohlcv, paid_last_year, dividend_rate
+T = ["BN.TO","CSU.TO","TRI.TO","RY.TO","AAPL","KO","7203.T","005930.KS","000660.KS","2330.TW","2317.TW","2891.TW","AP-UN.TO","T.TO","ENB.TO"]
+bars = ohlcv(T)
+for t in T:
+    i = yf.Ticker(t).info
+    h = paid_last_year(bars[t]) if t in bars else None
+    r = dividend_rate(i, h)
+    px = float(bars[t]["Close"].iloc[-1]) if t in bars else None
+    p(t, "fwd", i.get("dividendRate"), "trail", i.get("trailingAnnualDividendRate"), "hist", h, "used", r,
+      "yield", round(r / px * 100, 2) if r and px else None, "old", round((i.get("dividendRate") or i.get("trailingAnnualDividendRate") or 0) / px * 100, 2) if px else None)
 
 # 2. What the site built
 p("=== built data.json")
@@ -44,4 +31,4 @@ for ix in d["indexes"]:
 for k in ("buyIdeas", "sellIdeas", "watchlist"):
     p("==", k)
     for r in d[k]:
-        p("  ", r["ticker"], r.get("rating"), r.get("analysts"), "up", r.get("upside"), "|", "; ".join(r["why"]))
+        p("  ", r["ticker"], r.get("rating"), r.get("analysts"), "up", r.get("upside"), "score", r.get("score"), "idea", r.get("ideaScore"), "|", "; ".join(r["why"]))

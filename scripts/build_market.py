@@ -25,7 +25,7 @@ import pandas as pd
 import yfinance as yf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_data import CONSTITUENTS, INDEXES, fx_rates, to_yahoo  # noqa: E402
+from build_data import CONSTITUENTS, INDEXES, fx_rates, target_upside, to_yahoo  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -106,15 +106,17 @@ def ohlcv(tickers: list[str]) -> dict[str, pd.DataFrame]:
     for i in range(0, len(tickers), BATCH):
         batch = tickers[i:i + BATCH]
         try:
+            # actions=True adds each day's dividend (in the share price's currency) at no extra cost
             df = yf.download(batch, period="13mo", interval="1d", auto_adjust=False, group_by="ticker",
-                             threads=True, progress=False)
+                             threads=True, progress=False, actions=True)
         except Exception as e:
             log(f"price batch {i} failed ({e})")
             continue
         for t in batch:
             try:
                 sub = df[t] if isinstance(df.columns, pd.MultiIndex) else df
-                f = sub[["Open", "High", "Low", "Close", "Volume"]].dropna(subset=["Close"])
+                cols = [c for c in ("Open", "High", "Low", "Close", "Volume", "Dividends") if c in sub]
+                f = sub[cols].dropna(subset=["Close"])
             except KeyError:
                 continue
             if len(f) > 30:
@@ -124,6 +126,39 @@ def ohlcv(tickers: list[str]) -> dict[str, pd.DataFrame]:
 
 def pct(a, b):
     return None if a is None or not b or b != b else (a / b - 1) * 100
+
+
+def paid_last_year(f: pd.DataFrame) -> float | None:
+    """Regular dividends paid over the last 12 months from the price history, leaving out one-off specials."""
+    if "Dividends" not in f:
+        return None
+    d = f["Dividends"].fillna(0)
+    d = d[d > 0]
+    if d.empty:
+        return 0.0
+    usual = d.median()
+    year = d[d.index > f.index[-1] - pd.Timedelta(days=365)]
+    return float(year[year <= usual * 2.5].sum()) if len(d) > 2 else float(year.sum())
+
+
+def dividend_rate(inf: dict, history: float | None) -> float | None:
+    """Yearly dividend per share, in the share price's currency.
+
+    Yahoo's forward rate is used when it agrees with what the company actually paid in the last year, so a
+    recent raise shows. Where it is far off (it is wrong for some Korean and Taiwanese stocks) or missing,
+    the last year's payments are used. Yahoo's trailing rate is only a fallback when the company reports in
+    the same currency its shares trade in, since it is otherwise in the reporting currency.
+    """
+    fwd = inf.get("dividendRate")
+    if history:
+        return fwd if fwd and history / 1.5 <= fwd <= history * 1.5 else history
+    if history == 0.0:
+        return None  # nothing paid in the last 12 months
+    if fwd:
+        return fwd
+    if inf.get("financialCurrency") in (None, inf.get("currency")):
+        return inf.get("trailingAnnualDividendRate") or None
+    return None
 
 
 def stats(f: pd.DataFrame) -> dict:
@@ -269,6 +304,12 @@ def build():
             infos.update((t, v) for t, v in ex.map(facts, missing) if v)
         log(f"company facts for {sum(1 for v in infos.values() if v)} stocks after retrying")
 
+    # Dividends from the price history. If the download carried none at all, something went wrong on Yahoo's
+    # side, so fall back to its own dividend rates rather than show every stock as not paying.
+    paid = {t: paid_last_year(f) for t, f in bars.items()}
+    if sum(1 for v in paid.values() if v) < len(paid) * 0.1:
+        log("price history carried almost no dividends, using Yahoo's dividend rates")
+        paid = {}
     FUND.mkdir(parents=True, exist_ok=True)
     rows = []
     for t in sorted(bars):
@@ -277,8 +318,10 @@ def build():
         rate = rates.get(m["cur"]) or 1.0
         cap = inf.get("marketCap")
         price = st["p"]
-        div_rate = inf.get("dividendRate") or inf.get("trailingAnnualDividendRate")
+        div_rate = dividend_rate(inf, paid.get(t))
         earn = inf.get("earningsTimestampStart") or inf.get("earningsTimestamp")
+        # Targets that are missing, from no analysts or wildly off the price (bad data) are left out
+        upside = target_upside(inf.get("targetMeanPrice"), price, inf.get("numberOfAnalystOpinions"))
         row = {
             "t": t, "s": m["s"], "n": inf.get("shortName") or m["n"], "cur": m["cur"], "region": m["region"],
             "ix": m["ix"], "sector": inf.get("sector"), "industry": inf.get("industry"),
@@ -303,8 +346,8 @@ def build():
             "exDiv": day(inf.get("exDividendDate")),
             "recMean": num(inf.get("recommendationMean"), 2), "rec": inf.get("recommendationKey"),
             "analysts": inf.get("numberOfAnalystOpinions"),
-            "target": sig(inf.get("targetMeanPrice")),
-            "upside": num(pct(inf.get("targetMeanPrice"), price), 2) if inf.get("targetMeanPrice") else None,
+            "target": sig(inf.get("targetMeanPrice")) if upside is not None else None,
+            "upside": num(upside, 2),
             "earnings": day(earn),
             # Exact time of the report (seconds), and whether the date is still Yahoo's estimate
             "earnAt": int(earn) if earn else None,

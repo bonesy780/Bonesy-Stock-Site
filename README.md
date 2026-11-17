@@ -60,7 +60,7 @@ To use a price service hosted somewhere else, set the repo variable `LIVE_API_UR
 
 To have Claude answer questions on the Ask page (instead of the built-in notes alone), set up the live price service above, create an API key at console.anthropic.com, and add it as the repo secret `ANTHROPIC_API_KEY`. The next run of the workflow stores it in the Cloudflare Worker. Each question is billed to that key; the worker only accepts questions from the site itself, caps each visitor at 6 questions a minute and 60 a day, and asks for short answers. Delete the secret (and the Worker's `ANTHROPIC_API_KEY` secret in Cloudflare) to switch it off.
 
-Ranking: 3-month performance (50%), analyst consensus (30%), market cap (20%). Penny stocks (under $1 USD equivalent or under $300M market cap) are excluded. Big Asian companies often trade below $5 a share, so a $5 cutoff would drop blue chips.
+Ranking: momentum from 3, 6 and 12-month returns (40%), analyst consensus pulled toward neutral when few analysts cover a stock (30%), market cap (15%), steadiness or low volatility (15%). Stocks with no trade in a week and implausible price targets are left out. Penny stocks (under $1 USD equivalent or under $300M market cap) are excluded. Big Asian companies often trade below $5 a share, so a $5 cutoff would drop blue chips.
 
 Run locally:
 

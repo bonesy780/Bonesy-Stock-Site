@@ -114,7 +114,7 @@
           <thead><tr><th>#</th><th>Company</th><th>Mkt cap (USD)</th><th>Price</th><th>Day</th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>From 52W high</th><th>Div yield</th><th>Pays</th><th>3M trend</th></tr></thead>
           <tbody>${bigRows}</tbody></table>` : `<div class="empty">No market cap data for this index today.</div>`}
       </div>
-      <div class="subhead"><h3>Top 10 ranked</h3><p>Ranked on 3-month performance, then analyst ratings, then company size.</p></div>
+      <div class="subhead"><h3>Top 10 ranked</h3><p>Ranked on 3, 6 and 12-month momentum, then analyst ratings, company size and steadiness. A screen, not a recommendation.</p></div>
       <div class="panel table-wrap">
         ${ix.top.length ? `<table class="ranked">
           <thead><tr><th>#</th><th>Company</th><th>Price</th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>Analysts</th><th>Upside</th><th>Mkt cap</th><th>Div yield</th><th>Pays</th><th>Score</th><th>3M trend</th></tr></thead>
@@ -197,9 +197,13 @@
 
   const st = data.settings;
   $("method").innerHTML = [
-    `Each index's ${st.candidates} best performers over the last 3 months are scored. Performance counts for ${st.weights.perf * 100}%, the average analyst rating for ${st.weights.analyst * 100}% and market cap for ${st.weights.mcap * 100}%. The 10 highest scores make the list.`,
-    `Buy ideas need an analyst consensus of Buy or better from at least 5 analysts, 10% or more upside to the average price target, a positive 3-month return and a price above the 50-day average.`,
-    `Sell ideas are stocks down over the last 3 months and below their 50-day average, where analysts rate them Hold or worse (at least 3 analysts) or the price is above the average target.`,
+    st.weights.steady != null
+      ? `Each stock gets a momentum rank within its index from its 3-month, 6-month and 12-month returns (the 12-month return leaves out the latest month, which tends to reverse). The ${st.candidates} strongest in each index are scored: momentum counts for ${st.weights.perf * 100}%, the average analyst rating for ${st.weights.analyst * 100}%, company size for ${st.weights.mcap * 100}% and steadiness (smaller daily swings) for ${st.weights.steady * 100}%. A rating from only one or two analysts is pulled toward neutral, since a single opinion is weak evidence. The 10 highest scores make the list.`
+      : `Each index's ${st.candidates} best performers over the last 3 months are scored. Performance counts for ${st.weights.perf * 100}%, the average analyst rating for ${st.weights.analyst * 100}% and market cap for ${st.weights.mcap * 100}%. The 10 highest scores make the list.`,
+    `Buy ideas need an analyst consensus of Buy or better from at least 5 analysts, 10% or more upside to the average price target, a positive 3-month return and a price above both the 50-day and 200-day averages. Upcoming earnings are flagged because they can move the price sharply either way.`,
+    `Sell ideas are stocks down over the last 3 months and below their 50-day average, where at least 3 analysts rate them Hold or worse on average, or the price is above their average target.`,
+    `Stocks that haven't traded for over a week (halted or being taken over) are left out, and so are price targets more than 150% above or 70% below the price, which are almost always bad data. Dividend yields leave out one-off special dividends.`,
+    `Buy and sell ideas are automatic screens of public data, not recommendations. They don't know your goals, taxes or how much risk you can take, and analyst targets are often wrong. Momentum can reverse quickly.`,
     `Dividend yield is the last year of regular payments divided by today's price. Pays shows how often the company pays, based on its recent payment dates.`,
     `TSX Venture has no published member list, so it uses the 250 largest companies on the TSX Venture Exchange, with lower price and size floors for the picks since most are small. Taiwan 50 is approximated by the 50 largest companies on the Taiwan Stock Exchange. Member lists are refreshed from public sources when available.`,
   ].map((t) => `<li>${esc(t)}</li>`).join("");

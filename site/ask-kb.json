@@ -102,7 +102,7 @@
    "weights",
    "chosen"
   ],
-  "answer": "Each stock gets a score from 0 to 100: 50% from its 3-month price change, 30% from the analyst consensus and 20% from market cap (on a log scale), each turned into a percentile within its index. The 40 best 3-month performers in each index get full analyst data, and the top 10 by score are shown. Penny stocks are excluded: under $1 US (10 cents on the TSX Venture) or under $300M market cap ($50M on the Venture)."
+  "answer": "Each stock gets a score from 0 to 100: 40% from momentum (the average of its percentile ranks on 3-month, 6-month and 12-month returns, where the 12-month return skips the latest month), 30% from the analyst consensus, 15% from market cap (log scale) and 15% from steadiness (lower 3-month volatility), with momentum, size and steadiness ranked within its index. The analyst average is blended with 3 neutral votes, so a rating from one or two analysts counts for less than one from twenty. The 40 strongest by momentum in each index get full analyst data, and the top 10 by score are shown. Stocks that haven't traded for over a week are left out. Penny stocks are excluded: under $1 US (10 cents on the TSX Venture) or under $300M market cap ($50M on the Venture)."
  },
  {
   "id": "ideas",
@@ -122,7 +122,7 @@
    "watchlist",
    "coming"
   ],
-  "answer": "Buy ideas are stocks up over 3 months, trading above their 50-day average, rated Buy or better on average (Yahoo's mean rating 2.2 or lower) by at least 5 analysts, with an average price target at least 10% above the price. Sell ideas are stocks down over 3 months and below their 50-day average that either have a weak rating (2.8 or worse from at least 3 analysts) or trade above their average target. The 'stocks to watch' list picks stocks reporting earnings in the next 7 days, breaking out near a 52-week high, or that moved 10% or more last week. These are rules applied to the data, not advice."
+  "answer": "Buy ideas are stocks up over 3 months, trading above their 50-day and 200-day averages, rated Buy or better on average (Yahoo's mean rating 2.2 or lower) by at least 5 analysts, with an average price target at least 10% above the price (targets more than 150% above or 70% below the price are treated as bad data and ignored). Earnings in the next two weeks are flagged. Sell ideas are stocks down over 3 months and below their 50-day average that either have a weak rating (2.8 or worse from at least 3 analysts) or trade above their average target (at least 3 analysts). The 'stocks to watch' list picks stocks reporting earnings in the next 7 days, breaking out near a 52-week high, or that moved 10% or more last week. These are automatic rules applied to public data, not recommendations or financial advice."
  },
  {
   "id": "analyst",

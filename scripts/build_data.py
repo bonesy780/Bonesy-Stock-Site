@@ -29,10 +29,23 @@ FAST = os.environ.get("FAST") == "1"
 SAVED = ROOT / ".data-cache" / "build_data.json"
 
 # Ranking settings
-PERF_WINDOW = "3m"          # performance used for ranking
+PERF_WINDOW = "3m, 6m and 12m"  # performance used for ranking (the 12-month return leaves out the last month)
 CANDIDATES_PER_INDEX = 40   # best performers per index that get full analyst data
 SELL_CANDIDATES_PER_INDEX = 15  # weakest performers per index checked for sell ideas
-WEIGHTS = {"perf": 0.5, "analyst": 0.3, "mcap": 0.2}
+# perf: momentum across 3, 6 and 12 months. analyst: average rating, pulled toward neutral when few analysts
+# cover the stock. mcap: company size. steady: lower day-to-day swings (a smoother climb ranks higher).
+WEIGHTS = {"perf": 0.4, "analyst": 0.3, "mcap": 0.15, "steady": 0.15}
+# A rating from one or two analysts is weak evidence, so each average is blended with this many "neutral"
+# votes before it is scored. Neutral is the typical rating in that market: analysts in Korea and Taiwan
+# almost never say Sell, so a Buy there means less than a Buy on the TSX. NEUTRAL_REC (the line between
+# Buy and Hold) is used when too few stocks in a market have ratings to tell.
+PRIOR_VOTES = 3
+NEUTRAL_REC = 2.5
+IDEAS_PER_INDEX = 3         # so one market's habitually bullish analysts can't fill the buy ideas
+STALE_DAYS = 7              # a stock whose last trade is this much older than its market's is halted or delisted
+# An average target further than this from the price is almost always bad data (often a target quoted
+# in a different currency from the share price), so it is left out.
+MAX_UPSIDE, MIN_UPSIDE = 150.0, -70.0
 MIN_PRICE_USD = 1.0         # no penny stocks (with MIN_MCAP_USD)
 MIN_MCAP_USD = 300e6
 
@@ -202,11 +215,18 @@ def price_stats(s: pd.Series, t: str | None = None) -> dict:
         "chg1w": pct(last, back(5)),
         "chg1m": pct(last, back(21)),
         "chg3m": pct(last, back(63)),
+        "chg6m": pct(last, back(126)),
+        # 12-month return that skips the latest month: the classic momentum measure, less prone to
+        # short-term reversals than the most recent weeks
+        "chg12m1": pct(back(21), back(252)) if back(252) else None,
         "ytd": pct(last, ytd_base),
         "high52": hi,
         "low52": lo,
         "fromHigh": pct(last, hi),
         "aboveSma50": bool(last > s.iloc[-50:].mean()) if len(s) >= 50 else None,
+        "aboveSma200": bool(last > s.iloc[-200:].mean()) if len(s) >= 200 else None,
+        # Daily moves' spread over the last 3 months, on a yearly scale
+        "volat": float(s.pct_change().iloc[-63:].std() * math.sqrt(252) * 100) if len(s) > 63 else None,
         "spark": [round(float(v), 4) for v in s.iloc[-63:].tolist()],
     }
 
@@ -265,7 +285,9 @@ def dividend(t: str, price: float) -> tuple[str, dict]:
     recent = d[d.index >= d.index[-1] - pd.Timedelta(days=760)]
     gap = recent.index.to_series().diff().dt.days.dropna().median() if len(recent) > 1 else 365
     label, per_year = next(((l, n) for g, l, n in FREQS if gap <= g), ("Irregular", 1))
-    paid = float(d.iloc[-per_year:].sum())
+    # Leave out one-off special dividends (far bigger than the usual payment), which would overstate the yield
+    regular = recent[recent <= recent.median() * 2.5] if len(recent) > 2 else recent
+    paid = float(regular.iloc[-per_year:].sum())
     return t, {"divFreq": label, "divYield": paid / price * 100 if price else None}
 
 
@@ -323,6 +345,37 @@ def rank_pct(values: list) -> list:
     return out
 
 
+def target_upside(target, price, analysts):
+    """Percent from the price to the average analyst target, or None when there is no usable target."""
+    if not target or not price or target <= 0 or not analysts:
+        return None
+    up = pct(target, price)
+    return up if MIN_UPSIDE <= up <= MAX_UPSIDE else None
+
+
+def momentum(rows: list[dict]) -> None:
+    """Each row's momentum percentile within its index: the average rank of its 3, 6 and 12-month returns."""
+    ranks = [rank_pct([r.get(k) for r in rows]) for k in ("chg3m", "chg6m", "chg12m1")]
+    for i, r in enumerate(rows):
+        have = [rk[i] for rk, k in zip(ranks, ("chg3m", "chg6m", "chg12m1")) if r.get(k) is not None]
+        r["mom"] = sum(have) / len(have) if have else 0.5
+
+
+def analyst_score(rec, n, neutral: float = NEUTRAL_REC) -> float:
+    """0..1 from the average rating, pulled toward the market's typical rating when few analysts cover it.
+
+    The market's typical rating scores 0.5, and each full step better (Hold to Buy, say) adds 0.5.
+    """
+    n = n or 0
+    adj = (rec * n + neutral * PRIOR_VOTES) / (n + PRIOR_VOTES) if rec and n else neutral
+    return min(1.0, max(0.0, 0.5 + (neutral - adj) / 2))
+
+
+def median(values: list):
+    v = sorted(x for x in values if x is not None)
+    return None if not v else v[len(v) // 2] if len(v) % 2 else (v[len(v) // 2 - 1] + v[len(v) // 2]) / 2
+
+
 def rating_label(mean):
     if mean is None:
         return "No rating"
@@ -349,10 +402,15 @@ def build():
     for ix in INDEXES:
         rate = rates[ix["currency"]]
         names = dict(zip(members[ix["id"]]["symbol"], members[ix["id"]]["name"]))
+        ends = [closes[to_yahoo(s, ix)].index[-1] for s in names if to_yahoo(s, ix) in closes]
+        newest = max(ends) if ends else None
         rows = []
         for sym, name in names.items():
             t = to_yahoo(sym, ix)
             if t not in closes:
+                continue
+            if (newest - closes[t].index[-1]).days > STALE_DAYS:
+                log(f"{ix['id']}: {t} last traded {closes[t].index[-1].date()}, left out")
                 continue
             st = price_stats(closes[t], t)
             if st["price"] / rate < ix.get("min_price_usd", MIN_PRICE_USD) or st["chg3m"] is None:
@@ -363,7 +421,12 @@ def build():
         for r in rows:
             everyone.setdefault(r["ticker"], r).setdefault("markets", []).append(ix["name"])
         largest = sorted((r for r in rows if r["mcapUsd"]), key=lambda r: r["mcapUsd"], reverse=True)[:10]
-        rows.sort(key=lambda r: r["chg3m"], reverse=True)
+        # Size and steadiness are ranked against the whole index, so the scores mean the same in every market
+        momentum(rows)
+        for r, m, v in zip(rows, rank_pct([math.log(r["mcapUsd"]) if r["mcapUsd"] else None for r in rows]),
+                            rank_pct([-r["volat"] if r["volat"] is not None else None for r in rows])):
+            r["sizeRank"], r["steadyRank"] = m, v
+        rows.sort(key=lambda r: r["mom"], reverse=True)
         cands = rows[:CANDIDATES_PER_INDEX]
 
         losers = [r for r in rows[-SELL_CANDIDATES_PER_INDEX:] if r not in cands and r["chg3m"] < 0]
@@ -377,7 +440,9 @@ def build():
             r["recMean"] = inf.get("recommendationMean")
             r["analysts"] = inf.get("numberOfAnalystOpinions")
             r["target"] = inf.get("targetMeanPrice")
-            r["upside"] = pct(r["target"], r["price"]) if r["target"] else None
+            r["upside"] = target_upside(r["target"], r["price"], r["analysts"])
+            if r["upside"] is None:
+                r["target"] = None
             ed = earnings_date(inf)
             r["earnings"] = ed.date().isoformat() if ed else None
             r["rating"] = rating_label(r["recMean"])
@@ -388,11 +453,15 @@ def build():
                 r["score"] = None
                 weak.setdefault(r["ticker"], {**r, "indexes": []})["indexes"].append(ix["name"])
 
-        perf = rank_pct([r["chg3m"] for r in cands])
-        analyst = rank_pct([(5 - r["recMean"]) if r["recMean"] else None for r in cands])
-        size = rank_pct([math.log(r["mcapUsd"]) if r["mcapUsd"] else None for r in cands])
-        for r, p, a, m in zip(cands, perf, analyst, size):
-            r["score"] = round(100 * (WEIGHTS["perf"] * p + WEIGHTS["analyst"] * a + WEIGHTS["mcap"] * m), 1)
+        rated = [r["recMean"] for r in cands + losers if r["recMean"] and (r["analysts"] or 0) >= 3]
+        neutral = median(rated) if len(rated) >= 10 else NEUTRAL_REC
+        typical_up = median([r["upside"] for r in cands + losers if (r["analysts"] or 0) >= 3])
+        for r in cands:
+            # Gap to target compared with what's normal in this market, for ranking buy ideas
+            r["upsideVsMarket"] = r["upside"] - (typical_up or 0) if r["upside"] is not None else None
+            a = analyst_score(r["recMean"], r["analysts"], neutral)
+            r["score"] = round(100 * (WEIGHTS["perf"] * r["mom"] + WEIGHTS["analyst"] * a
+                                      + WEIGHTS["mcap"] * r["sizeRank"] + WEIGHTS["steady"] * r["steadyRank"]), 1)
             r["index"] = ix["id"]
             pool.setdefault(r["ticker"], {**r, "indexes": []})["indexes"].append(ix["name"])
             r["indexes"] = pool[r["ticker"]]["indexes"]
@@ -475,16 +544,28 @@ def buy_ideas(stocks: list[dict]) -> list[dict]:
     for r in stocks:
         if (r["recMean"] and r["recMean"] <= 2.2 and (r["analysts"] or 0) >= 5
                 and r["upside"] is not None and r["upside"] >= 10
-                and r["chg3m"] > 0 and r["aboveSma50"]):
+                and r["chg3m"] > 0 and r["aboveSma50"] and r["aboveSma200"] is not False):
             why = [f"up {r['chg3m']:.0f}% in 3 months",
                    f"{r['analysts']} analysts rate it {r['rating']}",
                    f"average target {r['upside']:.0f}% above today's price"]
             if r["fromHigh"] is not None and r["fromHigh"] > -3:
                 why.append("trading near its 52-week high")
-            ideas.append({**clean(r), "why": why,
-                          "ideaScore": round(r["score"] + min(r["upside"], 50) * 0.4, 1)})
+            soon = earnings_soon(r)
+            if soon:
+                why.append(f"reports earnings {soon}, which can move the price sharply")
+            rel = r.get("upsideVsMarket")
+            rel = r["upside"] if rel is None else rel
+            ideas.append({**clean(r), "why": why, "index": r.get("index"),
+                          "ideaScore": round(r["score"] + max(-20, min(rel, 40)) * 0.4, 1)})
     ideas.sort(key=lambda r: r["ideaScore"], reverse=True)
-    return ideas[:12]
+    picked, per = [], {}
+    for r in ideas:
+        if per.get(r["index"], 0) < IDEAS_PER_INDEX:
+            per[r["index"]] = per.get(r["index"], 0) + 1
+            picked.append(r)
+    for r in picked:
+        r.pop("index", None)
+    return picked[:12]
 
 
 def sell_ideas(stocks: list[dict]) -> list[dict]:
@@ -494,11 +575,13 @@ def sell_ideas(stocks: list[dict]) -> list[dict]:
         if r["ticker"] in seen or r["chg3m"] is None or r["chg3m"] >= 0 or r["aboveSma50"]:
             continue
         rated_low = r["recMean"] is not None and r["recMean"] >= 2.8 and (r["analysts"] or 0) >= 3
-        over_target = r["upside"] is not None and r["upside"] < 0
+        over_target = r["upside"] is not None and r["upside"] < 0 and (r["analysts"] or 0) >= 3
         if not (rated_low or over_target):
             continue
         seen.add(r["ticker"])
-        why = [f"down {abs(r['chg3m']):.0f}% in 3 months", "trading below its 50-day average"]
+        why = [f"down {abs(r['chg3m']):.0f}% in 3 months",
+               "trading below its 50-day and 200-day averages" if r.get("aboveSma200") is False
+               else "trading below its 50-day average"]
         if rated_low:
             why.append(f"{r['analysts']} analysts rate it {r['rating']}")
         if over_target:
@@ -507,6 +590,15 @@ def sell_ideas(stocks: list[dict]) -> list[dict]:
         ideas.append({**clean(r), "why": why, "ideaScore": round(weakness, 1)})
     ideas.sort(key=lambda r: r["ideaScore"], reverse=True)
     return ideas[:12]
+
+
+def earnings_soon(r: dict, days: int = 14) -> str | None:
+    """The report date as text when the company reports within `days` days."""
+    if not r.get("earnings"):
+        return None
+    d = datetime.fromisoformat(r["earnings"]).date()
+    today = datetime.now(timezone.utc).date()
+    return d.strftime("%a %b %d").replace(" 0", " ") if today <= d <= today + timedelta(days=days) else None
 
 
 def snapshots(rows: list[dict]) -> dict:

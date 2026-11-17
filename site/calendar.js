@@ -72,7 +72,7 @@
         { key: "ytd", label: "YTD", val: (r) => r.ytd, html: (r) => pct(r.ytd) },
         { key: "fpe", label: "Fwd P/E", val: (r) => r.fpe, html: (r) => `<span class="num">${r.fpe != null ? r.fpe.toFixed(1) : "–"}</span>` },
         { key: "epsGrowth", label: "Last EPS growth", title: "Earnings growth in the latest reported quarter vs a year earlier", val: (r) => r.epsGrowth, html: (r) => pct(r.epsGrowth) },
-        { key: "recMean", label: "Analysts", val: (r) => r.recMean, html: (r) => r.recMean == null ? "–" : `<span class="pill ${r.recMean <= 2.5 ? "buy" : r.recMean > 3.5 ? "sell" : ""}">${r.recMean <= 1.5 ? "Strong Buy" : r.recMean <= 2.5 ? "Buy" : r.recMean <= 3.5 ? "Hold" : "Sell"}</span>` },
+        { key: "recMean", label: "Analysts", val: (r) => r.recMean, html: (r) => r.recMean == null ? "–" : `<span class="pill ${r.recMean <= 2.5 ? "buy" : r.recMean > 3.5 ? "sell" : ""}">${r.recMean <= 1.5 ? "Strong Buy" : r.recMean <= 2.5 ? "Buy" : r.recMean <= 3.5 ? "Hold" : r.recMean <= 4.5 ? "Underperform" : "Sell"}</span>` },
         { key: "volat", label: "Volatility", title: "How much the price usually swings (yearly %, from the last 3 months)", val: (r) => r.volat, html: (r) => `<span class="num">${r.volat != null ? r.volat.toFixed(0) + "%" : "–"}</span>` },
       );
     } else {
