@@ -144,14 +144,14 @@ def paid_last_year(f: pd.DataFrame) -> float | None:
 def dividend_rate(inf: dict, history: float | None) -> float | None:
     """Yearly dividend per share, in the share price's currency.
 
-    Yahoo's forward rate is used when it agrees with what the company actually paid in the last year, so a
-    recent raise shows. Where it is far off (it is wrong for some Korean and Taiwanese stocks) or missing,
-    the last year's payments are used. Yahoo's trailing rate is only a fallback when the company reports in
+    Yahoo's forward rate is used unless it is far above what the company actually paid in the last year (it
+    is badly inflated for some Korean stocks), in which case the last year's payments are used. A forward
+    rate well below the last year's is kept, since that is usually a dividend cut. Yahoo's trailing rate is only a fallback when the company reports in
     the same currency its shares trade in, since it is otherwise in the reporting currency.
     """
     fwd = inf.get("dividendRate")
     if history:
-        return fwd if fwd and history / 1.5 <= fwd <= history * 1.5 else history
+        return fwd if fwd and fwd <= history * 1.5 else history
     if history == 0.0:
         return None  # nothing paid in the last 12 months
     if fwd:
