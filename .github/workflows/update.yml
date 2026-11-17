@@ -7,6 +7,8 @@ on:
     - cron: "0 12 * * 0"      # Sunday refresh for the week-ahead watchlist
     # Quick refresh every 15 minutes (a couple of minutes each): stock news, housing news, and prices while
     # Asian or North American markets are open. Off the hour, when GitHub's scheduler is least busy.
+    # GitHub often runs these late or skips them for hours, so each run also starts the next one itself
+    # (the "next" job below); the schedule only restarts that chain if it ever stops.
     - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
     inputs:
@@ -213,3 +215,30 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # GitHub's scheduler is unreliable (on Nov 17 it skipped every run for almost seven hours), so the news went
+  # stale. Each run waits until about 15 minutes after it started, then starts a quick run itself, unless
+  # another run is already waiting (such as the evening full refresh), which then carries the chain on.
+  next:
+    needs: [build, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Start the next quick refresh about 15 minutes after this one started
+        run: |
+          started=$(gh api "repos/$REPO/actions/runs/$GITHUB_RUN_ID" --jq .run_started_at)
+          wait=$(( $(date -u -d "$started" +%s) + 14 * 60 - $(date -u +%s) ))
+          [ $wait -gt 0 ] && { echo "Waiting $wait seconds"; sleep $wait; }
+          others=$(gh run list --repo "$REPO" --workflow update.yml --limit 20 --json databaseId,status \
+            --jq "[.[] | select(.status != \"completed\" and .databaseId != $GITHUB_RUN_ID)] | length")
+          if [ "$others" -gt 0 ]; then
+            echo "Another run is already queued or running, it will keep the news fresh"
+          else
+            gh workflow run update.yml --repo "$REPO" --ref main -f mode=quick && echo "Started the next quick refresh"
+          fi

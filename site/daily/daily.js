@@ -114,8 +114,9 @@
       const round = queues.filter((q) => q.length).map((q) => q.shift()).sort((a, b) => b.ts - a.ts);
       out.push(...round);
     }
-    // Then keep it roughly in time order: stories within the same three hours stay mixed
-    const bucket = (s) => Math.floor(s.ts / 108e5);
+    // Then keep it in time order hour by hour: stories from the same hour stay mixed, so an older story
+    // never sits above one from a later hour
+    const bucket = (s) => Math.floor(s.ts / 36e5);
     return out.sort((a, b) => bucket(b) - bucket(a));
   }
 
