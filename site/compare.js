@@ -133,7 +133,7 @@
     ["Beta", (x) => fixed(x.beta, 2)],
     ["Volatility", (x) => (x.volat != null ? x.volat.toFixed(0) + "%" : "–"), (x) => x.volat, -1],
     ["RSI (14)", (x) => fixed(x.rsi, 0)],
-    ["Analyst rating", (x) => (x.recMean != null ? `${x.recMean <= 1.5 ? "Strong Buy" : x.recMean <= 2.5 ? "Buy" : x.recMean <= 3.5 ? "Hold" : "Sell"} (${x.recMean.toFixed(1)})` : "–"), (x) => x.recMean, -1],
+    ["Analyst rating", (x) => (x.recMean != null ? `${x.recMean <= 1.5 ? "Strong Buy" : x.recMean <= 2.5 ? "Buy" : x.recMean <= 3.5 ? "Hold" : x.recMean <= 4.5 ? "Underperform" : "Sell"} (${x.recMean.toFixed(1)})` : "–"), (x) => x.recMean, -1],
     ["Analysts", (x) => x.analysts ?? "–"],
     ["Upside to target", (x) => pct(x.upside), (x) => x.upside, 1],
     ["Next earnings", (x) => (x.earnings ? new Date(x.earnings + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "–")],

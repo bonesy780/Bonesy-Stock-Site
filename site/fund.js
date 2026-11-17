@@ -29,7 +29,8 @@
     if (f.debtToEquity != null) out.push(f.debtToEquity > 200 ? "It carries a lot of debt compared with shareholders' equity." : f.debtToEquity < 50 ? "It has little debt compared with shareholders' equity." : "");
     if (m.divYield) out.push(`It pays a ${m.divYield.toFixed(2)}% dividend yield${f.payoutRatio != null ? `, using ${(f.payoutRatio * 100).toFixed(0)}% of its earnings` : ""}.`);
     if (f.recommendationMean != null && f.numberOfAnalystOpinions) {
-      const up = f.targetMeanPrice && m.p ? (f.targetMeanPrice / m.p - 1) * 100 : null;
+      let up = f.targetMeanPrice && m.p ? (f.targetMeanPrice / m.p - 1) * 100 : null;
+      if (up != null && (up > 150 || up < -70)) up = null; // a target that far off is almost always bad data
       out.push(`${f.numberOfAnalystOpinions} analysts rate it ${rating(f.recommendationMean)} on average${up != null ? `, with an average price target ${Math.abs(up).toFixed(0)}% ${up >= 0 ? "above" : "below"} today's price` : ""}.`);
     }
     return out.filter(Boolean).join(" ");
