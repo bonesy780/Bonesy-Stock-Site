@@ -1,3 +1,16 @@
+// Point search engines at this exact page (canonical link and description), since the page is filled in by script.
+function seoMeta(url, desc) {
+  const set = (sel, make, attr, val) => {
+    let el = document.head.querySelector(sel);
+    if (!el) { el = make(); document.head.appendChild(el); }
+    el.setAttribute(attr, val);
+  };
+  set('link[rel="canonical"]', () => Object.assign(document.createElement("link"), { rel: "canonical" }), "href", url);
+  set('meta[property="og:url"]', () => { const m = document.createElement("meta"); m.setAttribute("property", "og:url"); return m; }, "content", url);
+  set('meta[name="description"]', () => Object.assign(document.createElement("meta"), { name: "description" }), "content", desc);
+  set('meta[property="og:description"]', () => { const m = document.createElement("meta"); m.setAttribute("property", "og:description"); return m; }, "content", desc);
+}
+
 // One market: headline figures, price history, supply and speed, buyer/seller gauge,
 // a quick own-versus-rent check, similar markets and where to find listings.
 (async function () {
@@ -15,7 +28,8 @@
     return;
   }
   store.set("re-last", id);
-  document.title = `TopTicker Homes · ${m.name}`;
+  document.title = `${m.name} Housing Market: Home Prices and Rents · TopTicker Homes`;
+  seoMeta(`https://www.topticker.ca/re/market.html?id=${encodeURIComponent(id)}`, `${m.name} housing market: typical home prices, rents, price history, supply, days to sell and whether buyers or sellers have the upper hand.`);
   const h = headline(m);
   const R = D.rates || {};
   const when = (s) => /^\d{4}-Q\d$/.test(s) ? s.replace("-Q", " Q") : new Date(s + "-15").toLocaleDateString(undefined, { month: "long", year: "numeric" });
