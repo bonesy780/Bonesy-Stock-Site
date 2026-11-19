@@ -5,7 +5,6 @@ LMN,Lumine Group Inc
 AFM,Alphamin Resources Corp.
 BZ,Benz Mining Corp
 PNG,Kraken Robotics Inc
-DB,Decibel Cannabis Company Inc
 LGN,Logan Energy Corp
 FDR,Founders Metals Inc
 OMG,Omai Gold Mines Corp
@@ -19,6 +18,7 @@ GRZ,Gold Reserve Ltd
 SLG,San Lorenzo Gold Corp
 SGML,Sigma Lithium Corporation
 THX,Thor Explorations Ltd.
+GSKR,Goldsky Resources Corp
 BYN,Banyan Gold Corp
 TAU,Thesis Gold And Silver Inc
 AVTS,Aventus Capital Inc
@@ -28,7 +28,6 @@ ALDE,Aldebaran Resources Inc
 AMX,Amex Gold Mining Inc
 FISH,Sailfish Royalty Corp
 ITR,Integra Resources Corp
-GSKR,Goldsky Resources Corp
 CAD,Colonial Coal International Cor
 MOON,Blue Moon Metals Inc
 AUXX,Gold X2 Mining Inc
@@ -36,6 +35,7 @@ SICO,Silverco Mining Ltd
 SLI,Standard Lithium Ltd
 RDS,Radisson Mining Resources Inc.
 CEI,Coelacanth Energy Inc
+PAIN,Vector Science And Therapeutics
 CBR,Cabral Gold Inc
 KRY,Koryx Copper S A
 WSTR,Wellstar Technologies Corp
@@ -45,11 +45,11 @@ QTWO,Q2 Metals Corp
 NTLX,Neurothera Labs Inc
 SVRS,Silver Storm Mining Ltd
 LA,Los Andes Copper Limited
-ECU,Element 29 Resources Inc
 SIG,Sitka Gold Corp
 PML,Panoro Minerals Ltd
 PCU,Pecoy Copper Corp
 BIG,Hercules Metals Corp
+ECU,Element 29 Resources Inc
 ALV,Alvopetro Energy Ltd
 HITI,High Tide Inc
 CUU,Copper Fox Metals Inc
@@ -60,8 +60,8 @@ BRVO,Bravo Mining Corp
 EOG,Eco Atlantic Oil And Gas Ltd
 QNC,Quantum Emotion Corp
 TUD,Tudor Gold Corp
-WGO,White Gold Corp
 SM,Sierra Madre Gold And Silver Lt
+WGO,White Gold Corp
 PGLD,P2 Gold Inc
 DBG,Doubleview Gold Corp
 CERT,Cerrado Gold Inc
@@ -90,7 +90,6 @@ HME,Hemisphere Energy Corporation
 PLSR,Pulsar Helium Inc
 GG,Golconda Gold Ltd
 CAPT,Capitan Silver Corp
-BMM,Black Mammoth Metals Corp
 RX,Biosyent Inc.
 GMG,Graphene Manufacturing Group Lt
 LRA,Lara Exploration Ltd
@@ -101,7 +100,6 @@ GSVR,Guanajuato Silver Company Ltd
 TDG,Tdg Gold Corp
 WRLG,West Red Lake Gold Mines Ltd
 CVW,Cvw Sustainable Royalties Inc
-CGNT,Copper Giant Resources Corp
 TECT,Tectonic Metals Inc
 AAG,Aftermath Silver Ltd
 PNPN,Power Metallic Mines Inc
@@ -109,10 +107,12 @@ HHH,Helius Minerals Limited
 RVG,Revival Gold Inc
 SEI,Sintana Energy Inc
 GSI,Gatekeeper Systems Inc
-AUMB,1911 Gold Corporation
-LTC,Lotus Creek Exploration Inc
-LCX,Lycos Energy Inc
 PPX,Ppx Mining Corp
+AUMB,1911 Gold Corporation
+CGNT,Copper Giant Resources Corp
+LTC,Lotus Creek Exploration Inc
+BMM,Black Mammoth Metals Corp
+LCX,Lycos Energy Inc
 KLD,Kenorland Minerals Ltd
 AGX,Silver X Mining Corp
 DE,Decisive Dividend Corporation
@@ -130,6 +130,7 @@ KCP,King Copper Discovery Corp
 AXL,Arrow Exploration Corp
 AURO,Auro Metals Inc
 KTO,K2 Gold Corporation
+BLU,Bluenergies Ltd
 GGO,Galleon Gold Corp
 ZNG,Group Eleven Resources Corp
 MGM,Maple Gold Mines Ltd
@@ -140,7 +141,6 @@ KFR,Kingfisher Metals Corp
 BRAU,Big Ridge Gold Corp
 AE,American Eagle Gold Corp
 NRC,Nations Royalty Corp
-BLU,Bluenergies Ltd
 SSV,Southern Silver Exploration Cor
 ENA,Enablence Technologies Inc
 SKP,Strikepoint Gold Inc
@@ -176,6 +176,7 @@ PKT,Parkit Enterprise Inc
 LGC,Lavras Gold Corp
 COV,Covalon Technologies Ltd
 SPA,Spanish Mountain Gold Ltd
+MJS,Majestic Gold Corp.
 PTF,Pender Growth Fund Inc
 ADE,Adex Mining Inc.
 LIB,Libertystream Infrastructure Pa
@@ -183,6 +184,7 @@ MGG,Minaurum Silver Inc
 ARIC,Awale Resources Limited
 AUUA,Aluula Composites Inc
 WVM,West Vault Mining Inc
+EXN,Excellon Resources Inc
 BKM,Pacific Booker Minerals Inc.
 SERV,Elevate Service Group Inc
 LG,Lahontan Gold Corp
@@ -194,20 +196,19 @@ SOI,Sirios Resources Inc.
 BQE,Bqe Water Inc
 BOGO,Borealis Mining Company Limited
 PGDC,Patagonia Gold Corp
-TNR,Tnr Gold Corp
 MSR,Minsud Resources Corp.
 FAN,First Atlantic Nickel And Cobal
 SHL,Homeland Nickel Inc
 THM,Thunder Mountain Gold Inc
 BUFF,Buffalo Potash Corporation
 NSE,New Stratus Energy Inc
+TNR,Tnr Gold Corp
 TUO,Teuton Resources Corp
 AFE,Africa Energy Corp
+NAU,Nevgold Corp
 HI,Highland Copper Company Inc
 BRM,Biorem Inc.
-EXN,Excellon Resources Inc
 SRL,Salazar Resources Limited
-NAU,Nevgold Corp
 FMAN,Freeman Gold Corp
 NKL,Nickel 28 Capital Corp
 MMA,Midnight Sun Mining Corp
@@ -221,9 +222,9 @@ RCK,Rock Tech Lithium Inc
 FL,Frontier Lithium Inc
 LTH,Lithium Ionic Corp
 CAM,Cascadia Minerals Ltd
-MJS,Majestic Gold Corp.
 OMI,Orosur Mining Inc
 PGE,Stillwater Critical Minerals Co
+DB,Decibel Cannabis Company Inc
 ARGH,Argo Corporation
 YGT,Gold Terra Resource Corp
 KTN,Kootenay Silver Inc
@@ -238,7 +239,9 @@ SGLD,Scorpio Gold Corporation
 BEW,Bewhere Holdings Inc
 AEC,Anfield Energy Inc
 OYL,Cgx Energy Inc
+PALS,Paragon Advanced Labs Inc
 ZEN,Zentek Ltd
+NCAU,Newcore Gold Ltd
 AGLD,Austral Gold Limited
 DMGI,Dmg Blockchain Solutions Inc
 ROK,Rok Resources Inc
@@ -246,6 +249,3 @@ AZS,Arizona Gold And Silver Inc
 KLDC,Kirkland Lake Discoveries Corp
 EQ,Eq Inc
 SUNV,Sun Valley Minerals Inc
-ECR,Cartier Resources Inc.
-IPT,Impact Silver Corp.
-CENT,Centauri Minerals Inc
