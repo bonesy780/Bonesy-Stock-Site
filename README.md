@@ -71,3 +71,7 @@ python -m http.server -d site
 ```
 
 Not financial advice.
+
+## Search engines
+
+`site/robots.txt` lets every crawler in and points to `sitemap.xml`. Each deploy runs `scripts/build_sitemap.py`, which lists every page plus one stock lookup per stock (`stock.html?t=AAPL`) and one housing market lookup per market (`re/market.html?id=...`), each with the day's date. The lookup pages set their own title, description and canonical link once they load a stock or market. To prove ownership to Google Search Console or Bing Webmaster Tools with the "HTML tag" method, add the code (the `content="..."` value only) as the repository variable `GOOGLE_SITE_VERIFICATION` or `BING_SITE_VERIFICATION`; the next deploy puts the tag on the home page. A DNS record on topticker.ca works too and needs no change here.

@@ -1,3 +1,16 @@
+// Point search engines at this exact page (canonical link and description), since the page is filled in by script.
+function seoMeta(url, desc) {
+  const set = (sel, make, attr, val) => {
+    let el = document.head.querySelector(sel);
+    if (!el) { el = make(); document.head.appendChild(el); }
+    el.setAttribute(attr, val);
+  };
+  set('link[rel="canonical"]', () => Object.assign(document.createElement("link"), { rel: "canonical" }), "href", url);
+  set('meta[property="og:url"]', () => { const m = document.createElement("meta"); m.setAttribute("property", "og:url"); return m; }, "content", url);
+  set('meta[name="description"]', () => Object.assign(document.createElement("meta"), { name: "description" }), "content", desc);
+  set('meta[property="og:description"]', () => { const m = document.createElement("meta"); m.setAttribute("property", "og:description"); return m; }, "content", desc);
+}
+
 (async function () {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -281,7 +294,8 @@
     current = s; hist = null;
     drawings = loadDraw(t);
     if (push) history.replaceState(null, "", "?t=" + encodeURIComponent(t));
-    document.title = `${s.s} · Stock Lookup · TopTicker`;
+    document.title = `${s.s}${s.n && s.n !== s.s ? " (" + s.n + ")" : ""} Stock Price and Chart · TopTicker`;
+    seoMeta(`https://www.topticker.ca/stock.html?t=${encodeURIComponent(t)}`, `${s.n || s.s} (${s.s}) stock price, chart from one day to all time, returns, financials, analyst ratings and price targets on TopTicker.`);
     // the default stock shown on a bare visit doesn't count as looked up
     if (window.UI && (push || new URLSearchParams(location.search).get("t") === t)) UI.Recent.add(t);
     renderRecent();

@@ -175,6 +175,19 @@ jobs:
         with:
           path: .data-cache
           key: site-data-v1-${{ steps.code.outputs.hash }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: List every page, stock and housing market for search engines
+        run: python scripts/build_sitemap.py || echo "::warning::sitemap step failed, keeping the short sitemap"
+      - name: Add search engine ownership tags
+        # Optional repository variables (Settings > Secrets and variables > Actions > Variables):
+        # GOOGLE_SITE_VERIFICATION and BING_SITE_VERIFICATION hold the code from each tool's "HTML tag" method.
+        env:
+          GOOGLE_CODE: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          BING_CODE: ${{ vars.BING_SITE_VERIFICATION }}
+        run: |
+          tags=""
+          [ -n "$GOOGLE_CODE" ] && tags="$tags<meta name=\"google-site-verification\" content=\"${GOOGLE_CODE//[^A-Za-z0-9_-]/}\">"
+          [ -n "$BING_CODE" ] && tags="$tags<meta name=\"msvalidate.01\" content=\"${BING_CODE//[^A-Za-z0-9_-]/}\">"
+          [ -n "$tags" ] && sed -i "s#<!-- site-verification -->#$tags#" site/index.html || true
       - name: Bust browser cache for CSS and JS
         run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html site/re/*.html site/daily/*.html
       - name: Save refreshed member lists and this week's listings
