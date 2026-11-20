@@ -34,6 +34,7 @@ FUND = SITE / "fund"
 BATCH = 200
 INFO_WORKERS = 4
 INFO_BUDGET = 40 * 60   # seconds; stop asking Yahoo for company facts after this
+INFO_GIVE_UP = 40       # stocks in a row with no facts before giving up on Yahoo for this run
 
 # Company facts kept for the Financials tab (Yahoo's .info names)
 FUND_KEYS = (
@@ -269,16 +270,55 @@ def signals(f: pd.DataFrame) -> list[str]:
     return out
 
 
+# When Yahoo turns the request away, yfinance can still hand back a few stray fields (often just
+# trailingPegRatio) instead of failing. Count a reply as real only when it names the company or its size.
+REAL_INFO = ("marketCap", "shortName", "longName", "sector", "quoteType")
+
+
 def info(t: str, tries: int = 3) -> dict:
     for attempt in range(tries):
         try:
-            return yf.Ticker(t).info or {}
+            got = yf.Ticker(t).info or {}
+            if any(got.get(k) for k in REAL_INFO):
+                return got
+            err = "empty reply"
         except Exception as e:
-            if attempt == tries - 1:
-                log(f"info {t} failed ({e})")
-            # Yahoo rate limits bursts; back off much longer when it says so
-            time.sleep((15 if "Too Many" in str(e) else 2) * (attempt + 1))
+            err = str(e)
+        if attempt == tries - 1:
+            log(f"info {t} failed ({err})")
+        # Yahoo rate limits bursts; back off much longer when it says so or sends back nothing
+        time.sleep((15 if "Too Many" in err or err == "empty reply" else 2) * (attempt + 1))
     return {}
+
+
+# Facts that come from Yahoo's company info rather than the price history. When Yahoo sends none for a stock,
+# the last build's values are kept so one bad run never leaves the heatmap, screener and tools without sizes.
+FACT_KEYS = ("n", "sector", "industry", "mcap", "mcapUsd", "pe", "fpe", "peg", "pb", "ps", "evEbitda", "eps",
+             "feps", "revGrowth", "epsGrowth", "margin", "roe", "de", "beta", "divRate", "divYield", "payout",
+             "exDiv", "recMean", "rec", "analysts", "target", "upside", "earnings", "earnAt", "earnEst",
+             "shortFloat")
+
+
+def previous_rows() -> dict:
+    try:
+        return {r["t"]: r for r in json.loads(OUT.read_text())["stocks"]}
+    except Exception:
+        return {}
+
+
+def carry_forward(row: dict, old: dict, rate: float) -> None:
+    """Fill a row Yahoo sent no facts for from the last build, moving its size with the price."""
+    for k in FACT_KEYS:
+        if row.get(k) is None and old.get(k) is not None:
+            row[k] = old[k]
+    move = row["p"] / old["p"] if row.get("p") and old.get("p") else 1.0
+    if old.get("mcap"):
+        row["mcap"] = num(old["mcap"] * move, 0)
+        row["mcapUsd"] = num(row["mcap"] / rate, 0)
+    if old.get("pe"):
+        row["pe"] = num(old["pe"] * move, 2)
+    if row.get("divRate") and row.get("p"):
+        row["divYield"] = num(row["divRate"] / row["p"] * 100, 2)
 
 
 def write_fund(t: str, body: dict, inf: dict) -> None:
@@ -302,16 +342,24 @@ def build():
     log(f"prices for {len(bars)} stocks; fetching company facts")
 
     start = time.monotonic()
+    # If Yahoo refuses a long run of stocks in a row it is turning everyone away; stop asking and keep the
+    # last build's facts instead of spending the whole time budget on refusals.
+    streak = {"n": 0}
     def facts(t):
-        if time.monotonic() - start > INFO_BUDGET:
+        if time.monotonic() - start > INFO_BUDGET or streak["n"] >= INFO_GIVE_UP:
             return t, {}
-        return t, info(t)
+        got = info(t)
+        streak["n"] = 0 if got else streak["n"] + 1
+        if streak["n"] == INFO_GIVE_UP:
+            log(f"Yahoo refused {INFO_GIVE_UP} stocks in a row, not asking for more company facts this run")
+        return t, got
     with ThreadPoolExecutor(max_workers=INFO_WORKERS) as ex:
         infos = dict(ex.map(facts, sorted(bars)))
     log(f"company facts for {sum(1 for v in infos.values() if v)} stocks")
     # Second, slower pass for the ones Yahoo turned away
     missing = [t for t, v in infos.items() if not v]
     if missing and time.monotonic() - start < INFO_BUDGET:
+        streak["n"] = 0
         log(f"retrying {len(missing)} stocks more slowly")
         time.sleep(30)
         with ThreadPoolExecutor(max_workers=2) as ex:
@@ -325,6 +373,8 @@ def build():
         log("price history carried almost no dividends, using Yahoo's dividend rates")
         paid = {}
     FUND.mkdir(parents=True, exist_ok=True)
+    before = previous_rows()
+    carried = 0
     rows = []
     for t in sorted(bars):
         m, f, inf = stocks[t], bars[t], infos.get(t) or {}
@@ -369,6 +419,9 @@ def build():
                                          or (inf.get("earningsTimestampEnd") or earn) != earn) else None,
             "shortFloat": num(inf.get("shortPercentOfFloat") * 100, 2) if inf.get("shortPercentOfFloat") is not None else None,
         }
+        if not inf and t in before:
+            carry_forward(row, before[t], rate)
+            carried += 1
         rows.append({k: v for k, v in row.items() if v is not None and v != []})
         if inf:
             body = {"t": t, "asOf": now.isoformat(timespec="minutes"), "price": num(price), "cur": m["cur"]}
@@ -389,7 +442,10 @@ def build():
            "indexes": [{"id": ix["id"], "name": ix["name"], "currency": ix["currency"]} for ix in INDEXES],
            "stocks": rows}
     OUT.write_text(json.dumps(out, separators=(",", ":"), ensure_ascii=False, allow_nan=False))
-    log(f"wrote {len(rows)} stocks to {OUT}")
+    if carried:
+        log(f"::warning::Yahoo sent no company facts for {carried} stocks, kept their facts from the last build")
+    sized = sum(1 for r in rows if r.get("mcapUsd"))
+    log(f"wrote {len(rows)} stocks to {OUT} ({sized} with a company size)")
 
 
 if __name__ == "__main__":
