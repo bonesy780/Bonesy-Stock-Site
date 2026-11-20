@@ -104,6 +104,8 @@ jobs:
         run: python scripts/build_realestate.py --news-only || echo "::warning::housing news step failed, keeping the last headlines"
       - name: Gather the day's headlines for the Daily News page
         run: python scripts/build_daily_news.py || echo "::warning::daily news step failed, keeping the last headlines"
+      - name: Add new IPOs so they can be looked up the day they list
+        run: python scripts/build_ipos.py || echo "::warning::IPO step failed, new listings wait for the live search"
       - name: Save price history for the stock lookup page
         if: steps.mode.outputs.full == 'true'
         run: python scripts/build_history.py || echo "::warning::history step failed, stock lookup may be stale"
@@ -195,6 +197,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/constituents
+          [ -f data/listings.csv ] && git add data/listings.csv
           [ -f data/realestate/listings.json ] && git add data/realestate/listings.json
           [ -f data/realestate/rentcast_usage.json ] && git add data/realestate/rentcast_usage.json
           git diff --cached --quiet && exit 0

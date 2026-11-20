@@ -81,7 +81,10 @@ function seoMeta(url, desc) {
     await new Promise((r) => setTimeout(r, 250));
     if (mine !== liveSeq) return;
     const more = await UI.searchLive(text, have);
-    if (mine !== liveSeq || !more.length) return;
+    if (mine !== liveSeq) return;
+    // Nothing anywhere yet (a ticker so new that search doesn't know it): offer to look the symbol up directly
+    if (!have.length && !more.length) more.push(...UI.typedTicker(text));
+    if (!more.length) return;
     for (const m of more) found[m.t] = m;
     matches = have.concat(more).slice(0, 10); if (active < 0) active = 0; showResults();
   });
@@ -305,7 +308,8 @@ function seoMeta(url, desc) {
     if (!(window.Live && Live.on)) return false;
     let h;
     try { h = await Live.history(t); } catch (e) { return false; }
-    if (!h || !h.d || !h.d.length) return false;
+    // A symbol Yahoo knows but that hasn't traded yet (an IPO before its first trade) still gets its page
+    if (!h || !Array.isArray(h.d) || (!h.d.length && !h.n)) return false;
     const f = found[t] || {};
     const first = h.first != null ? new Date(h.first * 1000).toISOString().slice(0, 10) : null;
     const s = { t, s: t, n: h.n || f.n || t, x: h.x || f.x, cur: h.cur || "USD", region: "", ix: [], live: true,
@@ -500,7 +504,10 @@ function seoMeta(url, desc) {
       return;
     }
     if (!hist.d.length) {
-      $("quote").innerHTML = `<div class="panel quote">${head}<div class="empty">No price history for this stock yet.</div></div>`;
+      const fresh = s.ipo || s.live;
+      $("quote").innerHTML = `<div class="panel quote">${head}<div class="empty">${fresh
+        ? "No trades yet. A new listing's price and chart show up here within a few minutes of its first trade (IPOs often open late in the morning)."
+        : "No price history for this stock yet."}</div></div>`;
       return;
     }
     // Price change over standard periods, with the yearly rate for 3 years and longer
