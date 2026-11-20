@@ -17,6 +17,15 @@
   const hist = {};
 
   const RANGES = [["1M", 31], ["3M", 92], ["6M", 183], ["YTD", null], ["1Y", 365], ["3Y", 1096], ["5Y", 1827], ["10Y", 3653]];
+  // A new listing among the picks adds a "Since IPO" range starting on its first trading day
+  const DAY = 86400;
+  const listedAt = (t) => { const d = byT[t] && byT[t].ipo && byT[t].ipo.d; return d ? Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 1000 : null; };
+  const newest = () => {
+    const ts = picked.map(listedAt).filter((v) => v != null && Date.now() / 1000 - v < 366 * DAY);
+    return ts.length ? Math.max(...ts) : null;
+  };
+  const ranges = () => (newest() != null ? [["IPO", "ipo"], ...RANGES] : RANGES);
+  const label = (r) => (r === "IPO" ? "Since IPO" : r);
   const save = () => {
     store.set("compare", picked);
     history.replaceState(null, "", picked.length ? "?t=" + picked.map(encodeURIComponent).join(",") : location.pathname);
@@ -34,7 +43,16 @@
     const x = { ...(byT[t] || {}), ...(M.byTicker[t] || {}) };
     // Indexes have no row in market.json: take the price from the saved history
     const h = hist[t];
-    if (x.p == null && h && h.d && h.d.length) { x.p = h.d[h.d.length - 1][1]; x.cur = x.cur || "USD"; x.plain = true; }
+    if (x.p == null && h && h.d && h.d.length) {
+      const last = h.i && h.i.length && h.i[h.i.length - 1][0] > h.d[h.d.length - 1][0] ? h.i[h.i.length - 1] : h.d[h.d.length - 1];
+      x.p = last[1]; x.cur = x.cur || "USD"; x.plain = !!x.index;
+      // A new listing has no market figures for a month: show its day move and the 52-week high it has so far
+      if (!x.index && x.d1 == null) {
+        const prev = h.d.length > 1 ? h.d[h.d.length - 2][1] : (x.ipo && x.ipo.p) || null;
+        if (prev) x.d1 = (x.p / prev - 1) * 100;
+        if (h.hi52) x.fromHi = (x.p / h.hi52 - 1) * 100;
+      }
+    }
     return x;
   };
   const nameOf = (t) => { const x = info(t); return x.index ? x.n.replace(/ \(.*\)/, "").replace(/ index$/, "") : x.s || t; };
@@ -46,7 +64,8 @@
   }
 
   function startOf(lastTs) {
-    const [r, days] = RANGES.find((x) => x[0] === range);
+    if (range === "IPO") return newest() ?? lastTs - 365 * DAY;
+    const [r, days] = RANGES.find((x) => x[0] === range) || RANGES[4];
     if (r === "YTD") return Date.UTC(new Date(lastTs * 1000).getUTCFullYear(), 0, 1) / 1000;
     return lastTs - days * 86400;
   }
@@ -57,17 +76,28 @@
     const ready = picked.filter((t) => hist[t] && hist[t].d && hist[t].d.length);
     if (!picked.length) { el.innerHTML = `<div class="empty">Add a stock above to start comparing.</div>`; $("legend").innerHTML = ""; return; }
     if (!ready.length) { el.innerHTML = `<div class="empty">Loading prices…</div>`; return; }
-    const last = Math.max(...ready.map((t) => hist[t].d[hist[t].d.length - 1][0]));
-    const t0 = startOf(last);
+    // Over a few days (a stock that just listed), daily closes are too few for a line: use the 5-minute prices
+    const lastDaily = Math.max(...ready.map((t) => hist[t].d[hist[t].d.length - 1][0]));
+    const t0 = startOf(lastDaily);
+    const intraday = lastDaily - t0 <= 6 * DAY && ready.every((t) => hist[t].i && hist[t].i.length);
+    const pick = (t) => (intraday ? hist[t].i : hist[t].d);
+    const last = Math.max(...ready.map((t) => { const d = pick(t); return d[d.length - 1][0]; }));
+    const ipoPrice = (t) => (byT[t] && byT[t].ipo && byT[t].ipo.p) || null;
     const series = ready.map((t) => {
-      const d = hist[t].d;
-      // Base is the last close on or before the start, so every line starts at 0%
+      const d = pick(t), daily = hist[t].d;
       let i = d.findIndex((p) => p[0] >= t0);
       if (i < 0) return { t, pts: [] };
-      const base = i > 0 ? d[i - 1][1] : d[i][1];
+      // Base is the last close before the start, so every line starts at 0%. A stock that listed
+      // inside the range has no close before it: it starts from its IPO price on its first day.
+      const prev = daily.filter((p) => p[0] < t0 && p[0] < d[i][0]).pop();
+      const listed = listedAt(t);
+      const fresh = listed != null && listed >= t0 - DAY && ipoPrice(t);
+      const base = fresh ? ipoPrice(t) : intraday ? (prev ? prev[1] : d[i][1]) : i > 0 ? d[i - 1][1] : d[i][1];
       const pts = d.slice(i).map((p) => [p[0], (p[1] / base - 1) * 100]);
-      return { t, pts: [[Math.max(t0, i > 0 ? d[i - 1][0] : d[i][0]), 0], ...pts], color: COLORS[picked.indexOf(t)] };
+      const startTs = intraday || fresh ? d[i][0] - 1 : Math.max(t0, i > 0 ? d[i - 1][0] : d[i][0]);
+      return { t, pts: [[startTs, 0], ...pts], color: COLORS[picked.indexOf(t)], young: listed != null && listed > t0 + 3 * DAY };
     }).filter((s) => s.pts.length > 1);
+    if (!series.length) { el.innerHTML = `<div class="empty">No prices in this period yet.</div>`; $("legend").innerHTML = ""; return []; }
     const W = el.clientWidth || 800, H = W < 500 ? 260 : 340, pad = { l: 8, r: 56, t: 10, b: 24 };
     const all = series.flatMap((s) => s.pts.map((p) => p[1]));
     let lo = Math.min(0, ...all), hi = Math.max(0, ...all);
@@ -81,7 +111,9 @@
       grid += `<line class="${Math.abs(v) < step / 1000 ? "base" : "grid"}" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="axis" x="${W - pad.r + 6}" y="${Y(v) + 4}">${v > 0 ? "+" : ""}${+v.toFixed(1)}%</text>`;
     }
     const days = (last - x0) / 86400;
-    const fmtX = (ts) => new Date(ts * 1000).toLocaleDateString(undefined, days > 400 ? { year: "numeric", month: "short" } : { month: "short", day: "numeric" });
+    const fmtX = (ts) => intraday
+      ? new Date(ts * 1000)[days < 1 ? "toLocaleTimeString" : "toLocaleDateString"](undefined, days < 1 ? { hour: "numeric", minute: "2-digit" } : { weekday: "short", day: "numeric" })
+      : new Date(ts * 1000).toLocaleDateString(undefined, days > 400 ? { year: "numeric", month: "short" } : { month: "short", day: "numeric" });
     const ticks = W < 500 ? 2 : 4;
     for (let k = 0; k <= ticks; k++) {
       const ts = x0 + ((last - x0) * k) / ticks;
@@ -95,16 +127,19 @@
       if (at != null) { const p = s.pts.filter((q) => q[0] <= at).pop(); v = p ? p[1] : null; }
       return `<span class="leg"><i class="sw" style="--c:var(${s.color})"></i><b>${esc(nameOf(s.t))}</b> ${pct(v, 2)}</span>`;
     }).join("");
-    $("legend").innerHTML = legend(null);
+    // Say why a new listing's line starts partway across
+    const young = series.filter((s) => s.young && !intraday);
+    const note = young.length ? `<span class="leg tk">${young.map((s) => esc(nameOf(s.t))).join(", ")} started trading partway through this period, so ${young.length > 1 ? "their lines start" : "its line starts"} later, from the IPO price where known. Try “Since IPO”.</span>` : "";
+    $("legend").innerHTML = legend(null) + note;
     const svg = el.querySelector("svg"), cx = el.querySelector("#cx");
     svg.addEventListener("pointermove", (e) => {
       const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) * (W / r.width);
       const ts = x0 + ((x - pad.l) / (W - pad.l - pad.r)) * (last - x0);
       if (ts < x0 || ts > last) return;
       cx.setAttribute("x1", x); cx.setAttribute("x2", x); cx.setAttribute("visibility", "visible");
-      $("legend").innerHTML = `<span class="leg"><b>${new Date(ts * 1000).toLocaleDateString(undefined, { dateStyle: "medium" })}</b></span>` + legend(ts);
+      $("legend").innerHTML = `<span class="leg"><b>${intraday ? new Date(ts * 1000).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }) : new Date(ts * 1000).toLocaleDateString(undefined, { dateStyle: "medium" })}</b></span>` + legend(ts);
     });
-    svg.addEventListener("pointerleave", () => { cx.setAttribute("visibility", "hidden"); $("legend").innerHTML = legend(null); });
+    svg.addEventListener("pointerleave", () => { cx.setAttribute("visibility", "hidden"); $("legend").innerHTML = legend(null) + note; });
     return ends;
   }
 
@@ -143,7 +178,8 @@
     if (!picked.length) { $("table").innerHTML = ""; return; }
     const xs = picked.map(info);
     const perf = Object.fromEntries((chartEnds || []).map((e) => [e.s.t, e.v]));
-    const rows = [[`Change (${range})`, (x) => pct(perf[x.t], 1), (x) => perf[x.t], 1]].concat(ROWS);
+    const rows = [[`Change (${label(range)})`, (x) => pct(perf[x.t], 1), (x) => perf[x.t], 1]].concat(ROWS);
+    if (xs.some((x) => x.ipo)) rows.splice(2, 0, ["IPO price", (x) => (x.ipo && x.ipo.p ? `${money(x.ipo.p, x.cur)} <span class="tk">${esc(new Date(x.ipo.d + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }))}</span>` : "–")]);
     $("table").innerHTML = `<table class="compare-table"><thead><tr><th></th>${xs.map((x, i) =>
       `<th><span class="sw" style="--c:var(${COLORS[i]})"></span> <a class="co-link" href="${stockUrl(x.t)}">${esc(nameOf(x.t))}</a><div class="tk">${esc(x.index ? "Index" : (x.n || "").slice(0, 28))}</div></th>`).join("")}</tr></thead>
       <tbody>${rows.map(([label, show, get, dir]) => {
@@ -158,13 +194,18 @@
 
   function render() {
     renderPicked();
-    $("ranges").innerHTML = RANGES.map(([r]) => `<button class="tab" role="tab" aria-selected="${r === range}" data-r="${r}">${r}</button>`).join("");
+    // Drop back to a year if the new listing that offered "Since IPO" was removed
+    if (range === "IPO" && newest() == null) range = "1Y";
+    $("ranges").innerHTML = ranges().map(([r]) => `<button class="tab" role="tab" aria-selected="${r === range}" data-r="${r}">${label(r)}</button>`).join("");
     const ends = drawChart();
     drawTable(ends);
   }
 
   UI.picker($("add"), (s) => {
     if (!picked.includes(s.t) && picked.length < MAX) picked.push(s.t);
+    // A stock that listed in the last few weeks is easiest to compare from its first day
+    const l = listedAt(s.t);
+    if (l != null && Date.now() / 1000 - l < 30 * DAY) range = "IPO";
     save(); loadHist(s.t); render();
   });
   $("picked").addEventListener("click", (e) => {
