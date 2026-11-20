@@ -25,7 +25,7 @@
 
   // "Top stories" from the big financial outlets comes first, then one tab per market
   const sources = (data.sources || []).filter((x) => x.stories.length);
-  const PAYWALL = new Set(["wsj", "ft", "bloomberg", "economist"]);
+  const access = (s) => window.Paywall ? Paywall.access({ url: s.url, site: s.site, source: s.source }) : null;
   // "All markets" merges every market's stories, newest first, each labelled with its market
   const seenAll = new Set();
   const allMarkets = {
@@ -49,13 +49,13 @@
       <a class="panel story${big ? " lead" : ""}" href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener noreferrer">
         ${s.image ? `<img src="${esc(safeUrl(s.image))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
         <div class="story-body">
-          <div class="story-meta"><span>${esc(s.source)}</span>${s.paywall ? `<span class="tag" title="The full story may need a subscription">Subscription</span>` : ""}<span>${ago(s.published)}</span>${s.market && current === "all" ? `<span class="tag">${esc(s.market)}</span>` : ""}${s.related ? `<span class="tag">${esc(s.related)}</span>` : ""}</div>
+          <div class="story-meta"><span>${esc(s.source)}</span>${window.Paywall ? Paywall.tag(access(s)) : ""}<span>${ago(s.published)}</span>${s.market && current === "all" ? `<span class="tag">${esc(s.market)}</span>` : ""}${s.related ? `<span class="tag">${esc(s.related)}</span>` : ""}</div>
           <h3>${esc(s.title)}</h3>
           ${s.summary ? `<p>${esc(s.summary)}</p>` : ""}
         </div>
       </a>`;
     if (current === "top") {
-      const tagged = sources.flatMap((x) => x.stories.map((st) => ({ ...st, source: x.name, paywall: PAYWALL.has(x.id), from: x.id })));
+      const tagged = sources.flatMap((x) => x.stories.map((st) => ({ ...st, source: x.name, site: x.site, from: x.id })));
       const list = (outlet === "all" ? tagged : tagged.filter((st) => st.from === outlet)).sort((a, b) => new Date(b.published) - new Date(a.published)).slice(0, 36);
       const [lead, ...rest] = list;
       $("news").innerHTML = `
