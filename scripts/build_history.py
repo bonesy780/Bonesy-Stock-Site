@@ -24,7 +24,7 @@ import pandas as pd
 import yfinance as yf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_data import CONSTITUENTS, INDEXES, to_yahoo  # noqa: E402
+from build_data import CONSTITUENTS, INDEXES, extra_listings, to_yahoo  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -207,6 +207,12 @@ def build():
             e["ix"].append(ix["name"])
         stocks[ix["benchmark"]] = {"t": ix["benchmark"], "s": ix["benchmark"], "n": ix["name"] + " index",
                                    "cur": ix["currency"], "region": ix["region"], "ix": [], "index": True}
+    # New listings (data/listings.csv) that aren't in an index yet
+    for e in extra_listings():
+        if e["t"] in stocks:
+            stocks[e["t"]].update({k: v for k, v in e.items() if k in ("x", "ipo")})
+        else:
+            stocks[e["t"]] = e
 
     tickers = sorted(stocks)
     log(f"downloading history for {len(tickers)} tickers")
@@ -219,7 +225,8 @@ def build():
     lines = {}
     for t in tickers:
         d = daily.get(t)
-        if d is None or len(d) < 2:
+        # A stock on its first day of trading has a single daily bar; keep it
+        if d is None or not len(d):
             continue
         i = intraday.get(t)
         rows, daily_n = thin(d)

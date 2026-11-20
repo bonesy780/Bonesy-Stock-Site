@@ -6,6 +6,10 @@
 //   GET /chart?symbol=AAPL&range=1d          -> { t, i: [[unixSeconds, close, volume], ...], prevClose, price, post }
 //     post is the after-hours trade since the last close, { price, chg, time }, or null
 //     (most exchanges outside the US have no after-hours session)
+//   GET /history?symbol=ANT                  -> { t, n, x, cur, type, first, hi52, lo52, d: [[day, close, volume], ...], i, post }
+//     every daily close back to the listing plus the last 5 days of 5-minute prices (as /chart),
+//     so the lookup page can chart a stock that isn't in the site's own lists, such as a new IPO
+//   GET /search?q=anthropic                  -> [{ t, n, x, type }] stocks and funds matching a name or symbol
 //   GET  /ask                                -> { ai: true|false } whether Claude answers are switched on
 //   POST /ask { question, history }          -> { answer } from Claude, using the site's notes on
 //     where its data comes from (ask-kb.json, copied in by the deploy workflow). Needs the
@@ -17,6 +21,9 @@ const YAHOO = "https://query1.finance.yahoo.com/v8/finance/chart/";
 const MAX_SYMBOLS = 40;          // free Workers allow 50 outbound fetches per request
 const QUOTE_TTL = 20;            // seconds
 const CHART_TTL = 60;
+const HISTORY_TTL = 300;
+const SEARCH_TTL = 3600;
+const SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search";
 const SYMBOL = /^[\^A-Za-z0-9.\-=]{1,20}$/;
 
 const CORS = {
@@ -176,6 +183,44 @@ async function chart(symbol, range) {
   return { t: symbol, i, prevClose: m.chartPreviousClose ?? m.previousClose, price: m.regularMarketPrice, post };
 }
 
+// Everything the lookup page needs for a symbol it has no saved file for
+async function history(symbol) {
+  const [daily, recent] = await Promise.all([
+    yahoo(symbol, "max", "1d", HISTORY_TTL),
+    chart(symbol, "5d").catch(() => null),
+  ]);
+  const m = daily.meta;
+  return {
+    t: symbol,
+    n: m.longName || m.shortName || symbol,
+    x: m.fullExchangeName || m.exchangeName || null,
+    cur: m.currency || "USD",
+    type: m.instrumentType || null,
+    first: m.firstTradeDate ?? null,
+    hi52: m.fiftyTwoWeekHigh ?? null,
+    lo52: m.fiftyTwoWeekLow ?? null,
+    d: bars(daily),
+    i: recent ? recent.i : [],
+    post: recent ? recent.post : null,
+    price: m.regularMarketPrice ?? null,
+  };
+}
+
+// Yahoo's symbol search, kept to stocks and funds
+async function lookup(q) {
+  const url = `${SEARCH_URL}?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0&listsCount=0&enableFuzzyQuery=false`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketLeaders/1.0)" },
+    cf: { cacheTtl: SEARCH_TTL, cacheEverything: true },
+  });
+  if (!res.ok) throw new Error(`yahoo ${res.status}`);
+  const quotes = (await res.json())?.quotes || [];
+  return quotes
+    .filter((r) => r && SYMBOL.test(r.symbol || "") && ["EQUITY", "ETF"].includes(r.quoteType))
+    .slice(0, 8)
+    .map((r) => ({ t: r.symbol, n: r.longname || r.shortname || r.symbol, x: r.exchDisp || null, type: r.quoteType }));
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
@@ -207,6 +252,20 @@ export default {
       catch (e) { return json({ error: String(e.message || e) }, 502); }
     }
 
-    return json({ ok: true, routes: ["/quote?symbols=AAPL,MSFT", "/chart?symbol=AAPL&range=1d", "/ask"] });
+    if (url.pathname === "/history") {
+      const symbol = url.searchParams.get("symbol") || "";
+      if (!SYMBOL.test(symbol)) return json({ error: "bad symbol" }, 400);
+      try { return json(await history(symbol), 200, CHART_TTL); }
+      catch (e) { return json({ error: String(e.message || e) }, 404); }
+    }
+
+    if (url.pathname === "/search") {
+      const q = (url.searchParams.get("q") || "").trim().slice(0, 40);
+      if (!q) return json([]);
+      try { return json(await lookup(q), 200, SEARCH_TTL); }
+      catch (e) { return json({ error: String(e.message || e) }, 502); }
+    }
+
+    return json({ ok: true, routes: ["/quote?symbols=AAPL,MSFT", "/chart?symbol=AAPL&range=1d", "/history?symbol=AAPL", "/search?q=apple", "/ask"] });
   },
 };

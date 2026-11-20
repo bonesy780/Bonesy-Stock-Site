@@ -160,8 +160,28 @@
     },
   };
 
-  // A search box with a drop-down of matches; onPick gets the stocks.json entry
-  function picker(input, onPick) {
+  // Where a stock trades, for search results and headings: its indexes, or for one outside
+  // them (a new listing, or a symbol found through the price service) its exchange
+  function where(s) {
+    if (s.index) return s.region;
+    if (s.ix && s.ix.length) return s.ix.join(", ");
+    const ipo = s.ipo && s.ipo.d && Date.now() - Date.parse(s.ipo.d) < 183 * 86400000
+      ? "IPO " + new Date(s.ipo.d + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
+    return [s.x || s.region, ipo].filter(Boolean).join(" · ");
+  }
+
+  // Symbols from the price service that aren't in stocks.json, shaped like its entries
+  const fromLive = (r) => ({ t: r.t, s: r.t, n: r.n || r.t, x: r.x, ix: [], region: "", live: true });
+  async function searchLive(text, have) {
+    if (!(window.Live && Live.on) || text.trim().length < 2) return [];
+    const seen = new Set(have.map((s) => s.t.toUpperCase()));
+    return (await Live.search(text.trim()).catch(() => [])).filter((r) => !seen.has(r.t.toUpperCase())).map(fromLive);
+  }
+
+  // A search box with a drop-down of matches; onPick gets the stocks.json entry.
+  // opts.any: also list symbols the price service finds anywhere (for boxes that open the
+  // stock lookup, which can chart any symbol; other tools need the site's own files)
+  function picker(input, onPick, opts = {}) {
     const wrap = input.parentElement;
     const list = document.createElement("ul");
     list.className = "panel results";
@@ -180,7 +200,7 @@
       list.innerHTML = (recent && matches.length ? `<li role="presentation" class="res-head">Recently viewed</li>` : "") + matches.map((s, n) => `
         <li role="option" id="${list.id}-${n}" aria-selected="${n === active}" data-n="${n}">
           <span class="nm">${esc(s.n)}</span>
-          <span class="tk">${esc(s.t)} · ${esc(s.index ? s.region : s.ix.join(", "))}</span>
+          <span class="tk">${esc(s.t)}${where(s) ? " · " + esc(where(s)) : ""}</span>
         </li>`).join("");
       if (active >= 0) input.setAttribute("aria-activedescendant", `${list.id}-${active}`); else input.removeAttribute("aria-activedescendant");
     };
@@ -190,6 +210,13 @@
       const m = await search(input.value).catch(() => []);
       if (mine !== seq) return;
       recent = false; matches = m; active = m.length ? 0 : -1; show();
+      // Then whatever else the price service knows, after a pause in typing
+      if (!opts.any || m.length >= 8) return;
+      await new Promise((r) => setTimeout(r, 250));
+      if (mine !== seq) return;
+      const more = await searchLive(input.value, m);
+      if (mine !== seq || !more.length) return;
+      matches = m.concat(more).slice(0, 10); if (active < 0) active = 0; show();
     });
     // An empty box lists the stocks looked up lately
     input.addEventListener("focus", async () => {
@@ -296,7 +323,7 @@
       if (on && getComputedStyle(menu.querySelector(".menu-flat")).display !== "none") on.scrollIntoView({ block: "nearest", inline: "center" });
     }
     const box = document.getElementById("jump");
-    if (box) picker(box, (s) => { location.href = stockUrl(s.t); });
+    if (box) picker(box, (s) => { location.href = stockUrl(s.t); }, { any: true });
     // Press "/" anywhere to jump to the stock search
     if (box) {
       box.placeholder = "Go to a stock… (press /)";
@@ -561,5 +588,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tickerTape); else tickerTape();
 
-  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
+  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();

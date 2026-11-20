@@ -25,6 +25,21 @@
     return res.json();
   }
 
+  // Every daily close plus the last 5 days of 5-minute prices, for a stock without a saved file
+  async function history(symbol) {
+    const res = await fetch(`${API}/history?symbol=${encodeURIComponent(symbol)}`);
+    if (!res.ok) throw new Error("history " + res.status);
+    return res.json();
+  }
+
+  // Stocks and funds anywhere that match a name or symbol: [{ t, n, x, type }]
+  async function search(q) {
+    const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
+    if (!res.ok) return [];
+    const out = await res.json();
+    return Array.isArray(out) ? out : [];
+  }
+
   // Run fn now and every `ms` while the tab is visible
   function every(ms, fn) {
     let timer = null;
@@ -35,5 +50,5 @@
 
   const stamp = (d) => d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
-  window.Live = { on, api: on ? API : null, quotes, chart, every, stamp };
+  window.Live = { on, api: on ? API : null, quotes, chart, history, search, every, stamp };
 })();
