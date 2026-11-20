@@ -275,4 +275,41 @@
   window.addEventListener("resize", () => { clearTimeout(resize); resize = setTimeout(render, 150); });
   render();
   if (state.period === "cx") showCustom();
+
+  // ---- live prices: recolor the boxes from the price service every 30 seconds while the market trades.
+  // The day move comes straight from the live quote; the longer periods are the saved move carried forward
+  // by how far the price has gone since the last saved close. Custom ranges stay on saved closes.
+  if (!(window.Live && Live.on)) return;
+  const SAVED = ["p", "d1", "w1", "m1", "m3", "m6", "ytd", "y1"];
+  const LONGER = ["w1", "m1", "m3", "m6", "ytd", "y1"];
+  const lastLive = {}; // market id -> { at, open }
+  async function refreshLive(force) {
+    const ix = state.market, seen = lastLive[ix];
+    // Once a market is closed its prices stop moving, so only look again every 5 minutes
+    if (!force && seen && !seen.open && Date.now() - seen.at < 5 * 60e3) return;
+    const list = M.stocks.filter((s) => s.ix.includes(ix) && s.mcapUsd > 0);
+    if (!list.length) return;
+    const q = await Live.quotes(list.map((s) => s.t));
+    if (!Object.keys(q).length || state.market !== ix) return;
+    for (const s of list) {
+      const x = q[s.t];
+      if (!x || !(x.price > 0)) continue;
+      s.saved ||= Object.fromEntries(SAVED.map((k) => [k, s[k]]));
+      const base = s.saved;
+      // A quote older than the saved close (a stale feed) would undo the day's saved move, so skip it
+      if (x.time && s.asOf && new Date(x.time * 1000).toISOString().slice(0, 10) < s.asOf) continue;
+      s.p = x.price;
+      if (x.chg1d != null) s.d1 = x.chg1d;
+      if (base.p > 0) {
+        const f = x.price / base.p;
+        for (const k of LONGER) if (base[k] != null) s[k] = ((1 + base[k] / 100) * f - 1) * 100;
+      }
+    }
+    const open = Object.values(q).some((x) => x.state === "open");
+    lastLive[ix] = { at: Date.now(), open };
+    $("updated").innerHTML = `<span class="live-dot ${open ? "on" : ""}" aria-hidden="true"></span>${open ? "Live" : "Market closed"} · ${Live.stamp(new Date())}`;
+    if (state.period !== "cx") render();
+  }
+  Live.every(30000, () => refreshLive(false));
+  $("markets").addEventListener("click", () => setTimeout(() => refreshLive(true), 0));
 })();
