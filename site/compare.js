@@ -19,7 +19,17 @@
   const RANGES = [["1M", 31], ["3M", 92], ["6M", 183], ["YTD", null], ["1Y", 365], ["3Y", 1096], ["5Y", 1827], ["10Y", 3653]];
   // A new listing among the picks adds a "Since IPO" range starting on its first trading day
   const DAY = 86400;
-  const listedAt = (t) => { const d = byT[t] && byT[t].ipo && byT[t].ipo.d; return d ? Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 1000 : null; };
+  // When a stock started trading: its listing date when the site knows it (new listings, added by hand or
+  // from the IPO calendar), else the first day in its saved history if that is under a year ago, so any
+  // future new listing works here without being set up for it
+  const listedAt = (t) => {
+    const d = byT[t] && byT[t].ipo && byT[t].ipo.d;
+    if (d) return Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 1000;
+    const h = hist[t];
+    if (byT[t] && byT[t].index) return null;
+    const first = h && h.d && h.d.length ? h.d[0][0] : null;
+    return first != null && Date.now() / 1000 - first < 366 * DAY ? Math.floor(first / DAY) * DAY : null;
+  };
   const newest = () => {
     const ts = picked.map(listedAt).filter((v) => v != null && Date.now() / 1000 - v < 366 * DAY);
     return ts.length ? Math.max(...ts) : null;
