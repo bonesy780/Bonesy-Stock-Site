@@ -186,7 +186,8 @@ async function chart(symbol, range) {
 // Everything the lookup page needs for a symbol it has no saved file for
 async function history(symbol) {
   const [daily, recent] = await Promise.all([
-    yahoo(symbol, "max", "1d", HISTORY_TTL),
+    // Yahoo refuses range=max for a stock in its first days of trading, so fall back to 5 days
+    yahoo(symbol, "max", "1d", HISTORY_TTL).catch(() => yahoo(symbol, "5d", "1d", HISTORY_TTL)),
     chart(symbol, "5d").catch(() => null),
   ]);
   const m = daily.meta;

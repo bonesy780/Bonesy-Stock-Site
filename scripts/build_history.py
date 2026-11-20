@@ -217,6 +217,12 @@ def build():
     tickers = sorted(stocks)
     log(f"downloading history for {len(tickers)} tickers")
     daily = bars(tickers, period="max", interval="1d")
+    # Yahoo refuses period="max" for a stock in its first days of trading (only 1d or 5d
+    # are allowed), so ask again for the short period for any ticker that came back empty
+    missing = [t for t in tickers if t not in daily]
+    if missing:
+        daily.update(bars(missing, period="5d", interval="1d"))
+        log(f"retried {len(missing)} tickers with a 5-day period, {sum(t in daily for t in missing)} came back")
     intraday = bars(tickers, period="5d", interval="5m")
     log(f"daily: {len(daily)}, intraday: {len(intraday)}")
 
