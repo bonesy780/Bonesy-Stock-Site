@@ -25,6 +25,7 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_data import LISTINGS, extra_listings  # noqa: E402
+from safe_io import write_json  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -132,7 +133,9 @@ def first_days(today: date) -> None:
     try:
         stocks = json.loads(path.read_text()) if path.exists() else []
     except ValueError:
-        stocks = []
+        # Never rebuild the search list from just the new listings: that would drop every other stock
+        log("stocks.json unreadable, leaving the search list for the next full run")
+        return
     by = {s["t"]: s for s in stocks}
     for e in listings:
         if e["t"] in by:
@@ -141,7 +144,7 @@ def first_days(today: date) -> None:
             stocks.append(e)
             by[e["t"]] = e
             log(f"added {e['t']} to the search list")
-    path.write_text(json.dumps(stocks, separators=(",", ":"), ensure_ascii=False))
+    write_json(path, stocks, ensure_ascii=False)
 
     recent = [e["t"] for e in listings if e.get("ipo", {}).get("d", "") >= (today - timedelta(days=FRESH_DAYS)).isoformat()]
     if not recent:
@@ -170,7 +173,7 @@ def first_days(today: date) -> None:
             body = {"t": t, "d": points(d), "df": 0, **range52(d)}
         i = intraday.get(t)
         body["i"] = points(i) if i is not None else body.get("i", [])
-        f.write_text(json.dumps(body, separators=(",", ":")))
+        write_json(f, body)
         log(f"saved first-days prices for {t} ({len(body['d'])} days)")
 
 

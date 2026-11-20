@@ -25,6 +25,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  issues: write   # the site health check opens an issue (which emails the owner) when data stops updating
 
 # One run at a time, so two runs never fetch RentCast listings or save data together. A run that starts while
 # another is going waits; if a third arrives, the older waiting one is dropped (the newer one covers it).
@@ -35,7 +36,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    # Each slow step below has its own time limit and the run carries on without it, so this outer limit
+    # (which would throw away the whole run, news included) is only a last resort
+    timeout-minutes: 140
     env:
       CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -72,12 +75,27 @@ jobs:
         run: |
           [ -f .data-cache/site.tar ] && tar -xf .data-cache/site.tar
           last=$(cat .data-cache/last-full 2>/dev/null || echo 0)
+          now=$(date -u +%s)
+          # When the latest full refresh was due: 22:30 UTC on weekdays, 12:00 UTC on Sundays. GitHub has been
+          # dropping the scheduled full runs (none ran on Nov 18 or 19), so any run after that time does the
+          # full refresh if it hasn't happened yet, instead of waiting for the schedule.
+          due=0
+          for d in 0 1 2 3; do
+            day=$(date -u -d "@$(( now - d * 86400 ))" +%F)
+            case $(date -u -d "$day" +%u) in
+              [1-5]) t=$(date -u -d "$day 22:30" +%s) ;;
+              7) t=$(date -u -d "$day 12:00" +%s) ;;
+              *) continue ;;
+            esac
+            if [ "$t" -le "$now" ] && [ "$t" -gt "$due" ]; then due=$t; fi
+          done
           full=true
           if [ "$EVENT" = schedule ] && [ "$SCHEDULE" != "30 22 * * 1-5" ] && [ "$SCHEDULE" != "0 12 * * 0" ] || [ "$ASKED" = quick ]; then
             # A quick run still does everything when the saved data is from older scripts (a change was merged
-            # but its full run was dropped) or when no full refresh has finished in 26 hours.
+            # but its full run was dropped), when a scheduled full refresh is due, or when none has finished in 26 hours.
             if [[ "$MATCHED" != "site-data-v1-$CODE-"* ]]; then echo "Saved data is from older scripts, doing a full run"
-            elif [ $(( $(date -u +%s) - last )) -gt 93600 ]; then echo "No full refresh in 26 hours, doing a full run"
+            elif [ "$last" -lt "$due" ]; then echo "The full refresh due at $(date -u -d "@$due" '+%a %H:%M UTC') hasn't run yet, doing it now"
+            elif [ $(( now - last )) -gt 93600 ]; then echo "No full refresh in 26 hours, doing a full run"
             else full=false
             fi
           fi
@@ -91,30 +109,56 @@ jobs:
           echo "full=$full" >> "$GITHUB_OUTPUT"
           echo "prices=$prices" >> "$GITHUB_OUTPUT"
           echo "Full rebuild: $full. Price refresh: $prices."
+      # Every data step below keeps the last good data when its source fails or sends back too little, and has
+      # its own time limit. A failed step shows in orange on the run, the run goes on to publish everything
+      # else, and the health check near the end raises an alert if a step keeps failing.
       - name: Gather prices and rank the top stocks
+        id: prices
         if: steps.mode.outputs.full == 'true' || steps.mode.outputs.prices == 'true'
+        timeout-minutes: 25
+        continue-on-error: true
         env:
           FAST: ${{ steps.mode.outputs.full == 'true' && '0' || '1' }}
-        # A quick price refresh that fails keeps the last prices; a full run that fails stops here as before
-        run: python scripts/build_data.py || { [ "$FAST" = 1 ] && echo "::warning::price refresh failed, keeping the last prices"; }
+        run: python scripts/build_data.py
       - name: Gather market news
-        run: python scripts/build_news.py || echo "::warning::news step failed, deploying without fresh news"
+        id: news
+        timeout-minutes: 6
+        continue-on-error: true
+        run: python scripts/build_news.py
       - name: Gather housing news
+        id: housing_news
         if: steps.mode.outputs.full != 'true'
-        run: python scripts/build_realestate.py --news-only || echo "::warning::housing news step failed, keeping the last headlines"
+        timeout-minutes: 7
+        continue-on-error: true
+        run: python scripts/build_realestate.py --news-only
       - name: Gather the day's headlines for the Daily News page
-        run: python scripts/build_daily_news.py || echo "::warning::daily news step failed, keeping the last headlines"
+        id: daily_news
+        timeout-minutes: 8
+        continue-on-error: true
+        run: python scripts/build_daily_news.py
       - name: Add new IPOs so they can be looked up the day they list
-        run: python scripts/build_ipos.py || echo "::warning::IPO step failed, new listings wait for the live search"
+        id: ipos
+        timeout-minutes: 4
+        continue-on-error: true
+        run: python scripts/build_ipos.py
       - name: Save price history for the stock lookup page
+        id: history
         if: steps.mode.outputs.full == 'true'
-        run: python scripts/build_history.py || echo "::warning::history step failed, stock lookup may be stale"
+        timeout-minutes: 15
+        continue-on-error: true
+        run: python scripts/build_history.py
       - name: Gather facts on every stock for the screener, watchlists and other tools
+        id: market
         if: steps.mode.outputs.full == 'true'
-        run: python scripts/build_market.py || echo "::warning::market facts step failed, tool pages may be stale"
+        timeout-minutes: 30
+        continue-on-error: true
+        run: python scripts/build_market.py
       - name: Gather which analyst firms rate each stock
+        id: ratings
         if: steps.mode.outputs.full == 'true'
-        run: python scripts/build_ratings.py || echo "::warning::analyst history step failed, stock pages will skip it"
+        timeout-minutes: 15
+        continue-on-error: true
+        run: python scripts/build_ratings.py
       - name: Use the latest saved listings and RentCast request log from main
         if: steps.mode.outputs.full == 'true'
         # This run may have checked out an older commit than main (runs queue one after another), so take
@@ -125,11 +169,14 @@ jobs:
             git show "origin/main:data/realestate/$f" > "/tmp/$f" 2>/dev/null && mv "/tmp/$f" "data/realestate/$f" || true
           done
       - name: Gather housing market data and listings for the real estate pages
+        id: realestate
         if: steps.mode.outputs.full == 'true'
+        timeout-minutes: 25
+        continue-on-error: true
         env:
           RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: python scripts/build_realestate.py || echo "::warning::real estate step failed, real estate pages may be stale"
+        run: python scripts/build_realestate.py
       - name: Give the live service the Ask page's notes
         run: cp site/ask-kb.json worker/ask-kb.json
       - name: Deploy the live price service
@@ -167,6 +214,18 @@ jobs:
           else
             echo "::notice::No live price service set up yet, so the site shows the saved prices. See README."
           fi
+      - name: Check the data before publishing, and raise an alert if it has stopped updating
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STEPS: >-
+            {"prices": "${{ steps.prices.outcome }}", "news": "${{ steps.news.outcome }}",
+            "housing news": "${{ steps.housing_news.outcome }}", "daily news": "${{ steps.daily_news.outcome }}",
+            "IPOs": "${{ steps.ipos.outcome }}", "price history": "${{ steps.history.outcome }}",
+            "market facts": "${{ steps.market.outcome }}", "analyst ratings": "${{ steps.ratings.outcome }}",
+            "real estate": "${{ steps.realestate.outcome }}"}
+        run: python scripts/check_site.py
       - name: Keep this run's data for the next run
         run: |
           mkdir -p .data-cache
@@ -178,7 +237,8 @@ jobs:
           path: .data-cache
           key: site-data-v1-${{ steps.code.outputs.hash }}-${{ github.run_id }}-${{ github.run_attempt }}
       - name: List every page, stock and housing market for search engines
-        run: python scripts/build_sitemap.py || echo "::warning::sitemap step failed, keeping the short sitemap"
+        continue-on-error: true
+        run: python scripts/build_sitemap.py
       - name: Add search engine ownership tags
         # Optional repository variables (Settings > Secrets and variables > Actions > Variables):
         # GOOGLE_SITE_VERIFICATION and BING_SITE_VERIFICATION hold the code from each tool's "HTML tag" method.
@@ -229,7 +289,14 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # GitHub Pages sometimes turns a deployment away for a moment; try once more before giving up
       - id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - if: steps.deployment.outcome == 'failure'
+        run: sleep 45
+      - id: retry
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
 
   # GitHub's scheduler is unreliable (on Nov 17 it skipped every run for almost seven hours), so the news went

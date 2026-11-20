@@ -8,6 +8,7 @@
     $("updated").textContent = "Data could not be loaded.";
     return;
   }
+  if (window.UI && UI.freshness) UI.freshness(data.generated, 44);
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const pct = (v) => v == null ? '<span class="num">–</span>' :
@@ -98,7 +99,7 @@
       </tr>`).join("");
     $("index-view").innerHTML = `
       <div class="panel summary">
-        <div><h2>${esc(ix.name)}</h2><div class="region">${esc(ix.region)} · ${ix.members} members · prices in ${ix.currency}</div></div>
+        <div><h2>${esc(ix.name)}</h2><div class="region">${esc(ix.region)} · ${ix.members} members · prices in ${ix.currency}${ix.stale ? ` · <span class="stale-tag" title="Prices for this market didn't come back in the latest update, so this is the last good list">as of ${esc(new Date(ix.stale).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }))}</span>` : ""}</div></div>
         <div class="stats">
           <div class="stat"><div class="label">Level</div><div class="value num">${ix.level ? ix.level.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "–"}</div></div>
           <div class="stat"><div class="label">Day</div><div class="value">${pct(ix.chg1d)}</div></div>

@@ -59,11 +59,31 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   };
 
+  // ---- notice when a page's data is older than it should be (the automatic refresh fell behind).
+  // Worked out in the browser from the file's own timestamp, so it still shows if the refresh stops entirely.
+  // Hours: full refreshes run weekday evenings and Sunday midday, so prices can be ~40 hours old over a weekend.
+  const FRESH_HOURS = { "data.json": 44, "market.json": 44, "news.json": 3 };
+  function freshness(iso, maxHours) {
+    const at = new Date(iso);
+    if (!iso || isNaN(at) || (Date.now() - at) / 3600000 <= maxHours) return;
+    if (document.getElementById("stale-note")) return;
+    const main = document.querySelector("main") || document.body;
+    const note = document.createElement("div");
+    note.id = "stale-note";
+    note.className = "stale-note";
+    note.setAttribute("role", "status");
+    note.textContent = `Some figures on this page are from ${at.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. ` +
+      "The automatic update is running behind; the page will catch up on its own once it does.";
+    main.prepend(note);
+  }
   // ---- data files, fetched once per page
   const cache = {};
   const load = (file) => (cache[file] ||= fetch(file, { cache: "no-cache" }).then((r) => {
     if (!r.ok) throw new Error(file + " " + r.status);
     return r.json();
+  }).then((d) => {
+    if (FRESH_HOURS[file] && d && d.generated) freshness(d.generated, FRESH_HOURS[file]);
+    return d;
   }));
   // Every stock's facts from market.json, by ticker
   let marketMap = null;
@@ -597,5 +617,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tickerTape); else tickerTape();
 
-  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, typedTicker, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
+  window.UI = { freshness, esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, typedTicker, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();

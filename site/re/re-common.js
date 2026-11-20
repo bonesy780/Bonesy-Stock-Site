@@ -59,9 +59,23 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   };
   const cache = {};
+  // Hours before each file counts as behind (market data refreshes daily, headlines every 15 minutes)
+  const FRESH_HOURS = { "data.json": 44, "news.json": 4 };
   const load = (file) => (cache[file] ||= fetch(file, { cache: "no-cache" }).then((r) => {
     if (!r.ok) throw new Error(file + " " + r.status);
     return r.json();
+  }).then((d) => {
+    const at = d && new Date(d.updated);
+    if (FRESH_HOURS[file] && at && !isNaN(at) && (Date.now() - at) / 3600000 > FRESH_HOURS[file] && !document.getElementById("stale-note")) {
+      const note = document.createElement("div");
+      note.id = "stale-note";
+      note.className = "stale-note";
+      note.setAttribute("role", "status");
+      note.textContent = `Some figures on this page are from ${at.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. ` +
+        "The automatic update is running behind; the page will catch up on its own once it does.";
+      (document.querySelector("main") || document.body).prepend(note);
+    }
+    return d;
   }));
   const marketUrl = (id) => "market.html?id=" + encodeURIComponent(id);
   const place = (m) => m.c === "US" ? (m.region ? `${m.region} · United States` : "United States")

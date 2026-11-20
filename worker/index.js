@@ -17,7 +17,8 @@
 
 import KB from "./ask-kb.json";
 
-const YAHOO = "https://query1.finance.yahoo.com/v8/finance/chart/";
+// Yahoo serves the same data from two hosts; when one rate-limits or fails, the other usually still answers
+const YAHOO_HOSTS = ["https://query1.finance.yahoo.com/v8/finance/chart/", "https://query2.finance.yahoo.com/v8/finance/chart/"];
 const MAX_SYMBOLS = 40;          // free Workers allow 50 outbound fetches per request
 const QUOTE_TTL = 20;            // seconds
 const CHART_TTL = 60;
@@ -112,16 +113,32 @@ function json(body, status = 200, ttl = 0) {
   });
 }
 
+// Only good answers are cached. Caching everything for `ttl` also kept Yahoo's refusals (429s and errors)
+// for that long, so one refused request left a stock without a live price (or a search without results,
+// for an hour) for every visitor.
+const cacheOk = (ttl) => ({ cacheTtlByStatus: { "200-299": ttl, "404": 60, "400-599": 0 }, cacheEverything: true });
+
 async function yahoo(symbol, range, interval, ttl, prePost = false) {
-  const url = `${YAHOO}${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=${prePost}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketLeaders/1.0)" },
-    cf: { cacheTtl: ttl, cacheEverything: true },
-  });
-  if (!res.ok) throw new Error(`yahoo ${res.status}`);
-  const r = (await res.json())?.chart?.result?.[0];
-  if (!r) throw new Error("no data");
-  return r;
+  const path = `${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=${prePost}`;
+  let err = null;
+  for (const host of YAHOO_HOSTS) {
+    try {
+      const res = await fetch(host + path, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketLeaders/1.0)" },
+        cf: cacheOk(ttl),
+      });
+      if (res.status === 404) throw Object.assign(new Error("yahoo 404"), { final: true });
+      if (!res.ok) throw new Error(`yahoo ${res.status}`);
+      const r = (await res.json())?.chart?.result?.[0];
+      // A reply without a usable price is as good as no reply
+      if (!r || !(r.meta?.regularMarketPrice > 0)) throw new Error("no data");
+      return r;
+    } catch (e) {
+      err = e;
+      if (e.final) break;
+    }
+  }
+  throw err;
 }
 
 async function quote(symbol) {
@@ -212,7 +229,7 @@ async function lookup(q) {
   const url = `${SEARCH_URL}?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0&listsCount=0&enableFuzzyQuery=false`;
   const res = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketLeaders/1.0)" },
-    cf: { cacheTtl: SEARCH_TTL, cacheEverything: true },
+    cf: cacheOk(SEARCH_TTL),
   });
   if (!res.ok) throw new Error(`yahoo ${res.status}`);
   const quotes = (await res.json())?.quotes || [];

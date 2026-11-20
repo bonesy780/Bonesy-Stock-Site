@@ -20,3 +20,4 @@ site/re/hist/
 site/daily/news.json
 site/daily/search-cache.json
 site/closes/
+site/status.json

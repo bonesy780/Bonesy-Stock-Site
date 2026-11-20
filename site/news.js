@@ -8,6 +8,7 @@
     $("updated").textContent = "News could not be loaded.";
     return;
   }
+  if (window.UI && UI.freshness) UI.freshness(data.generated, 3);
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const safeUrl = (u) => /^https?:\/\//i.test(u || "") ? u : "#";
