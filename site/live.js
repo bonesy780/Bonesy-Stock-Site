@@ -16,6 +16,12 @@
         if (res.ok) Object.assign(out, await res.json());
       } catch (e) { /* keep saved prices */ }
     }));
+    // Drop any quote without a real price, so a bad answer never shows as $0 or a -100% day
+    for (const [k, q] of Object.entries(out)) {
+      if (!q || !(Number.isFinite(q.price) && q.price > 0)) { delete out[k]; continue; }
+      if (!(Number.isFinite(q.prevClose) && q.prevClose > 0)) { q.prevClose = null; q.chg1d = null; }
+      else if (!Number.isFinite(q.chg1d)) q.chg1d = (q.price / q.prevClose - 1) * 100;
+    }
     return out;
   }
 
@@ -41,9 +47,20 @@
   }
 
   // Run fn now and every `ms` while the tab is visible
+  // (One refresh at a time: coming back to the tab while a refresh is still loading used to start a second
+  // loop, doubling the requests every time it happened.)
   function every(ms, fn) {
-    let timer = null;
-    const tick = async () => { clearTimeout(timer); try { await fn(); } finally { if (!document.hidden) timer = setTimeout(tick, ms); } };
+    let timer = null, busy = false;
+    const tick = async () => {
+      clearTimeout(timer);
+      if (busy) return;
+      busy = true;
+      try { await fn(); } catch (e) { /* keep what is shown and try again next time */ } finally {
+        busy = false;
+        clearTimeout(timer);
+        if (!document.hidden) timer = setTimeout(tick, ms);
+      }
+    };
     document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); else clearTimeout(timer); });
     tick();
   }

@@ -46,6 +46,20 @@ Pages: `re/index.html` (overview: country cards, rates, top 10 lists, buy ideas,
 
 Every page has share-preview tags (Open Graph and Twitter), so a link pasted into iMessage, Slack, X or Facebook shows a picture card: `site/img/share-stocks.png`, `share-homes.png`, `share-news.png` and `share-home.png`. `site/robots.txt` and `site/sitemap.xml` help search engines find the pages (add new pages to the sitemap), and `site/manifest.webmanifest` with the PNG icons lets phones add the site to the home screen. On screens wider than a phone, a sun/moon button in the header (`site/theme.js`) switches between light and dark; the choice is saved in the browser, and phones stay dark. `site/404.html` is shown for any missing address; a link like `/AAPL` goes straight to that stock.
 
+## When a data source fails
+
+Yahoo, Google News and the housing sources sometimes refuse requests or send back nearly empty answers.
+Every build step now keeps the last good data in that case instead of publishing the gap: an index whose
+prices didn't come back keeps its last list (marked "as of" on the Markets page), stocks Yahoo skipped keep
+their last facts, and news boxes keep their recent stories. Each step has its own time limit, so one slow
+source can't stop the rest of the run from publishing.
+
+After the build, `scripts/check_site.py` checks each data file's age and size and writes `status.json`
+(see https://www.topticker.ca/status.json). If data stays out of date for more than one run, or a step fails
+three runs in a row, it opens a GitHub issue titled "Site health: data is not updating", assigned to the
+repository owner (GitHub emails you), and closes it when things recover. Pages also show a short notice
+when their data is older than it should be.
+
 ## Live prices
 
 GitHub Pages can only serve files, so live prices come from a small Cloudflare Worker in `worker/` that fetches quotes from Yahoo Finance and caches them for 20 seconds. The pages (`site/live.js`) ask it for fresh prices every 30 seconds (main page) or every minute (stock lookup) while the tab is open. Rankings, buy and sell ideas and longer price history still refresh with the daily build. Some exchanges' prices reach Yahoo up to 20 minutes late.

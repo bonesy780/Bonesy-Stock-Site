@@ -21,6 +21,9 @@ from urllib.parse import quote_plus
 
 import requests
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_io import write_text  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "site" / "daily" / "news.json"
 # Google News results from earlier runs: the page refreshes every 15 minutes, but searches only every hour or two
@@ -421,7 +424,7 @@ def searched(kind: str, keys: list[str], run, now: datetime) -> list[list[dict]]
     _cache[kind] = {"at": now.isoformat(timespec="minutes"),
                     "items": {k: [{**s, "at": s["at"].isoformat(timespec="minutes")} for s in v] for k, v in zip(keys, got)}}
     CACHE.parent.mkdir(parents=True, exist_ok=True)
-    CACHE.write_text(json.dumps(_cache, ensure_ascii=False, separators=(",", ":")))
+    write_text(CACHE, json.dumps(_cache, ensure_ascii=False, separators=(",", ":")))
     return got
 
 
@@ -529,7 +532,7 @@ def build():
         outlets.append({**{k: v for k, v in m.items() if k != "g"}, "n": per_outlet.get(oid, 0), "how": how[oid] if per_outlet.get(oid, 0) else "none"})
     missing = [o["name"] for o in outlets if o["n"] == 0]
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({
+    write_text(OUT, json.dumps({
         "generated": now.isoformat(timespec="minutes"),
         "genres": [{"id": a, "label": b, "icon": c} for a, b, c in GENRES],
         "provinces": {k: v[0] for k, v in PROVINCES.items()},

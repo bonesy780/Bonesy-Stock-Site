@@ -19,6 +19,9 @@ import pandas as pd
 import requests
 import yfinance as yf
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_io import read_json, write_json  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 CONSTITUENTS = ROOT / "data" / "constituents"
 # Stocks outside the eight indexes that the stock lookup should still carry, such as new IPOs
@@ -198,13 +201,26 @@ def extra_listings() -> list[dict]:
 HIGH_LOW: dict[str, tuple[pd.Series, pd.Series]] = {}
 
 
-def download_prices(tickers: list[str]) -> dict[str, pd.Series]:
+def download_prices(tickers: list[str], min_days: int = 31) -> dict[str, pd.Series]:
     closes: dict[str, pd.Series] = {}
     for i in range(0, len(tickers), 200):
         batch = tickers[i:i + 200]
-        # Traded prices (split adjusted only), so the 52-week high and low match what really traded
-        df = yf.download(batch, period="13mo", interval="1d", auto_adjust=False, group_by="ticker",
-                         threads=True, progress=False)
+        # Traded prices (split adjusted only), so the 52-week high and low match what really traded.
+        # One failed batch (Yahoo refusing or timing out) only loses that batch; the publish check below
+        # keeps the last good prices if too much is missing.
+        df = None
+        for attempt in range(2):
+            try:
+                df = yf.download(batch, period="13mo", interval="1d", auto_adjust=False, group_by="ticker",
+                                 threads=True, progress=False)
+                if df is not None and len(df):
+                    break
+            except Exception as e:
+                log(f"price batch {i} failed ({e}), retry {attempt + 1}")
+            time.sleep(10)
+        if df is None or not len(df):
+            log(f"price batch {i}: no prices came back")
+            continue
         for t in batch:
             try:
                 sub = df[t] if isinstance(df.columns, pd.MultiIndex) else df
@@ -213,7 +229,7 @@ def download_prices(tickers: list[str]) -> dict[str, pd.Series]:
                 continue
             if "High" in sub and "Low" in sub:
                 HIGH_LOW[t] = (sub["High"].reindex(s.index), sub["Low"].reindex(s.index))
-            if len(s) > 30:
+            if len(s) >= min_days:
                 closes[t] = s
     return closes
 
@@ -260,11 +276,30 @@ def price_stats(s: pd.Series, t: str | None = None) -> dict:
 
 
 def fx_rates() -> dict[str, float]:
+    """Units of each currency per 1 USD. A rate Yahoo won't give (or gives wildly off the last one) is
+    taken from the last good run, so one bad answer can't stop the build or misprice a whole market."""
+    saved = (read_json(SAVED, {}) or {}).get("fx") or {}
     rates = {"USD": 1.0}
     for cur, sym in FX.items():
-        if sym:
-            s = yf.download(sym, period="5d", progress=False, auto_adjust=True)["Close"].dropna()
-            rates[cur] = float(s.iloc[-1].squeeze())  # units of currency per 1 USD
+        if not sym:
+            continue
+        v = None
+        for attempt in range(3):
+            try:
+                s = yf.download(sym, period="5d", progress=False, auto_adjust=True)["Close"].dropna()
+                v = float(s.iloc[-1].squeeze())
+                break
+            except Exception as e:
+                log(f"fx {sym} failed ({e}), retry {attempt + 1}")
+                time.sleep(3 * (attempt + 1))
+        old = saved.get(cur)
+        if v is not None and v == v and v > 0 and (not old or 0.7 < v / old < 1.3):
+            rates[cur] = v
+        elif old:
+            log(f"::warning::exchange rate {cur} unavailable or out of range ({v}), using the last one ({old})")
+            rates[cur] = old
+        else:
+            raise RuntimeError(f"no exchange rate for {cur}")
     return rates
 
 
@@ -282,7 +317,13 @@ def market_caps(tickers: list[str]) -> dict[str, float]:
                 time.sleep(1 + attempt)
         return t, None
     with ThreadPoolExecutor(max_workers=12) as ex:
-        return {**known, **{t: v for t, v in ex.map(one, todo) if v}}
+        got = {t: v for t, v in ex.map(one, todo) if v}
+    # Sizes Yahoo wouldn't give this time come from the last run, so the largest-company lists and the
+    # size part of each score don't empty out on a bad day
+    old = {t: _saved["caps"][t] for t in todo if t not in got and t in _saved["caps"]}
+    if old:
+        log(f"market caps: {len(old)} stocks kept from the last run")
+    return {**old, **known, **got}
 
 
 # ---------------------------------------------------------------- dividends
@@ -325,7 +366,10 @@ def dividends(rows: list[dict]) -> None:
         _div.update({r["ticker"]: _saved["div"][r["ticker"]] for r in rows if r["ticker"] in _saved["div"]})
     todo = {r["ticker"]: r["price"] for r in rows if r["ticker"] not in _div}
     with ThreadPoolExecutor(max_workers=4) as ex:
-        _div.update(ex.map(lambda kv: dividend(*kv), todo.items()))
+        got = dict(ex.map(lambda kv: dividend(*kv), todo.items()))
+    # A stock Yahoo gave no dividend answer for keeps the last run's, rather than losing its yield
+    for t, v in got.items():
+        _div[t] = v if v or t not in _saved["div"] else _saved["div"][t]
 
 
 # ---------------------------------------------------------------- analyst data
@@ -440,7 +484,8 @@ def build():
     all_tickers = sorted({to_yahoo(s, ix) for ix in INDEXES for s in members[ix["id"]]["symbol"]})
     log(f"downloading prices for {len(all_tickers)} tickers")
     closes = download_prices(all_tickers)
-    bench = download_prices([ix["benchmark"] for ix in INDEXES])
+    # Yahoo sometimes has only today's bar for an index (KOSPI 200 lately); still show its level
+    bench = download_prices([ix["benchmark"] for ix in INDEXES], min_days=1)
     log(f"got prices for {len(closes)} tickers")
 
     caps = market_caps(sorted(closes))
@@ -543,14 +588,15 @@ def build():
         "watchlist": watchlist(stocks, now),
         "snapshots": snapshots(list(everyone.values())),
     }
+    out = publish_check(out)
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(out, separators=(",", ":"), allow_nan=False, default=str))
+    write_json(OUT, out, allow_nan=False, default=str)
     # Small file for the ticker tape in every page's header: each index and its top 3 stocks
     tape = {"generated": out["generated"], "items": []}
     for ixo in indexes_out:
         tape["items"].append({"t": ixo["benchmark"], "ix": ixo["id"], "p": ixo["level"], "c": ixo["chg1d"]})
         tape["items"] += [{"t": r["ticker"], "s": r["symbol"], "p": r.get("price"), "c": r.get("chg1d")} for r in ixo["top"][:3]]
-    (OUT.parent / "tape.json").write_text(json.dumps(tape, separators=(",", ":"), allow_nan=False, default=str))
+    write_json(OUT.parent / "tape.json", tape, allow_nan=False, default=str)
     for ixo in indexes_out:
         log(f"{ixo['name']}: {ixo['priced']}/{ixo['members']} priced, top: "
             + ", ".join(f"{r['symbol']} {r['chg3m']:+.0f}%" for r in ixo["top"][:3]))
@@ -565,11 +611,52 @@ def build():
     keep = ("shortName", "longName", "sector", "marketCap", "recommendationMean", "numberOfAnalystOpinions",
             "targetMeanPrice", "earningsTimestampStart", "earningsTimestamp")
     SAVED.parent.mkdir(exist_ok=True)
-    SAVED.write_text(json.dumps({
+    write_json(SAVED, {
         "caps": {**_saved["caps"], **caps},
         "info": {**_saved["info"], **{t: {k: v.get(k) for k in keep} for t, v in _info_cache.items() if v}},
-        "div": {**_saved["div"], **_div},
-    }, default=str))
+        "div": {**_saved["div"], **{t: v for t, v in _div.items() if v}},
+        "fx": rates,
+    }, default=str)
+
+
+class BadData(Exception):
+    """This run's data looks broken; the last good data.json stays on the site."""
+
+
+def publish_check(out: dict) -> dict:
+    """Compare this run with the data.json already on the site before replacing it.
+
+    Yahoo can answer with errors or near-empty replies instead of failing outright, and the build would
+    happily publish that. So: an index that lost most of its prices or its top-10 keeps its last good
+    block (marked stale), and if most of the site's prices are missing the whole file is left as it was.
+    """
+    prev = read_json(OUT, None)
+    if not prev or not prev.get("indexes"):
+        if not any(ix["top"] for ix in out["indexes"]):
+            raise BadData("no index has any stocks priced")
+        return out
+    before = {ix["id"]: ix for ix in prev["indexes"]}
+    total_now = sum(ix["priced"] for ix in out["indexes"])
+    total_before = sum(ix.get("priced") or 0 for ix in prev["indexes"])
+    if total_before and total_now < total_before * 0.5:
+        raise BadData(f"only {total_now} stocks priced against {total_before} last time")
+    for i, ix in enumerate(out["indexes"]):
+        old = before.get(ix["id"])
+        if not old:
+            continue
+        thin = old.get("priced") and ix["priced"] < old["priced"] * 0.6
+        if (thin or (old.get("top") and not ix["top"])) and old.get("top"):
+            log(f"::warning::{ix['name']}: only {ix['priced']} of {old.get('priced')} stocks priced this run, "
+                f"keeping the last good list from {old.get('stale') or prev.get('generated')}")
+            out["indexes"][i] = {**old, "stale": old.get("stale") or prev.get("generated")}
+        elif ix.get("level") is None and old.get("level") is not None:
+            # Index level missing this time: show the last one rather than a blank
+            ix.update({k: old.get(k) for k in ("level", "chg1d", "chg1w", "chg1m", "ytd", "spark")})
+    for key in ("buyIdeas", "sellIdeas", "watchlist"):
+        if not out[key] and prev.get(key) and total_now < total_before * 0.9:
+            log(f"::warning::{key} came back empty, keeping the last ones")
+            out[key] = prev[key]
+    return out
 
 
 def clean(r: dict) -> dict:
@@ -677,4 +764,8 @@ def watchlist(stocks: list[dict], now: datetime) -> list[dict]:
 
 
 if __name__ == "__main__":
-    build()
+    try:
+        build()
+    except BadData as e:
+        log(f"::error::Stock data looked broken, so the site keeps the last good prices: {e}")
+        sys.exit(2)

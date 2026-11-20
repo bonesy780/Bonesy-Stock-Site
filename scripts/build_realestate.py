@@ -45,6 +45,9 @@ from urllib.parse import quote_plus
 
 import requests
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_io import read_json, write_json  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "data" / "realestate"
 OUT = ROOT / "site" / "re"
@@ -1326,10 +1329,30 @@ def main():
     countries["MX"]["nation"] = mx[0] if mx else None
     countries["MX"]["shf"] = mx_meta
 
+    # Any rate, state table or world table that failed this run keeps what the last build had, so one
+    # slow or refusing source never blanks part of the real estate pages
+    last = read_json(OUT / "data.json", {}) or {}
+    for k, v in (last.get("rates") or {}).items():
+        if rates.get(k) is None and v is not None:
+            rates[k] = v
+            log(f"  rate {k}: kept the last value")
+    for c in ("US", "CA", "MX"):
+        for k, v in ((last.get("countries") or {}).get(c) or {}).items():
+            if countries[c].get(k) is None and v is not None:
+                countries[c][k] = v
+
     idea = safe("picks", lambda: picks(us, ca, mx), {})
     log("US states and world markets")
-    states = safe("US states", build_states, [])
+    states = safe("US states", build_states, []) or ((last.get("regions") or {}).get("US") or [])
     world, world_hist = safe("World", build_world, (None, {}))
+    if not world and last.get("world"):
+        log("  world: kept the last build's table and history")
+        world = last["world"]
+        world_hist = read_json(OUT / "world_hist.json", {}) or {}
+    if not PROVINCE_ROWS and (last.get("regions") or {}).get("CA"):
+        PROVINCE_ROWS[:] = last["regions"]["CA"]
+    if not idea and last.get("picks"):
+        idea = last["picks"]
 
     # Listings: real US ones when RentCast is set up, clearly marked samples otherwise
     rc = safe("RentCast", rentcast, None)
@@ -1349,43 +1372,72 @@ def main():
         "markets": us + ca + mx, "errors": errors,
         "regions": {"US": states, "CA": PROVINCE_ROWS}, "world": world,
     }
-    (OUT / "data.json").write_text(json.dumps(data, separators=(",", ":"), ensure_ascii=False))
+    if not data["markets"] and last.get("markets"):
+        log("::error::no housing markets came back at all, keeping the last real estate data")
+        sys.exit(2)
+    write_json(OUT / "data.json", data, ensure_ascii=False)
     # History: national series in hist.json, and one small file per market in hist/ (loaded only when charted)
     hist = {
         "rates": {"us30": thin(us30), "us15": thin(us15), "ca5": thin(ca5), "caPolicy": thin(capol), "mxRate": thin(mxpol)},
         "bis": {c: thin(s) for c, s in bis.items()}, "bisReal": {c: thin(s) for c, s in bisr.items()},
     }
-    (OUT / "hist.json").write_text(json.dumps(hist, separators=(",", ":")))
+    # A national series that failed keeps its saved history rather than an empty chart
+    old_hist = read_json(OUT / "hist.json", {}) or {}
+    for group, series_map in hist.items():
+        for k, v in series_map.items():
+            if not v and ((old_hist.get(group) or {}).get(k)):
+                series_map[k] = old_hist[group][k]
+    write_json(OUT / "hist.json", hist)
     hdir = OUT / "hist"
     hdir.mkdir(exist_ok=True)
-    for old in hdir.glob("*.json"):
-        old.unlink()
-    for mid, h in {**us_hist, **ca_hist}.items():
-        (hdir / f"{mid}.json").write_text(json.dumps(h, separators=(",", ":")))
-    (OUT / "world_hist.json").write_text(json.dumps(world_hist, separators=(",", ":")))
-    (OUT / "listings.json").write_text(json.dumps(listings, separators=(",", ":"), ensure_ascii=False))
+    new_hist = {**us_hist, **ca_hist}
+    # Only clear out old market histories when this run has a full set to replace them with
+    if new_hist:
+        live_ids = {m["id"] for m in data["markets"]}
+        for old in hdir.glob("*.json"):
+            if old.stem not in new_hist and old.stem not in live_ids:
+                old.unlink()
+    for mid, h in new_hist.items():
+        write_json(hdir / f"{mid}.json", h)
+    write_json(OUT / "world_hist.json", world_hist)
+    write_json(OUT / "listings.json", listings, ensure_ascii=False)
     nw = safe("news", lambda: news(us, ca, mx), {})
-    (OUT / "news.json").write_text(json.dumps({"updated": NOW.isoformat(timespec="seconds"), "news": nw.get("items", {}),
-                                               "markets": nw.get("markets", []), "topics": list(TOPICS)},
-                                              separators=(",", ":"), ensure_ascii=False))
+    write_news(nw)
     log(f"Wrote {len(data['markets'])} markets, {len(listings['items'])} listings; failed parts: {errors or 'none'}")
+
+
+def write_news(nw: dict) -> None:
+    """Save the housing headlines. Places whose searches failed this run keep the last run's stories, and
+    if nothing at all came back the saved file is left as it was."""
+    items = dict(nw.get("items") or {})
+    if not any(items.values()):
+        log("news: nothing came back, keeping the saved headlines")
+        return
+    markets = list(nw.get("markets") or [])
+    old = read_json(OUT / "news.json", {}) or {}
+    have = {m.get("key") for m in markets}
+    kept = 0
+    for m in old.get("markets") or []:
+        k = m.get("key")
+        if k not in have and (old.get("news") or {}).get(k):
+            items[k] = old["news"][k]
+            markets.append(m)
+            kept += 1
+    if kept:
+        log(f"news: kept the last stories for {kept} places this run's searches missed")
+    write_json(OUT / "news.json", {"updated": NOW.isoformat(timespec="seconds"), "news": items,
+                                   "markets": markets, "topics": list(TOPICS)}, ensure_ascii=False)
 
 
 def news_only():
     """Refresh just the housing headlines (the workflow does this every 15 minutes between full runs), using the
-    markets from the last full build. Keeps the old file if the news searches all fail."""
-    try:
-        data = json.loads((OUT / "data.json").read_text())
-    except (OSError, ValueError):
-        data = {}
+    markets from the last full build. Keeps the old stories for any place whose searches fail."""
+    global DEADLINE
+    # A quick run has to finish well inside its 15 minutes, so a slow Google News gets 5 minutes here
+    DEADLINE = min(DEADLINE, time.time() + 5 * 60)
+    data = read_json(OUT / "data.json", {}) or {}
     ms = data.get("markets") or []
-    nw = news(*([m for m in ms if m.get("c") == c] for c in ("US", "CA", "MX")))
-    if not any(nw.get("items", {}).values()):
-        log("news: nothing came back, keeping the saved headlines")
-        return
-    (OUT / "news.json").write_text(json.dumps({"updated": NOW.isoformat(timespec="seconds"), "news": nw["items"],
-                                               "markets": nw["markets"], "topics": list(TOPICS)},
-                                              separators=(",", ":"), ensure_ascii=False))
+    write_news(news(*([m for m in ms if m.get("c") == c] for c in ("US", "CA", "MX"))))
 
 
 if __name__ == "__main__":

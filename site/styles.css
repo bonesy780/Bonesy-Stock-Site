@@ -1043,3 +1043,8 @@ body::before {
 .tag.access-sub, .dn-lock.access-sub { background: var(--down-soft); color: var(--down); }
 .tag.access-meter, .dn-lock.access-meter { background: var(--surface-2); color: var(--warn); }
 .dn-lock { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+
+/* Shown when a page's data is older than it should be (the automatic update fell behind) */
+.stale-note { margin: 12px 0; padding: 10px 14px; border: 1px solid var(--border); border-left: 4px solid var(--warn);
+  border-radius: 8px; background: var(--surface); color: var(--text); font-size: 14px; line-height: 1.45; }
+.stale-tag { color: var(--warn); font-weight: 600; }

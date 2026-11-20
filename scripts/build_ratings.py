@@ -26,7 +26,7 @@ OUT = SITE / "ratings"
 
 WORKERS = 3
 COOL_DOWN = 45            # seconds to wait first: the facts step just before often leaves Yahoo rate limiting us
-BUDGET = 20 * 60          # seconds; stop asking Yahoo after this and keep what we have
+BUDGET = 12 * 60          # seconds; stop asking Yahoo after this and keep what we have
 KEEP_DAYS = 365
 MAX_ACTIONS = 60
 MODULES = ["upgradeDowngradeHistory", "recommendationTrend"]

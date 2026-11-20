@@ -25,6 +25,7 @@ import yfinance as yf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_data import CONSTITUENTS, INDEXES, extra_listings, to_yahoo  # noqa: E402
+from safe_io import read_json, write_json  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -177,7 +178,7 @@ def month_closes(daily: dict[str, pd.DataFrame]) -> None:
                 continue
             rows = [[None if v != v else float(f"{v:.5g}") for v in row] for row in grp.to_numpy(dtype=float)]
             body = {"t": list(grp.columns), "d": [ts.strftime("%Y-%m-%d") for ts in grp.index], "c": rows}
-            (out / f"{key}.json").write_text(json.dumps(body, separators=(",", ":"), allow_nan=False))
+            write_json(out / f"{key}.json", body, allow_nan=False)
             keep.add(key)
         for old in out.glob("*.json"):
             if old.stem not in keep:
@@ -189,7 +190,7 @@ def month_closes(daily: dict[str, pd.DataFrame]) -> None:
         last = json.loads((CLOSES / k / f"{ms[-1]}.json").read_text())["d"][-1]
         first = json.loads((CLOSES / k / f"{ms[0]}.json").read_text())["d"][0]
         first_last[k] = {"from": first, "to": last}
-    (CLOSES / "index.json").write_text(json.dumps(first_last, separators=(",", ":")))
+    write_json(CLOSES / "index.json", first_last)
     log(f"wrote monthly closes for {len(months)} indexes")
 
 
@@ -225,6 +226,13 @@ def build():
         log(f"retried {len(missing)} tickers with a 5-day period, {sum(t in daily for t in missing)} came back")
     intraday = bars(tickers, period="5d", interval="5m")
     log(f"daily: {len(daily)}, intraday: {len(intraday)}")
+    # Yahoo can turn away most of a run's requests without an error. Then rewriting the search list, the
+    # trend lines and the heatmap's monthly closes from what little came back would drop most stocks from
+    # the site, so those keep the last good build and only the stocks that did come back are refreshed.
+    partial = len(daily) < len(tickers) * 0.8
+    if partial:
+        log(f"::warning::price history came back for only {len(daily)} of {len(tickers)} stocks; "
+            "keeping the last saved search list, trend lines and heatmap closes for the rest")
 
     HIST.mkdir(parents=True, exist_ok=True)
     listed = []
@@ -236,20 +244,34 @@ def build():
             continue
         i = intraday.get(t)
         rows, daily_n = thin(d)
+        f = HIST / f"{t.replace('^', '_')}.json"
+        if i is None:  # keep the last 5-day chart rather than blank it when only the intraday call failed
+            i_pts = (read_json(f, {}) or {}).get("i") or []
+        else:
+            i_pts = points(i)
         # "df": index in "d" where the every-day stretch begins
-        body = {"t": t, "d": points(rows), "df": len(rows) - daily_n, "i": points(i) if i is not None else [], **range52(d)}
-        (HIST / f"{t.replace('^', '_')}.json").write_text(json.dumps(body, separators=(",", ":")))
+        body = {"t": t, "d": points(rows), "df": len(rows) - daily_n, "i": i_pts, **range52(d)}
+        write_json(f, body)
         listed.append(stocks[t])
         try:
             lines[t] = trends(d)
         except Exception as e:  # a bad series shouldn't stop the build
             log(f"trend failed for {t} ({e})")
-    try:
-        month_closes(daily)
-    except Exception as e:  # the heatmap's custom range is a bonus; keep the rest of the build
-        log(f"monthly closes failed ({e})")
-    (SITE / "trends.json").write_text(json.dumps(lines, separators=(",", ":")))
-    (SITE / "stocks.json").write_text(json.dumps(listed, separators=(",", ":"), ensure_ascii=False))
+    if partial:
+        old_list = read_json(SITE / "stocks.json", []) or []
+        have = {e["t"] for e in listed}
+        listed += [e for e in old_list if e.get("t") in stocks and e["t"] not in have]
+        lines = {**(read_json(SITE / "trends.json", {}) or {}), **lines}
+    else:
+        try:
+            month_closes(daily)
+        except Exception as e:  # the heatmap's custom range is a bonus; keep the rest of the build
+            log(f"monthly closes failed ({e})")
+    if not listed:
+        log("::error::no price history came back at all, keeping the saved files")
+        sys.exit(2)
+    write_json(SITE / "trends.json", lines)
+    write_json(SITE / "stocks.json", listed, ensure_ascii=False)
     log(f"wrote {len(listed)} histories to {HIST}")
 
 

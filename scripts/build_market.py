@@ -26,6 +26,7 @@ import yfinance as yf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from build_data import CONSTITUENTS, INDEXES, extra_listings, fx_rates, target_upside, to_yahoo  # noqa: E402
+from safe_io import write_json  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -33,7 +34,7 @@ OUT = SITE / "market.json"
 FUND = SITE / "fund"
 BATCH = 200
 INFO_WORKERS = 4
-INFO_BUDGET = 40 * 60   # seconds; stop asking Yahoo for company facts after this
+INFO_BUDGET = 20 * 60   # seconds; stop asking Yahoo for company facts after this (the run has a time limit)
 INFO_GIVE_UP = 40       # stocks in a row with no facts before giving up on Yahoo for this run
 
 # Company facts kept for the Financials tab (Yahoo's .info names)
@@ -109,12 +110,18 @@ def ohlcv(tickers: list[str]) -> dict[str, pd.DataFrame]:
     out = {}
     for i in range(0, len(tickers), BATCH):
         batch = tickers[i:i + BATCH]
-        try:
-            # actions=True adds each day's dividend (in the share price's currency) at no extra cost
-            df = yf.download(batch, period="13mo", interval="1d", auto_adjust=False, group_by="ticker",
-                             threads=True, progress=False, actions=True)
-        except Exception as e:
-            log(f"price batch {i} failed ({e})")
+        df = None
+        for attempt in range(2):
+            try:
+                # actions=True adds each day's dividend (in the share price's currency) at no extra cost
+                df = yf.download(batch, period="13mo", interval="1d", auto_adjust=False, group_by="ticker",
+                                 threads=True, progress=False, actions=True)
+                if df is not None and len(df):
+                    break
+            except Exception as e:
+                log(f"price batch {i} failed ({e}), retry {attempt + 1}")
+            time.sleep(10)
+        if df is None or not len(df):
             continue
         for t in batch:
             try:
@@ -340,6 +347,13 @@ def build():
     log(f"{len(tickers)} stocks; downloading 13 months of prices")
     bars = ohlcv(tickers)
     log(f"prices for {len(bars)} stocks; fetching company facts")
+    before = previous_rows()
+    # Yahoo refusing most price requests would leave the screener, heatmap and every tool page with a
+    # handful of stocks. Keep the last good market.json instead (its date shows on each page).
+    if before and len(bars) < len(before) * 0.6:
+        log(f"::error::prices came back for only {len(bars)} stocks against {len(before)} last time, "
+            "keeping the last good market facts")
+        sys.exit(2)
 
     start = time.monotonic()
     # If Yahoo refuses a long run of stocks in a row it is turning everyone away; stop asking and keep the
@@ -373,7 +387,6 @@ def build():
         log("price history carried almost no dividends, using Yahoo's dividend rates")
         paid = {}
     FUND.mkdir(parents=True, exist_ok=True)
-    before = previous_rows()
     carried = 0
     rows = []
     for t in sorted(bars):
@@ -438,10 +451,17 @@ def build():
             write_fund(t, {"t": t, "asOf": now.isoformat(timespec="minutes"), "price": num(price), "cur": e["cur"]}, inf)
             log(f"company profile for new listing {t}")
 
+    # Stocks whose prices didn't come back this time keep last build's row (with its own asOf date), so a
+    # few refused requests don't make them vanish from the screener and heatmap
+    have = {r["t"] for r in rows}
+    kept = [before[t] for t in tickers if t not in have and t in before]
+    if kept:
+        log(f"::warning::no prices for {len(kept)} stocks this run, kept their last saved rows")
+        rows += kept
     out = {"generated": now.isoformat(timespec="minutes"), "fx": rates,
            "indexes": [{"id": ix["id"], "name": ix["name"], "currency": ix["currency"]} for ix in INDEXES],
            "stocks": rows}
-    OUT.write_text(json.dumps(out, separators=(",", ":"), ensure_ascii=False, allow_nan=False))
+    write_json(OUT, out, ensure_ascii=False, allow_nan=False)
     if carried:
         log(f"::warning::Yahoo sent no company facts for {carried} stocks, kept their facts from the last build")
     sized = sum(1 for r in rows if r.get("mcapUsd"))
