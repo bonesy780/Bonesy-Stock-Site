@@ -435,7 +435,7 @@ def build():
         if not inf and t in before:
             carry_forward(row, before[t], rate)
             carried += 1
-        rows.append({k: v for k, v in row.items() if v is not None and v != []})
+        rows.append({k: v for k, v in row.items() if v is not None and (v != [] or k == "ix")})
         if inf:
             body = {"t": t, "asOf": now.isoformat(timespec="minutes"), "price": num(price), "cur": m["cur"]}
             write_fund(t, body, inf)
