@@ -89,7 +89,12 @@
   let marketMap = null;
   async function market() {
     const m = await load("market.json");
-    if (!marketMap) marketMap = Object.fromEntries(m.stocks.map((s) => [s.t, s]));
+    if (!marketMap) {
+      // New listings outside the indexes can arrive without a market list; give every stock one so pages
+      // that filter by market (heatmap, screener, movers...) never stop on them
+      for (const s of m.stocks) if (!Array.isArray(s.ix)) s.ix = [];
+      marketMap = Object.fromEntries(m.stocks.map((s) => [s.t, s]));
+    }
     return { ...m, byTicker: marketMap };
   }
 
