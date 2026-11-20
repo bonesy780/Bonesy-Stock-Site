@@ -21,6 +21,8 @@ import yfinance as yf
 
 ROOT = Path(__file__).resolve().parent.parent
 CONSTITUENTS = ROOT / "data" / "constituents"
+# Stocks outside the eight indexes that the stock lookup should still carry, such as new IPOs
+LISTINGS = ROOT / "data" / "listings.csv"
 OUT = ROOT / "site" / "data.json"
 # Between full runs, the workflow refreshes prices every 15 minutes with FAST=1. A fast run reuses the member
 # lists, market caps, analyst data and dividends saved by the last run here, so it asks Yahoo for prices only
@@ -162,6 +164,32 @@ def load_constituents(ix) -> pd.DataFrame:
 
 def to_yahoo(symbol: str, ix) -> str:
     return str(symbol).replace(".", "-") + ix["suffix"]
+
+
+def extra_listings() -> list[dict]:
+    """Stocks from data/listings.csv, in the same shape as the search list's entries.
+
+    Each row is a Yahoo symbol (ANT, XYZ.TO), name, exchange, currency, region and,
+    for an IPO, the listing date and IPO price. They belong to no index ("ix" is empty),
+    so the index pages leave them out, but the lookup, search and charts carry them.
+    """
+    if not LISTINGS.exists():
+        return []
+    out = []
+    for r in pd.read_csv(LISTINGS, dtype=str, keep_default_na=False).to_dict("records"):
+        t = r.get("symbol", "").strip().upper()
+        if not t:
+            continue
+        e = {"t": t, "s": t.split(".")[0], "n": r.get("name") or t, "cur": r.get("currency") or "USD",
+             "region": r.get("region") or "United States", "ix": [], "x": r.get("exchange") or None}
+        try:
+            price = float(r.get("ipo_price") or "nan")
+        except ValueError:
+            price = float("nan")
+        if r.get("listed"):
+            e["ipo"] = {"d": r["listed"], **({"p": price} if price == price else {})}
+        out.append({k: v for k, v in e.items() if v is not None})
+    return out
 
 
 # ---------------------------------------------------------------- prices

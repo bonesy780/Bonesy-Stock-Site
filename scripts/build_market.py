@@ -25,7 +25,7 @@ import pandas as pd
 import yfinance as yf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from build_data import CONSTITUENTS, INDEXES, fx_rates, target_upside, to_yahoo  # noqa: E402
+from build_data import CONSTITUENTS, INDEXES, extra_listings, fx_rates, target_upside, to_yahoo  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -97,6 +97,9 @@ def members() -> dict[str, dict]:
             e = out.setdefault(t, {"t": t, "s": sym, "n": name, "cur": ix["currency"],
                                    "region": ix["region"], "ix": []})
             e["ix"].append(ix["id"])
+    # New listings outside the indexes join once they have the month of trading the figures need
+    for e in extra_listings():
+        out.setdefault(e["t"], {k: e[k] for k in ("t", "s", "n", "cur", "region", "ix")})
     return out
 
 
@@ -278,6 +281,17 @@ def info(t: str, tries: int = 3) -> dict:
     return {}
 
 
+def write_fund(t: str, body: dict, inf: dict) -> None:
+    """The company profile and financial figures the stock lookup shows, in site/fund/."""
+    for k in FUND_KEYS:
+        v = inf.get(k)
+        if isinstance(v, (int, float)):
+            v = num(v, 6)
+        if v not in (None, ""):
+            body[k] = v
+    (FUND / f"{t.replace('^', '_')}.json").write_text(json.dumps(body, separators=(",", ":"), ensure_ascii=False))
+
+
 def build():
     now = datetime.now(timezone.utc)
     stocks = members()
@@ -358,13 +372,18 @@ def build():
         rows.append({k: v for k, v in row.items() if v is not None and v != []})
         if inf:
             body = {"t": t, "asOf": now.isoformat(timespec="minutes"), "price": num(price), "cur": m["cur"]}
-            for k in FUND_KEYS:
-                v = inf.get(k)
-                if isinstance(v, (int, float)):
-                    v = num(v, 6)
-                if v not in (None, ""):
-                    body[k] = v
-            (FUND / f"{t.replace('^', '_')}.json").write_text(json.dumps(body, separators=(",", ":"), ensure_ascii=False))
+            write_fund(t, body, inf)
+
+    # New listings too young for the figures above (under ~30 trading days) still get their company profile
+    for e in extra_listings():
+        t = e["t"]
+        if t in bars:
+            continue
+        inf = info(t)
+        if inf:
+            price = inf.get("currentPrice") or inf.get("regularMarketPrice")
+            write_fund(t, {"t": t, "asOf": now.isoformat(timespec="minutes"), "price": num(price), "cur": e["cur"]}, inf)
+            log(f"company profile for new listing {t}")
 
     out = {"generated": now.isoformat(timespec="minutes"), "fx": rates,
            "indexes": [{"id": ix["id"], "name": ix["name"], "currency": ix["currency"]} for ix in INDEXES],
