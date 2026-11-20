@@ -197,6 +197,9 @@
 
   function hue(id) { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
   function initials(name) { return name.replace(/^The /, "").split(/[\s&]+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase(); }
+  // 🔒 / 🔑 when the outlet needs a subscription or a sign-in (paywall.js)
+  const access = (s) => window.Paywall ? Paywall.access({ url: s.u, site: OUT[s.o] && OUT[s.o].site, source: s.s }) : null;
+  const lock = (s, cls = "dn-lock") => window.Paywall ? Paywall.tag(access(s), cls) : "";
   const gIcons = (s) => s.g.filter((g) => GEN[g] && !REGION_G.has(g)).slice(0, 3).map((g) => `<span title="${esc(GEN[g].label)}">${GEN[g].icon}</span>`).join("");
   const placeTags = (s) => s.geo.slice(0, 2).map((p) => `<button class="tag dn-place-tag" type="button" data-goto="${p}">${p.startsWith("CA-") ? "🇨🇦" : "🇺🇸"} ${esc(PLACE[p] || p)}</button>`).join("");
 
@@ -207,7 +210,7 @@
     return `<article class="panel dn-story${read.has(s.u) ? " read" : ""}" data-i="${s.i}" style="--h:${hue(s.o)}">
       ${S.view === "cards" && img ? `<a class="dn-media" href="${esc(s.u)}" target="_blank" rel="noopener" data-open="${s.i}" tabindex="-1" aria-hidden="true">${img}</a>` : ""}
       <div class="dn-body">
-        <div class="story-meta"><span class="dn-src-name"><span class="dn-dot"></span>${esc(s.s)}</span><span>${esc(ago(s.ts))}</span>${isNew && !read.has(s.u) ? `<span class="dn-new">NEW</span>` : ""}<span class="dn-gi">${gIcons(s)}</span></div>
+        <div class="story-meta"><span class="dn-src-name"><span class="dn-dot"></span>${esc(s.s)}</span><span>${esc(ago(s.ts))}</span>${isNew && !read.has(s.u) ? `<span class="dn-new">NEW</span>` : ""}${lock(s)}<span class="dn-gi">${gIcons(s)}</span></div>
         <h3><a href="${esc(s.u)}" target="_blank" rel="noopener" data-open="${s.i}">${esc(s.t)}</a></h3>
         ${S.view === "cards" && s.sum ? `<p>${esc(s.sum)}</p>` : ""}
         <div class="dn-foot">${placeTags(s)}<span class="dn-spacer"></span>
@@ -315,7 +318,7 @@
   const dlg = $("dn-dialog"), dlgBody = $("dn-dialog-body");
   const openDialog = (html) => { dlgBody.innerHTML = html; if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); };
   const closeBtn = `<button class="dn-x" type="button" data-close aria-label="Close">✕</button>`;
-  const line = (s) => `<li><a href="${esc(s.u)}" target="_blank" rel="noopener" data-open="${s.i}"><span class="dn-badge" style="--h:${hue(s.o)}">${esc(initials(s.s))}</span><span><b>${esc(s.s)}</b> <span class="muted">${esc(ago(s.ts))}</span><br>${esc(s.t)}</span></a></li>`;
+  const line = (s) => `<li><a href="${esc(s.u)}" target="_blank" rel="noopener" data-open="${s.i}"><span class="dn-badge" style="--h:${hue(s.o)}">${esc(initials(s.s))}</span><span><b>${esc(s.s)}</b> <span class="muted">${esc(ago(s.ts))}</span> ${lock(s)}<br>${esc(s.t)}</span></a></li>`;
   $("dn-big").addEventListener("click", (e) => {
     const b = e.target.closest("[data-big]"); if (!b) return;
     const g = big[+b.dataset.big].slice().sort((a, b) => b.ts - a.ts);
@@ -341,7 +344,7 @@
       if (s) { picks.push([g.icon, g.label, s]); usedU.add(s.u); }
     }
     openDialog(`${closeBtn}<h2>⚡ Your 2-minute briefing</h2><p class="muted dn-small">${now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}: the biggest stories, then one from each corner of the news.</p>
-      <ol class="dn-brief">${picks.map(([icon, label, s]) => `<li><span class="dn-brief-g">${icon} ${esc(label)}</span><a href="${esc(s.u)}" target="_blank" rel="noopener" data-open="${s.i}">${esc(s.t)}</a><span class="muted dn-small"> · ${esc(s.s)}, ${esc(ago(s.ts))}</span></li>`).join("")}</ol>`);
+      <ol class="dn-brief">${picks.map(([icon, label, s]) => `<li><span class="dn-brief-g">${icon} ${esc(label)}</span><a href="${esc(s.u)}" target="_blank" rel="noopener" data-open="${s.i}">${esc(s.t)}</a><span class="muted dn-small"> · ${esc(s.s)}, ${esc(ago(s.ts))}</span> ${lock(s)}</li>`).join("")}</ol>`);
   });
 
   // ---- surprise me: a random unread story from what's on screen
@@ -351,7 +354,7 @@
     const s = list[Math.floor(Math.random() * list.length)];
     openDialog(`${closeBtn}<p class="dn-small muted">🎲 Random pick from ${list.length.toLocaleString()} unread stories</p>
       ${s.img ? `<img class="dn-pick-img" src="${esc(s.img)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
-      <div class="story-meta"><span>${esc(s.s)}</span><span>${esc(ago(s.ts))}</span><span>${gIcons(s)}</span></div>
+      <div class="story-meta"><span>${esc(s.s)}</span><span>${esc(ago(s.ts))}</span>${lock(s)}<span>${gIcons(s)}</span></div>
       <h2 class="dn-pick-t">${esc(s.t)}</h2>${s.sum ? `<p>${esc(s.sum)}</p>` : ""}
       <div class="dn-pick-btns"><a class="btn primary" href="${esc(s.u)}" target="_blank" rel="noopener" data-open="${s.i}">Read it →</a><button class="btn" type="button" data-again>🎲 Another</button><button class="btn" type="button" data-save="${s.i}" aria-pressed="${isSaved(s.u)}">${isSaved(s.u) ? "★" : "☆"}</button></div>`);
   }
