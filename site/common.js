@@ -178,6 +178,13 @@
     return (await Live.search(text.trim()).catch(() => [])).filter((r) => !seen.has(r.t.toUpperCase())).map(fromLive);
   }
 
+  // What was typed, as a symbol to try on the stock lookup, when no search knows it yet
+  const typedTicker = (text) => {
+    const t = text.trim().toUpperCase();
+    return window.Live && Live.on && /^[A-Z][A-Z0-9.\-]{0,9}$/.test(t)
+      ? [{ t, s: t, n: `Look up ${t}`, x: "Any exchange, including today's IPOs", ix: [], region: "", live: true }] : [];
+  };
+
   // A search box with a drop-down of matches; onPick gets the stocks.json entry.
   // opts.any: also list symbols the price service finds anywhere (for boxes that open the
   // stock lookup, which can chart any symbol; other tools need the site's own files)
@@ -215,7 +222,9 @@
       await new Promise((r) => setTimeout(r, 250));
       if (mine !== seq) return;
       const more = await searchLive(input.value, m);
-      if (mine !== seq || !more.length) return;
+      if (mine !== seq) return;
+      if (!m.length && !more.length) more.push(...typedTicker(input.value));
+      if (!more.length) return;
       matches = m.concat(more).slice(0, 10); if (active < 0) active = 0; show();
     });
     // An empty box lists the stocks looked up lately
@@ -588,5 +597,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tickerTape); else tickerTape();
 
-  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
+  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, typedTicker, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();
