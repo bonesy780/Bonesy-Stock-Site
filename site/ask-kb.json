@@ -512,7 +512,7 @@
    "login",
    "sync"
   ],
-  "answer": "In your own browser (local storage), so they stay on this device and in this browser only. There are no accounts, and nothing is sent anywhere. Paper trades fill at the site's latest prices. Alerts are checked every minute while any page of the site is open. Clearing your browser's site data erases them, and the watchlist page can download a CSV as a backup."
+  "answer": "In your own browser (local storage), so they stay on this device and in this browser only. There are no accounts, and nothing is sent anywhere. Paper trades fill at the site's latest prices. Alerts are checked every minute while any page of the site is open. Clearing your browser's site data erases them, and the watchlist page can download a CSV as a backup. With a free account (Account page) they are also saved on the site's live service under a private account key and kept the same on every device you sign in on; the newest change to each item wins. Push alerts, turned on from the Alerts page, store your active alerts and this browser's push address so the service can check them every 5 minutes and notify you with the site closed."
  },
  {
   "id": "hours",
@@ -649,5 +649,114 @@
    "watch"
   ],
   "answer": "Each US metro gets a score from -100 (buyer's market) to +100 (seller's market): the average of Zillow's heat index, the sale-to-list ratio, the share of listings with a price cut, days to pending, the change in homes for sale on a year ago and the 3-month price trend, each scaled to -1..1. Buy ideas among the 100 biggest metros favour a buyer's market (40%), a good gross rent yield (30%), Zillow's forecast (20%) and prices below their peak (10%). Markets to watch are those whose last 3 months differ most from the past year's pace, or whose supply jumped. These are rules, not advice."
+ },
+ {
+  "id": "macro",
+  "title": "Where do the rates, oil, gold, dollar and Bitcoin figures come from?",
+  "page": "markets.html",
+  "keys": [
+   "vix",
+   "10-year",
+   "treasury",
+   "yield",
+   "oil",
+   "gold",
+   "dollar",
+   "bitcoin",
+   "macro",
+   "commodities"
+  ],
+  "answer": "They come from Yahoo Finance: the VIX (^VIX), the US 10-year Treasury yield (^TNX), WTI crude oil futures (CL=F), gold futures (GC=F), the US dollar index (DX-Y.NYB), the US dollar in Canadian dollars (CAD=X) and Bitcoin (BTC-USD). Daily closes are saved every 15 minutes and, with live prices on, the Markets page and ticker tape refresh them every minute. The 10-year yield's daily move is shown in basis points (hundredths of a percentage point)."
+ },
+ {
+  "id": "funds",
+  "title": "Where does the ETFs and Crypto page get its data?",
+  "page": "funds.html",
+  "keys": [
+   "etf",
+   "fund",
+   "crypto",
+   "coin",
+   "expense ratio",
+   "fee",
+   "holdings",
+   "bitcoin",
+   "ethereum"
+  ],
+  "answer": "About 50 popular US and Canadian ETFs are listed by hand in the build script, grouped by type. Prices and returns are Yahoo Finance daily closes, refreshed every 15 minutes; each fund's fee (expense ratio), yield, size, category and top 10 holdings come from Yahoo's fund profile and refresh after each weekday's US close. The crypto list is the 10 biggest coins by market value from Yahoo's cryptocurrency screener, leaving out stablecoins pegged to the dollar."
+ },
+ {
+  "id": "econ",
+  "title": "Where does the economic calendar come from?",
+  "page": "calendar.html",
+  "keys": [
+   "economic",
+   "calendar",
+   "cpi",
+   "inflation",
+   "jobs",
+   "payrolls",
+   "fed",
+   "fomc",
+   "bank of canada",
+   "gdp",
+   "rate decision"
+  ],
+  "answer": "From Nasdaq's public economic calendar, covering the past week and the next two for the US, Canada, Japan, South Korea, Taiwan, the euro zone, Germany, the UK and China. The whole window is fetched every 3 hours and yesterday's and today's releases every 15 minutes, so actual figures appear soon after they come out. 'Market movers' are flagged by name: rate decisions, inflation (CPI, PCE, PPI), jobs, GDP, retail sales and a few big surveys."
+ },
+ {
+  "id": "earnhist",
+  "title": "How is the earnings beat or miss worked out?",
+  "page": "stock.html",
+  "keys": [
+   "beat",
+   "miss",
+   "surprise",
+   "earnings history",
+   "eps",
+   "reaction"
+  ],
+  "answer": "Yahoo Finance's earnings history gives each of the last four quarters' actual earnings per share and the analysts' average estimate beforehand; the surprise is the difference as a percent of the estimate. The reaction day is worked out by the site: the trading day with the highest volume (against the 20 days before) between 10 and 80 days after the quarter ended, which is almost always the day the market reacted to the report. The move is that day's close against the day before."
+ },
+ {
+  "id": "insiders",
+  "title": "Where do insider trades come from?",
+  "page": "insiders.html",
+  "keys": [
+   "insider",
+   "form 4",
+   "director",
+   "officer",
+   "cluster",
+   "buying",
+   "selling"
+  ],
+  "answer": "From the insider transactions Yahoo Finance collects, mostly US companies' SEC Form 4 filings; coverage for Canadian and Asian companies is thin. Each filing's wording sorts it into a buy (open-market purchase), sale, option exercise, share award or gift; company buybacks are left out. The Insiders page ranks the biggest buys and sales of the last 90 days in US dollars, and a cluster buy is two or more different insiders buying the same stock in that time. The 6-month tally is Yahoo's own count."
+ },
+ {
+  "id": "recap",
+  "title": "How does the weekly recap track the picks?",
+  "page": "recap.html",
+  "keys": [
+   "recap",
+   "weekly",
+   "picks",
+   "track record",
+   "how did",
+   "performance"
+  ],
+  "answer": "Once a week, the first full update saves that week's buy ideas, sell ideas and stocks to watch, with their prices and each market's index level, into the site's code repository. The recap then compares each saved price with the latest close, and each pick's index over the same time, for the last 12 weeks. Returns are price changes only, before dividends, fees and taxes."
+ },
+ {
+  "id": "explain",
+  "title": "Who writes the Explain this stock summary?",
+  "page": "stock.html",
+  "keys": [
+   "explain",
+   "summary",
+   "claude",
+   "ai"
+  ],
+  "answer": "Claude, Anthropic's AI model, writes it on request from only the figures the site has saved for that stock: the company profile and financials, the last four quarters of earnings, insider trades and recent analyst rating changes. Each stock's explanation is kept for 12 hours. It's told not to guess numbers or give buy or sell advice, but it can still make mistakes."
  }
 ]

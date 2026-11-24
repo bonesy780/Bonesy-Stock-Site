@@ -39,8 +39,8 @@
 
 <main id="main" class="wrap">
   <section class="hero">
-    <h1>Upcoming earnings</h1>
-    <p>Who reports today, tomorrow, over the next week and over the next month. Prices often jump or drop on earnings day, so it helps to know what is coming for the stocks you own or watch.</p>
+    <h1>Earnings: coming up and just reported</h1>
+    <p>Who reports today, tomorrow, over the next week and over the next month. Prices often jump or drop on earnings day, so it helps to know what is coming for the stocks you own or watch. Below that, see who beat or missed expectations in the last month.</p>
   </section>
 
   <div class="toolbar">
@@ -57,6 +57,15 @@
   <div class="panel er-chart" id="chart" hidden></div>
   <div id="days"></div>
 
+  <section class="er-results" id="results-sec" hidden>
+    <div class="section-head">
+      <h2>Recent results: beat or miss</h2>
+      <p>Companies that reported in the last 30 days: earnings per share against what analysts expected, and how the stock moved on the day the market reacted. The record column counts beats over the last four quarters.</p>
+    </div>
+    <div class="toolbar"><div class="seg" id="res-kind" role="tablist" aria-label="Results"></div><span class="spacer"></span><span class="hint" id="res-sum"></span></div>
+    <div class="panel table-wrap" id="results"></div>
+  </section>
+
   <p class="disclaimer"><strong>Not financial advice.</strong> Dates come from Yahoo Finance and refresh every weekday after the US close. Dates marked "estimated" are not yet confirmed by the company and often move. Report times are shown in your own time zone. Check the company's investor relations page before trading around a report.</p>
 </main>
 
@@ -65,6 +74,7 @@
 <script src="common.js?v=__V__"></script>
 <script src="live.js?v=__V__"></script>
 <script src="earnings.js?v=__V__"></script>
+<script src="earnings-results.js?v=__V__"></script>
 <script src="theme.js?v=__V__" defer></script>
 </body>
 </html>

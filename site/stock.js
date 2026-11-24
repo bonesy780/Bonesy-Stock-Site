@@ -11,6 +11,9 @@ function seoMeta(url, desc) {
   set('meta[property="og:description"]', () => { const m = document.createElement("meta"); m.setAttribute("property", "og:description"); return m; }, "content", desc);
 }
 
+// A stock's own search-friendly page (stocks/AAPL.html, made by build_stock_pages.py) names its stock here
+const PAGE_T = (document.body && document.body.dataset.t) || "";
+
 (async function () {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -333,11 +336,12 @@ function seoMeta(url, desc) {
     q.value = ""; q.blur();
     current = s; hist = null;
     drawings = loadDraw(t);
-    if (push) history.replaceState(null, "", "?t=" + encodeURIComponent(t));
+    // On a stock's own page (stocks/AAPL.html) the address stays; elsewhere it becomes stock.html?t=...
+    if (push && t !== PAGE_T) history.replaceState(null, "", (PAGE_T ? "stock.html" : "") + "?t=" + encodeURIComponent(t));
     document.title = `${s.s}${s.n && s.n !== s.s ? " (" + s.n + ")" : ""} Stock Price and Chart · TopTicker`;
-    seoMeta(`https://www.topticker.ca/stock.html?t=${encodeURIComponent(t)}`, `${s.n || s.s} (${s.s}) stock price, chart from one day to all time, returns, financials, analyst ratings and price targets on TopTicker.`);
+    seoMeta(s.index || s.live ? `https://www.topticker.ca/stock.html?t=${encodeURIComponent(t)}` : `https://www.topticker.ca/stocks/${encodeURIComponent(t)}.html`, `${s.n || s.s} (${s.s}) stock price, chart from one day to all time, returns, financials, analyst ratings and price targets on TopTicker.`);
     // the default stock shown on a bare visit doesn't count as looked up
-    if (window.UI && (push || new URLSearchParams(location.search).get("t") === t)) UI.Recent.add(t);
+    if (window.UI && (push || (new URLSearchParams(location.search).get("t") || PAGE_T) === t)) UI.Recent.add(t);
     renderRecent();
     renderQuote();
     if (window.renderFund) window.renderFund(t, s);
@@ -1023,7 +1027,7 @@ function seoMeta(url, desc) {
   let resizeTimer;
   window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => current && hist && renderQuote(), 150); });
 
-  const start = (new URLSearchParams(location.search).get("t") || "").trim();
+  const start = (new URLSearchParams(location.search).get("t") || PAGE_T || "").trim();
   const fallback = (stocks.find((s) => s.t === "^GSPTSE") || stocks[0]).t;
   if (stocks.some((s) => s.t === start)) pick(start, false);
   else if (start) {

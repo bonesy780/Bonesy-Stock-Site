@@ -60,6 +60,27 @@ three runs in a row, it opens a GitHub issue titled "Site health: data is not up
 repository owner (GitHub emails you), and closes it when things recover. Pages also show a short notice
 when their data is older than it should be.
 
+## Rates, ETFs and crypto, earnings, insiders and the economy
+
+- `scripts/build_macro.py` (every run) saves `site/macro.json`: the VIX, US 10-year yield, oil, gold, the US dollar index, USD/CAD and Bitcoin, shown as a strip on the Markets page (`macro.js`), at the end of the ticker tape and in the Daily Brief. It also saves `site/funds.json` for `funds.html` (ETFs and Crypto): about 50 popular US and Canadian ETFs listed in the script (price moves, fee, yield, size, top 10 holdings and sectors) and the 10 biggest cryptocurrencies from Yahoo's crypto screener, stablecoins left out. Fund profiles and the coin list refresh in full runs (`FULL=1`); prices every run.
+- `scripts/build_econ.py` (every run) saves `site/econ.json` from Nasdaq's public economic calendar: the past week and next two for the US, Canada, Japan, Korea, Taiwan, the euro zone, Germany, the UK and China, with forecast, previous and actual figures. Market-moving releases (rate decisions, CPI, jobs, GDP...) are flagged. Shown on the Calendar page's Economy tab and in the Daily Brief.
+- `scripts/build_ratings.py` now also saves each stock's last four quarters of earnings against estimates (with the move on the day the market reacted, found from trading volume in `site/hist/`) and its insider trades, in the same `site/ratings/` files, plus two summaries: `site/surprises.json` (the Earnings page's "Recent results") and `site/insiders.json` (`insiders.html`: biggest buys and sales, cluster buys and a 6-month tally). The stock lookup shows both under "Company and financials".
+- `scripts/build_recap.py` (full runs) saves each week's buy ideas, sell ideas and stocks to watch once, in `data/picks/<Monday>.json` (committed by the workflow, so the record is kept), and writes `site/recap.json` for `recap.html`: the week in markets, movers, sectors, rates, earnings reactions and how the last 12 weeks of picks have done against their markets.
+
+## Stock pages for search engines
+
+`scripts/build_stock_pages.py` (full runs) writes `site/stocks/<ticker>.html` for every stock, ETF and coin: the stock lookup page with its own address, title, description, canonical link and structured data, and the key facts already written in, so search engines see them without running scripts. The page's script then draws the live chart as usual (`stock.js` reads the ticker from `<body data-t>`). Links across the site (`UI.stockUrl`) point at these pages; a stock without one yet falls back to the lookup through `404.html`. The sitemap lists them.
+
+## Explain this stock, push alerts and accounts
+
+These run on the live price service (the Cloudflare Worker, see `worker/extras.js`):
+
+- **Explain this stock** (button on the lookup's Company and financials): with `ANTHROPIC_API_KEY` set, Claude writes a short plain-language take from the site's saved figures for that stock. Each stock's answer is cached for 12 hours, and visitors share the Ask page's rate limit.
+- **Push alerts** (Alerts page): the browser registers `site/sw.js` and a push subscription, and its active alerts are stored by the service. A cron trigger checks them against Yahoo prices every 5 minutes and sends an empty push; the service worker then asks which alerts fired and shows them, so no message encryption is needed. The push keys are made by the service on first use. iPhones and iPads need the site added to the home screen first.
+- **Accounts** (Account page): no email or password. The service makes a random account key; the browser keeps watchlists, notes, alerts, paper portfolios, saved screens, chart drawings and a few settings in step with it (`UI.Account` in `common.js`), newest change of each item winning. Only a hash of the key is stored.
+
+Both push alerts and accounts are stored in one Durable Object (`Store`, SQLite-backed, which the free Workers plan includes), declared in `worker/wrangler.toml` with the cron trigger. The **Edit Cloudflare Workers** API token covers both.
+
 ## Live prices
 
 GitHub Pages can only serve files, so live prices come from a small Cloudflare Worker in `worker/` that fetches quotes from Yahoo Finance and caches them for 20 seconds. The pages (`site/live.js`) ask it for fresh prices every 30 seconds (main page) or every minute (stock lookup) while the tab is open. Rankings, buy and sell ideas and longer price history still refresh with the daily build. Some exchanges' prices reach Yahoo up to 20 minutes late.

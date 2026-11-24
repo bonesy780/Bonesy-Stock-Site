@@ -12,9 +12,15 @@
   }
   $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
-  const KINDS = { earnings: "Earnings", exDiv: "Ex-dividend" };
-  const state = { kind: "earnings", market: "", mine: false, ...store.get("calendar", {}) };
+  const KINDS = { earnings: "Earnings", exDiv: "Ex-dividend", econ: "Economy" };
+  const state = { kind: "earnings", market: "", mine: false, keyOnly: true, ...store.get("calendar", {}) };
+  const asked = new URLSearchParams(location.search).get("k");
+  if (asked && KINDS[asked]) state.kind = asked;
   if (!KINDS[state.kind]) state.kind = "earnings";
+  // The economic calendar (econ.json): releases and central bank decisions, by country
+  let E = null;
+  const econ = () => E || (E = UI.load("econ.json").then((d) => d.events || []).catch(() => []));
+  const COUNTRY = { tsx: "CA", tsxv: "CA", sp500: "US", nasdaq100: "US", dow: "US", nikkei225: "JP", kospi200: "KR", twse50: "TW" };
   $("market").innerHTML += M.indexes.map((i) => `<option value="${i.id}">${esc(i.name)}</option>`).join("");
   $("market").value = state.market;
   $("mine").checked = state.mine;
@@ -30,13 +36,51 @@
     return M.stocks.filter((s) => s[state.kind] && (!state.market || s.ix.includes(state.market)) && (!mine || mine.has(s.t)));
   }
 
+  async function renderEcon(days, fmt) {
+    const all = await econ();
+    if (state.kind !== "econ") return;
+    const c = state.market ? COUNTRY[state.market] : null;
+    const list = all.filter((e) => (!c || e.c === c) && (!state.keyOnly || e.key));
+    const byDay = {};
+    for (const e of list) (byDay[e.d] ||= []).push(e);
+    const time = (e) => e.at ? new Date(e.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "All day";
+    const shown = days.filter((d, i) => i < 5 || (byDay[iso(d)] || []).length);
+    $("week").innerHTML = shown.map((d) => {
+      const k = iso(d), items = byDay[k] || [];
+      const top = items.slice(0, 12);
+      return `<section class="panel cal-day ${k === todayIso ? "today" : ""} ${k < todayIso ? "past" : ""}">
+        <h3>${fmt(d, { weekday: "short" })} <span>${fmt(d, { month: "short", day: "numeric" })}</span>${items.length ? `<em>${items.length}</em>` : ""}</h3>
+        ${top.length ? `<ul>${top.map((e) => `<li class="econ-li"><span title="${esc(e.why || e.n)}"><b>${e.f} ${esc(e.n)}</b><span>${esc(time(e))}${e.a ? ` · actual ${esc(e.a)}` : e.fc ? ` · forecast ${esc(e.fc)}` : ""}</span></span></li>`).join("")}</ul>` : `<p class="muted">Nothing scheduled</p>`}
+        ${items.length > top.length ? `<p class="hint">+${items.length - top.length} more below</p>` : ""}
+      </section>`;
+    }).join("");
+    const weekItems = list.filter((e) => e.d >= iso(days[0]) && e.d <= iso(days[6]));
+    $("list-title").textContent = `Economic calendar this week (${weekItems.length})`;
+    $("list-help").textContent = "Releases and central bank decisions that move markets. When the actual figure differs from the forecast, prices often jump. Times are in your time zone.";
+    const cols = [
+      { key: "date", label: "When", left: true, sm: true, val: (e) => (e.at || e.d + "T99"),
+        html: (e) => `<span class="num">${new Date((e.at || e.d + "T12:00:00Z")).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })} ${e.at ? esc(time(e)) : ""}</span>` },
+      { key: "n", label: "Event", left: true, sm: true, val: (e) => e.n,
+        html: (e) => `<div class="co"><span class="nm">${e.f} ${e.key ? "<b>" : ""}${esc(e.n)}${e.key ? "</b>" : ""}</span>${e.why ? `<span class="tk">${esc(e.why)}</span>` : ""}</div>` },
+      { key: "a", label: "Actual", sm: true, val: (e) => e.a || "", html: (e) => `<span class="num"><b>${esc(e.a || "–")}</b></span>` },
+      { key: "fc", label: "Forecast", val: (e) => e.fc || "", html: (e) => `<span class="num">${esc(e.fc || "–")}</span>` },
+      { key: "pv", label: "Previous", val: (e) => e.pv || "", html: (e) => `<span class="num">${esc(e.pv || "–")}</span>` },
+    ];
+    UI.table($("table"), cols, weekItems, esort, { empty: `No ${state.keyOnly ? "major " : ""}economic releases this week${c ? " for this market's country" : ""}. The calendar covers the past week and the next two.` });
+  }
+  const esort = { key: "date", dir: 1 };
+
   function render() {
     store.set("calendar", state);
+    $("key-wrap").hidden = state.kind !== "econ";
+    $("mine-wrap").hidden = state.kind === "econ";
+    $("key").checked = state.keyOnly;
     $("kind").innerHTML = Object.entries(KINDS).map(([k, l]) => `<button role="tab" aria-selected="${k === state.kind}" data-k="${k}">${l}</button>`).join("");
     const days = [...Array(7)].map((_, i) => { const d = new Date(monday); d.setUTCDate(d.getUTCDate() + i); return d; });
     const fmt = (d, o) => d.toLocaleDateString(undefined, { timeZone: "UTC", ...o });
     $("week-label").textContent = `${fmt(days[0], { month: "short", day: "numeric" })} – ${fmt(days[6], { month: "short", day: "numeric", year: "numeric" })}`;
     $("this").setAttribute("aria-selected", String(+monday === +thisMonday));
+    if (state.kind === "econ") { renderEcon(days, fmt); return; }
 
     const list = pool();
     const byDay = {};
@@ -93,6 +137,7 @@
   $("this").addEventListener("click", () => { monday = new Date(thisMonday); render(); });
   $("market").addEventListener("change", () => { state.market = $("market").value; render(); });
   $("mine").addEventListener("change", () => { state.mine = $("mine").checked; render(); });
+  $("key").addEventListener("change", () => { state.keyOnly = $("key").checked; render(); });
   window.addEventListener("watchlists", () => { if (state.mine) render(); });
   render();
 })();

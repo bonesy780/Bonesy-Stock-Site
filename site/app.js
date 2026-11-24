@@ -23,7 +23,7 @@
   };
   const divYield = (s) => s.divYield != null ? `<span class="num">${s.divYield.toFixed(2)}%</span>` : s.divFreq === "None" ? '<span class="num muted">0%</span>' : '<span class="num">–</span>';
   const divFreq = (s) => `<span class="${s.divFreq === "None" ? "muted" : ""}">${esc(s.divFreq || "–")}</span>`;
-  const link = (s) => `<a href="stock.html?t=${encodeURIComponent(s.ticker)}">${esc(s.name)}</a>`;
+  const link = (s) => `<a href="${UI.stockUrl(s.ticker)}">${esc(s.name)}</a>`;
   const pillClass = (r) => /buy/i.test(r) ? "buy" : /sell|under/i.test(r) ? "sell" : "";
   const spark = (pts, w = 96, h = 28) => {
     if (!pts || pts.length < 2) return "";
@@ -181,7 +181,7 @@
     const list = ((data.snapshots || {})[period] || []);
     const key = period === "day" ? "chg1d" : "chg1w";
     $("snaps").innerHTML = list.length ? list.map((s) => `
-      <a class="panel snapcard" href="stock.html?t=${encodeURIComponent(s.ticker)}">
+      <a class="panel snapcard" href="${UI.stockUrl(s.ticker)}">
         <div class="tk">${esc(s.symbol)} · ${esc((s.markets || s.indexes || [])[0] || "")}</div>
         <div class="nm">${esc(s.name)}</div>
         <div class="snap-chg ${s[key] >= 0 ? "up" : "down"} num">${s[key] >= 0 ? "+" : ""}${s[key].toFixed(1)}%</div>

@@ -21,3 +21,11 @@ site/daily/news.json
 site/daily/search-cache.json
 site/closes/
 site/status.json
+site/stocks/
+site/macro.json
+site/funds.json
+site/econ.json
+site/recap.json
+site/surprises.json
+site/insiders.json
+worker/.wrangler/
