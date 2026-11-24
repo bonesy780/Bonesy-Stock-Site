@@ -9,6 +9,10 @@
   <url><loc>https://www.topticker.ca/brief.html</loc><changefreq>hourly</changefreq></url>
   <url><loc>https://www.topticker.ca/heatmap.html</loc><changefreq>hourly</changefreq></url>
   <url><loc>https://www.topticker.ca/signals.html</loc><changefreq>daily</changefreq></url>
+  <url><loc>https://www.topticker.ca/funds.html</loc><changefreq>daily</changefreq></url>
+  <url><loc>https://www.topticker.ca/insiders.html</loc><changefreq>daily</changefreq></url>
+  <url><loc>https://www.topticker.ca/recap.html</loc><changefreq>daily</changefreq></url>
+  <url><loc>https://www.topticker.ca/account.html</loc><changefreq>daily</changefreq></url>
   <url><loc>https://www.topticker.ca/analysts.html</loc><changefreq>daily</changefreq></url>
   <url><loc>https://www.topticker.ca/dividends.html</loc><changefreq>daily</changefreq></url>
   <url><loc>https://www.topticker.ca/earnings.html</loc><changefreq>daily</changefreq></url>

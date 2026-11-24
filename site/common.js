@@ -10,6 +10,7 @@
     ["portfolio.html", "Paper Trading"],
     ["screener.html", "Screener"],
     ["movers.html", "Movers"],
+    ["funds.html", "ETFs & Crypto"],
     ["brief.html", "Daily Brief", null, "Research"],
     ["heatmap.html", "Heatmap", null, "Research"],
     ["signals.html", "Signals", null, "Research"],
@@ -17,12 +18,15 @@
     ["dividends.html", "Dividends", null, "Research"],
     ["earnings.html", "Earnings", null, "Research"],
     ["calendar.html", "Calendar", null, "Research"],
+    ["insiders.html", "Insiders", null, "Research"],
+    ["recap.html", "Weekly Recap", null, "Research"],
     ["compare.html", "Compare", null, "Tools"],
     ["backtest.html", "Backtest", null, "Tools"],
     ["options.html", "Options", null, "Tools"],
     ["alerts.html", "Alerts", null, "Tools"],
     ["tools.html", "Calculators", null, "Tools"],
     ["ask.html", "Ask"],
+    ["account.html", "Account"],
     ["daily/", "Daily News ↗"],
     ["re/", "Real Estate ↗"],
   ];
@@ -53,7 +57,9 @@
     const color = pts[pts.length - 1] >= pts[0] ? "var(--up)" : "var(--down)";
     return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="${color}" stroke-width="1.6" points="${d}"/></svg>`;
   };
-  const stockUrl = (t) => "stock.html?t=" + encodeURIComponent(t);
+  // Each stock has its own search-friendly page (stocks/AAPL.html, build_stock_pages.py). Indexes, futures and
+  // currencies don't, so they open the lookup directly; a missing page falls back to the lookup through 404.html.
+  const stockUrl = (t) => /^[A-Za-z0-9][A-Za-z0-9.\-]{0,19}$/.test(t) && !/=|^\^/.test(t) ? "stocks/" + encodeURIComponent(t) + ".html" : "stock.html?t=" + encodeURIComponent(t);
   const store = {
     get(k, fallback) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -530,6 +536,160 @@
     setInterval(() => { if (!document.hidden && window.Live && Live.on) watchAlerts(); }, 60000);
   });
 
+  // ---- push alerts: the live service checks saved alerts every 5 minutes and pushes the ones that go off,
+  // so they arrive with the site closed. sw.js shows them. Turned on from the Alerts page; kept in step here.
+  const Push = {
+    supported() { return !!(window.Live && Live.on && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window); },
+    on() { return !!store.get("pushOn", false); },
+    async reg() { return navigator.serviceWorker.register("sw.js?api=" + encodeURIComponent(Live.api)); },
+    async enable() {
+      if (!this.supported()) throw new Error("This browser can't receive push notifications");
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") throw new Error("Notifications are blocked for this site in your browser settings");
+      const reg = await this.reg();
+      await navigator.serviceWorker.ready;
+      const { key } = await (await fetch(Live.api + "/push/key")).json();
+      const raw = Uint8Array.from(atob(key.replace(/-/g, "+").replace(/_/g, "/") + "==".slice(0, (4 - key.length % 4) % 4)), (c) => c.charCodeAt(0));
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
+      store.set("pushOn", true);
+      await this.sync(true);
+    },
+    async disable() {
+      store.set("pushOn", false);
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (sub) {
+          await fetch(Live.api + "/push/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
+          await sub.unsubscribe();
+        }
+      } catch {}
+    },
+    async sub() {
+      const reg = await navigator.serviceWorker.getRegistration();
+      return reg ? reg.pushManager.getSubscription() : null;
+    },
+    // Send this browser's active alerts to the service
+    async sync(now) {
+      if (!this.on() || !this.supported()) return;
+      clearTimeout(this.t);
+      if (!now) { this.t = setTimeout(() => this.sync(true), 1500); return; }
+      const sub = await this.sub().catch(() => null);
+      if (!sub) return;
+      await fetch(Live.api + "/push/sync", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sub: sub.toJSON(), alerts: Alerts.all().active }) }).catch(() => {});
+    },
+    // Alerts the service already pushed move to "triggered" here too, without a second pop-up
+    async reconcile() {
+      if (!this.on() || !this.supported()) return;
+      const sub = await this.sub().catch(() => null);
+      if (!sub) return;
+      try {
+        const d = await (await fetch(`${Live.api}/push/inbox?ep=${encodeURIComponent(sub.endpoint)}`)).json();
+        const done = new Map((d.fired || []).map((a) => [a.id, a]));
+        const v = Alerts.all();
+        const gone = v.active.filter((a) => done.has(a.id));
+        if (!gone.length) return;
+        v.active = v.active.filter((a) => !done.has(a.id));
+        v.fired.push(...gone.map((a) => ({ ...a, firedAt: done.get(a.id).firedAt, firedPrice: done.get(a.id).firedPrice, firedChg: done.get(a.id).firedChg })));
+        Alerts.save(v);
+      } catch {}
+    },
+  };
+  window.addEventListener("alerts", () => Push.sync());
+  window.addEventListener("load", () => setTimeout(() => Push.reconcile(), 1500));
+
+  // ---- accounts: one account key (made on the Account page) keeps watchlists, notes, alerts, paper portfolios,
+  // saved screens, chart drawings and settings the same on every device. The newest copy of each item wins.
+  const SYNC_KEYS = ["watchlists", "watchNotes", "alerts", "portfolios", "savedScreens", "recentStocks", "clocks", "calcs", "backtest", "compare"];
+  const SYNC_PREFIX = ["lookupDraw:"];
+  const hashOf = (s) => { let h = 5381; for (let i = 0; i < (s || "").length; i++) h = (h * 33 + s.charCodeAt(i)) | 0; return s == null ? "null" : String(h >>> 0) + ":" + s.length; };
+  const Account = {
+    SYNC_KEYS,
+    key() { return store.get("acctKey", null); },
+    status() { return store.get("acctStatus", {}); },
+    names() {
+      const out = new Set(SYNC_KEYS);
+      try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (SYNC_PREFIX.some((p) => k.startsWith(p))) out.add(k); } } catch {}
+      for (const k of Object.keys(store.get("acctMeta", {}))) out.add(k);
+      return [...out];
+    },
+    async call(path, body) {
+      if (!(window.Live && Live.on)) throw new Error("Accounts need the live price service, which isn't set up");
+      const res = await fetch(Live.api + "/account/" + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "The account service didn't answer (" + res.status + ")");
+      return d;
+    },
+    async create() {
+      const { key } = await this.call("create");
+      store.set("acctKey", key); store.set("acctMeta", {}); store.set("acctFresh", false);
+      await this.sync();
+      return key;
+    },
+    // Sign in on another device: what's saved in the account wins over what's in this browser
+    async signIn(key) {
+      key = String(key || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/(.{4})(?=.)/g, "$1-");
+      await this.call("get", { key });
+      store.set("acctKey", key); store.set("acctMeta", {}); store.set("acctFresh", true);
+      return this.sync();
+    },
+    signOut() { ["acctKey", "acctMeta", "acctFresh", "acctStatus"].forEach((k) => { try { localStorage.removeItem(k); } catch {} }); },
+    async remove() { const key = this.key(); if (key) await this.call("delete", { key }); this.signOut(); },
+    async sync(beacon) {
+      const key = this.key();
+      if (!key || this.busy) return 0;
+      this.busy = true;
+      try {
+        const meta = store.get("acctMeta", {}), fresh = store.get("acctFresh", false), now = Date.now();
+        const changed = {};
+        for (const name of this.names()) {
+          let raw = null;
+          try { raw = localStorage.getItem(name); } catch {}
+          const h = hashOf(raw);
+          if (meta[name] && meta[name].h === h) continue;
+          if (raw == null && !meta[name]) continue;
+          // On a newly signed-in device, this browser's items count as older than the account's
+          const at = fresh ? 1 : now;
+          let v = null;
+          try { v = raw == null ? null : JSON.parse(raw); } catch { v = raw; }
+          changed[name] = { v, at };
+          meta[name] = { h, at };
+        }
+        const d = await this.call("put", { key, data: changed });
+        let pulled = 0;
+        for (const [name, item] of Object.entries(d.data || {})) {
+          if (!/^[\w:.\-^=]+$/.test(name) || !(SYNC_KEYS.includes(name) || SYNC_PREFIX.some((p) => name.startsWith(p)))) continue;
+          const raw = item.v == null ? null : JSON.stringify(item.v);
+          if (meta[name] && meta[name].h === hashOf(raw)) { meta[name].at = Math.max(meta[name].at || 0, item.at); continue; }
+          if ((meta[name] && meta[name].at > item.at)) continue;
+          try { if (raw == null) localStorage.removeItem(name); else localStorage.setItem(name, raw); } catch {}
+          meta[name] = { h: hashOf(raw), at: item.at };
+          pulled++;
+        }
+        store.set("acctMeta", meta); store.set("acctFresh", false);
+        store.set("acctStatus", { at: new Date().toISOString(), items: Object.keys(d.data || {}).length });
+        if (pulled) { window.dispatchEvent(new CustomEvent("watchlists")); window.dispatchEvent(new CustomEvent("alerts")); window.dispatchEvent(new CustomEvent("synced", { detail: { pulled } })); }
+        return pulled;
+      } catch (e) {
+        store.set("acctStatus", { ...this.status(), error: String(e.message || e), errAt: new Date().toISOString() });
+        if (!beacon) throw e;
+        return 0;
+      } finally { this.busy = false; }
+    },
+  };
+  window.addEventListener("load", () => {
+    if (!Account.key()) return;
+    setTimeout(() => Account.sync(true).catch(() => {}), 800);
+    setInterval(() => { if (!document.hidden) Account.sync(true).catch(() => {}); }, 60000);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) Account.sync(true).catch(() => {}); });
+    let t = null;
+    const soon = () => { clearTimeout(t); t = setTimeout(() => Account.sync(true).catch(() => {}), 2500); };
+    window.addEventListener("watchlists", soon);
+    window.addEventListener("alerts", soon);
+  });
+
   // Seconds until the next open or close for a market id: { open, secs, next: "close" | "open" | "reopen" }
   const countdown = (id, now = new Date()) => clock(id, now);
 
@@ -585,8 +745,10 @@
     const top = document.querySelector("header.top");
     if (!top || document.getElementById("tape")) return;
     const names = Object.fromEntries(CLOCKS);
-    load("tape.json").then((d) => {
-      const items = (d.items || []).filter((x) => x.p != null);
+    Promise.all([load("tape.json"), load("macro.json").catch(() => ({ items: [] }))]).then(([d, mac]) => {
+      // Rates, oil, gold, the dollar and Bitcoin after the indexes and their top stocks
+      const macro = (mac.items || []).filter((m) => m.p != null).map((m) => ({ t: m.t, s: m.s, p: m.p, c: m.d1, mac: true }));
+      const items = (d.items || []).filter((x) => x.p != null).concat(macro);
       if (!items.length) return;
       const tape = document.createElement("div");
       tape.className = "tape";
@@ -599,7 +761,7 @@
         const label = x.ix ? names[x.ix] || x.t : x.s || x.t;
         const c = x.c == null ? "" : `<i class="${x.c >= 0 ? "u" : "d"}">${x.c >= 0 ? "▲" : "▼"} ${Math.abs(x.c).toFixed(2)}%</i>`;
         const inner = `<b>${esc(label)}</b><span class="num">${num(x.p)}</span>${c}`;
-        return x.ix ? `<span class="tk ix">${inner}</span>` : `<a class="tk" href="${stockUrl(x.t)}">${inner}</a>`;
+        return x.ix ? `<span class="tk ix">${inner}</span>` : `<a class="tk${x.mac ? " mac" : ""}" href="${stockUrl(x.t)}">${inner}</a>`;
       };
       const draw = () => {
         const row = items.map(cell).join("");
@@ -622,5 +784,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tickerTape); else tickerTape();
 
-  window.UI = { freshness, esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, typedTicker, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
+  window.UI = { Push, Account, freshness, esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, typedTicker, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();

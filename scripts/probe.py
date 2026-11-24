@@ -1,32 +1,19 @@
-import json, requests, yfinance as yf
-def show(label, obj, n=2500):
-    print("=====", label); print(json.dumps(obj, default=str)[:n])
-for t in ["AAPL", "RY.TO", "7203.T"]:
-    try:
-        r = yf.Ticker(t)._quote._fetch(modules=["earningsHistory", "insiderTransactions", "netSharePurchaseActivity"])
-        show(t, r, 4000)
-    except Exception as e: print(t, "ERR", e)
-for t in ["SPY", "QQQ"]:
-    try:
-        r = yf.Ticker(t)._quote._fetch(modules=["topHoldings", "fundProfile", "summaryDetail", "defaultKeyStatistics"])
-        show(t, r, 3000)
-    except Exception as e: print(t, "ERR", e)
-try:
-    d = yf.download(["^VIX", "^TNX", "CL=F", "GC=F", "DX-Y.NYB", "BTC-USD", "ETH-USD"], period="5d", progress=False)
-    print(d["Close"].tail(3))
-except Exception as e: print("dl ERR", e)
-H = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Accept": "application/json, text/plain, */*", "Origin": "https://www.nasdaq.com", "Referer": "https://www.nasdaq.com/"}
-for d in ["2026-11-24", "2026-11-25", "2026-12-05"]:
-    try:
-        r = requests.get(f"https://api.nasdaq.com/api/calendar/economicevents?date={d}", headers=H, timeout=20)
-        print(r.status_code); show("nasdaq econ " + d, r.json(), 3000)
-    except Exception as e: print("nasdaq ERR", e)
-for u in ["https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm", "https://www.bankofcanada.ca/press/upcoming-events/", "https://www.bls.gov/schedule/news_release/cpi.htm", "https://www.sec.gov/cgi-bin/own-disp?action=getissuer&CIK=0000320193", "https://efts.sec.gov/LATEST/search-index?q=%22form%204%22"]:
-    try:
-        r = requests.get(u, headers={"User-Agent": "TopTicker site builder admin@topticker.ca"}, timeout=20)
-        print("=====", u, r.status_code, len(r.text)); print(r.text[:300].replace("\n", " "))
-    except Exception as e: print(u, "ERR", e)
-try:
-    r = requests.get("https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?scrIds=all_cryptocurrencies_us&count=15", headers=H, timeout=20)
-    print("crypto screener", r.status_code, r.text[:1500])
-except Exception as e: print("crypto ERR", e)
+import json, os, subprocess, sys, re
+os.makedirs("site", exist_ok=True)
+def run(cmd, env=None):
+    print("=====", cmd, flush=True); subprocess.run(cmd, shell=True, env={**os.environ, **(env or {})})
+run("python scripts/build_macro.py", {"FULL": "1"})
+print(open("site/macro.json").read()[:1500])
+f = json.load(open("site/funds.json")); print("etfs", len(f["etfs"]), "crypto", [c["t"] for c in f["crypto"]])
+print(json.dumps(f["etfs"][0])[:1500]); print(json.dumps([e for e in f["etfs"] if e["t"]=="XEQT.TO"])[:600])
+run("python scripts/build_econ.py")
+e = json.load(open("site/econ.json")); print("events", len(e["events"]), "key", sum(1 for x in e["events"] if x.get("key")))
+print("\n".join(f'{x["d"]} {x["c"]} {x["n"]} a={x.get("a")} fc={x.get("fc")}' for x in e["events"] if x.get("key"))[:3000])
+# a mini ratings run
+json.dump({"generated": "x", "fx": {"USD": 1, "CAD": 1.4, "JPY": 150}, "stocks": [{"t": t, "s": t, "n": t, "cur": c, "ix": ["sp500"], "mcapUsd": 1e12, "p": 100} for t, c in [("AAPL", "USD"), ("NVDA", "USD"), ("RY.TO", "CAD"), ("7203.T", "JPY"), ("INTC", "USD")]]}, open("site/market.json", "w"))
+src = open("scripts/build_ratings.py").read().replace("COOL_DOWN = 45", "COOL_DOWN = 0")
+open("/tmp/br.py", "w").write(src.replace('Path(__file__).resolve().parent.parent', 'Path(os.getcwd())').replace("import json\n", "import json\nimport os\n", 1))
+run("cd scripts && python /tmp/br.py")
+for t in ["AAPL", "INTC"]:
+    print(t, open(f"site/ratings/{t}.json").read()[:1800])
+print(open("site/insiders.json").read()[:1500]); print(open("site/surprises.json").read()[:800])

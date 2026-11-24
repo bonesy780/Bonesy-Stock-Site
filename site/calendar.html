@@ -39,8 +39,8 @@
 
 <main id="main" class="wrap">
   <section class="hero">
-    <h1>Earnings and dividend calendar</h1>
-    <p>Which companies report earnings, and which stocks go ex-dividend, day by day. Stock prices often move sharply on earnings day. To get a dividend you need to own the stock before its ex-dividend date.</p>
+    <h1>Earnings, dividend and economic calendar</h1>
+    <p>Which companies report earnings, and which stocks go ex-dividend, day by day. Stock prices often move sharply on earnings day. To get a dividend you need to own the stock before its ex-dividend date. The Economy tab lists jobs, inflation and GDP releases and central bank rate decisions.</p>
   </section>
 
   <div class="toolbar">
@@ -49,7 +49,8 @@
     <strong id="week-label"></strong>
     <span class="spacer"></span>
     <label class="hint">Market <select class="field" id="market"><option value="">All markets</option></select></label>
-    <label class="hint check"><input type="checkbox" id="mine"> My watchlists only</label>
+    <label class="hint check" id="mine-wrap"><input type="checkbox" id="mine"> My watchlists only</label>
+    <label class="hint check" id="key-wrap" hidden><input type="checkbox" id="key"> Market movers only</label>
   </div>
 
   <div class="cal-week" id="week"></div>
@@ -57,7 +58,7 @@
   <div class="subhead"><h3 id="list-title">This week in detail</h3><p id="list-help"></p></div>
   <div class="panel table-wrap" id="table"></div>
 
-  <p class="disclaimer"><strong>Not financial advice.</strong> Dates come from Yahoo Finance, refresh every weekday after the US close and are often estimates until the company confirms them. Check the company's investor relations page before trading around a date.</p>
+  <p class="disclaimer"><strong>Not financial advice.</strong> Dates come from Yahoo Finance, refresh every weekday after the US close and are often estimates until the company confirms them. Check the company's investor relations page before trading around a date. Economic releases come from Nasdaq's economic calendar and refresh through the day.</p>
 </main>
 
 <footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>

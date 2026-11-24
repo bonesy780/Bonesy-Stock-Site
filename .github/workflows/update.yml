@@ -136,6 +136,18 @@ jobs:
         timeout-minutes: 8
         continue-on-error: true
         run: python scripts/build_daily_news.py
+      - name: Gather rates, commodities, ETFs and crypto
+        id: macro
+        timeout-minutes: 6
+        continue-on-error: true
+        env:
+          FULL: ${{ steps.mode.outputs.full == 'true' && '1' || '0' }}
+        run: python scripts/build_macro.py
+      - name: Gather the economic calendar
+        id: econ
+        timeout-minutes: 4
+        continue-on-error: true
+        run: python scripts/build_econ.py
       - name: Add new IPOs so they can be looked up the day they list
         id: ipos
         timeout-minutes: 4
@@ -153,12 +165,24 @@ jobs:
         timeout-minutes: 30
         continue-on-error: true
         run: python scripts/build_market.py
-      - name: Gather which analyst firms rate each stock
+      - name: Gather analyst ratings by firm, earnings results and insider trades
         id: ratings
         if: steps.mode.outputs.full == 'true'
-        timeout-minutes: 15
+        timeout-minutes: 20
         continue-on-error: true
         run: python scripts/build_ratings.py
+      - name: Write the weekly recap and save this week's picks
+        id: recap
+        if: steps.mode.outputs.full == 'true'
+        timeout-minutes: 3
+        continue-on-error: true
+        run: python scripts/build_recap.py
+      - name: Build a search-friendly page for every stock
+        id: pages
+        if: steps.mode.outputs.full == 'true'
+        timeout-minutes: 6
+        continue-on-error: true
+        run: python scripts/build_stock_pages.py
       - name: Use the latest saved listings and RentCast request log from main
         if: steps.mode.outputs.full == 'true'
         # This run may have checked out an older commit than main (runs queue one after another), so take
@@ -224,7 +248,9 @@ jobs:
             "housing news": "${{ steps.housing_news.outcome }}", "daily news": "${{ steps.daily_news.outcome }}",
             "IPOs": "${{ steps.ipos.outcome }}", "price history": "${{ steps.history.outcome }}",
             "market facts": "${{ steps.market.outcome }}", "analyst ratings": "${{ steps.ratings.outcome }}",
-            "real estate": "${{ steps.realestate.outcome }}"}
+            "real estate": "${{ steps.realestate.outcome }}", "rates and funds": "${{ steps.macro.outcome }}",
+            "economic calendar": "${{ steps.econ.outcome }}", "weekly recap": "${{ steps.recap.outcome }}",
+            "stock pages": "${{ steps.pages.outcome }}"}
         run: python scripts/check_site.py
       - name: Keep this run's data for the next run
         run: |
@@ -251,13 +277,16 @@ jobs:
           [ -n "$BING_CODE" ] && tags="$tags<meta name=\"msvalidate.01\" content=\"${BING_CODE//[^A-Za-z0-9_-]/}\">"
           [ -n "$tags" ] && sed -i "s#<!-- site-verification -->#$tags#" site/index.html || true
       - name: Bust browser cache for CSS and JS
-        run: sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html site/re/*.html site/daily/*.html
+        run: |
+          sed -i "s/__V__/${GITHUB_SHA::7}/g" site/*.html site/re/*.html site/daily/*.html
+          [ -d site/stocks ] && find site/stocks -name '*.html' -print0 | xargs -0 -r sed -i "s/__V__/${GITHUB_SHA::7}/g" || true
       - name: Save refreshed member lists and this week's listings
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/constituents
           [ -f data/listings.csv ] && git add data/listings.csv
+          [ -d data/picks ] && git add data/picks
           [ -f data/realestate/listings.json ] && git add data/realestate/listings.json
           [ -f data/realestate/rentcast_usage.json ] && git add data/realestate/rentcast_usage.json
           git diff --cached --quiet && exit 0

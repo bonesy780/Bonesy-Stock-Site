@@ -14,8 +14,12 @@
 //   POST /ask { question, history }          -> { answer } from Claude, using the site's notes on
 //     where its data comes from (ask-kb.json, copied in by the deploy workflow). Needs the
 //     ANTHROPIC_API_KEY secret; without it the Ask page answers from the notes by itself.
+//   POST /explain, /push/*, /account/*         -> see extras.js (Explain this stock, push alerts, accounts)
 
 import KB from "./ask-kb.json";
+import { explain, toStore, cron, Store } from "./extras.js";
+
+export { Store };
 
 // Yahoo serves the same data from two hosts; when one rate-limits or fails, the other usually still answers
 const YAHOO_HOSTS = ["https://query1.finance.yahoo.com/v8/finance/chart/", "https://query2.finance.yahoo.com/v8/finance/chart/"];
@@ -49,7 +53,7 @@ Rules:
 - If the notes don't cover the question, say you don't know that detail rather than guessing, and point to the closest topic you do know.
 - You can explain financial terms (P/E, RSI, market cap and so on) in general, but don't give investment advice or say whether to buy or sell anything.
 - You can't see live prices or a particular stock's numbers; say so if asked, and point to the page that shows them.
-- Name pages by their menu name (Stock Lookup, Screener, Movers, Signals, Analysts, Dividends, Earnings, Calendar, Heatmap, Compare, Backtest, Options, Alerts, Calculators, News, Watchlists, Paper Trading, Daily Brief).
+- Name pages by their menu name (Stock Lookup, Screener, Movers, Signals, Analysts, Dividends, Earnings, Calendar, Heatmap, Compare, Backtest, Options, Alerts, Calculators, News, Watchlists, Paper Trading, Daily Brief, ETFs & Crypto, Insiders, Weekly Recap, Account).
 
 The site's notes:
 ${KB.map((k) => `## ${k.title}\n${k.answer}`).join("\n\n")}`;
@@ -239,10 +243,33 @@ async function lookup(q) {
     .map((r) => ({ t: r.symbol, n: r.longname || r.shortname || r.symbol, x: r.exchDisp || null, type: r.quoteType }));
 }
 
+const fromSite = (request) => ASK_ORIGINS.some((re) => re.test(request.headers.get("Origin") || ""));
+const withCors = async (res) => {
+  const out = new Response(res.body, res);
+  for (const [k, v] of Object.entries(CORS)) out.headers.set(k, v);
+  out.headers.set("Cache-Control", "no-store");
+  return out;
+};
+
 export default {
-  async fetch(request, env) {
+  // Every 5 minutes (wrangler.toml): check saved push alerts against prices
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(cron(env));
+  },
+
+  async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
     const url = new URL(request.url);
+    if (url.pathname === "/explain" && request.method === "POST") {
+      try { return await explain(request, env, ctx, { json, limited, allowed: fromSite }); }
+      catch (e) { return json({ error: "Claude is unavailable right now" }, 502); }
+    }
+    if (url.pathname.startsWith("/push/") || url.pathname.startsWith("/account/")) {
+      // Only the site may change saved alerts and accounts; the service worker's inbox read is a plain GET
+      if (request.method === "POST" && !fromSite(request)) return json({ error: "not allowed" }, 403);
+      try { return await withCors(await toStore(request, env)); }
+      catch (e) { return json({ error: "Saved alerts and accounts are unavailable right now" }, 502); }
+    }
     if (url.pathname === "/ask") {
       if (request.method === "POST") {
         try { return await ask(request, env); } catch (e) { return json({ error: "Claude is unavailable right now" }, 502); }

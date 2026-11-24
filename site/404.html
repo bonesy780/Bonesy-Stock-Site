@@ -7,6 +7,7 @@
 <script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
 <meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
 <meta name="robots" content="noindex">
+<base href="/">
 <title>Page not found · TopTicker</title>
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -23,6 +24,8 @@
       var want = last.toUpperCase();
       var hit = list.find(function (s) { return s.t.toUpperCase() === want || s.s.toUpperCase() === want; });
       if (hit) location.replace("stock.html?t=" + encodeURIComponent(hit.t));
+      // A stock page that hasn't been built (yet): the lookup can still chart it with live prices
+      else if (/\/stocks\/[^/]+$/.test(location.pathname)) location.replace("stock.html?t=" + encodeURIComponent(last));
     }).catch(function () {});
   })();
 </script>
