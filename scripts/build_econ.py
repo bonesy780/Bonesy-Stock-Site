@@ -46,7 +46,8 @@ KEY = re.compile(
     r"gdp|retail sales|ism (manufacturing|non-manufacturing|services) pmi|jolts|michigan consumer sentiment|"
     r"cb consumer confidence|tankan|trade balance", re.I)
 # Minor variants of key events that would crowd the list
-MINOR = re.compile(r"n\.s\.a|\bex (tobacco|gas)|weekly|gdpnow|4-week|\(tentative\)", re.I)
+MINOR = re.compile(r"n\.s\.a|\bex (tobacco|gas)|weekly|gdpnow|4-week|\(tentative\)|gdp (price index|sales|capital|external|private|implicit)|"
+                   r"full employment|part time|private nonfarm|\bu6\b|large scale|brc |core ppi output|ppi (input|output)", re.I)
 TAG = re.compile(r"<[^>]+>")
 
 
