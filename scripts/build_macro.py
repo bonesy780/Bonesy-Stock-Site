@@ -69,6 +69,7 @@ GROUPS = ["US broad market", "Canada", "Dividends", "US sectors", "International
 # Used when Yahoo's crypto list can't be reached
 CRYPTO_FALLBACK = ["BTC-USD", "ETH-USD", "XRP-USD", "BNB-USD", "SOL-USD", "DOGE-USD", "TRX-USD", "ADA-USD", "LINK-USD", "AVAX-USD"]
 STABLE = ("USDT", "USDC", "DAI", "USDE", "FDUSD", "TUSD", "USDS", "PYUSD", "USD1", "BUSD", "USDD", "RLUSD", "USDF")
+WRAPPED = ("STETH", "WSTETH", "WBTC", "WETH", "WEETH", "CBBTC", "RETH", "METH", "BTCB", "WBETH", "EZETH", "LBTC", "SOLVBTC", "JITOSOL", "MSOL")
 CRYPTO_N = 10
 
 QS = "https://query2.finance.yahoo.com/v10/finance/quoteSummary/"
@@ -204,7 +205,8 @@ def crypto_list() -> list[dict]:
             for q in quotes:
                 sym = q.get("symbol") or ""
                 base = sym.split("-")[0].upper()
-                if not sym.endswith("-USD") or base in STABLE or "USD" in base:
+                # Stablecoins, and wrapped or staked copies of other coins (stETH, WBTC...), aren't separate coins
+                if not sym.endswith("-USD") or base in STABLE or "USD" in base or base in WRAPPED:
                     continue
                 out.append({"t": sym, "n": (q.get("shortName") or q.get("longName") or base).replace(" USD", ""),
                             "mcap": sig(q.get("marketCap"), 4), "vol24": sig(q.get("volume24Hr") or q.get("regularMarketVolume"), 4),

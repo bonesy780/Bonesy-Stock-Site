@@ -39,13 +39,14 @@ COUNTRIES = {
 }
 # Events that tend to move markets the most
 KEY = re.compile(
-    r"interest rate decision|rate statement|fomc|fed chair|powell|monetary policy (statement|report)|press conference|"
+    r"interest rate decision|rate statement|fomc (statement|meeting minutes|economic projections)|fed chair .*(testifies|speaks)|"
+    r"monetary policy (statement|report)|boj press conference|ecb press conference|"
     r"nonfarm payrolls|unemployment rate|employment change|jobless claims|"
     r"^(core )?cpi|consumer price index|^(core )?pce|^(core )?ppi|"
     r"gdp|retail sales|ism (manufacturing|non-manufacturing|services) pmi|jolts|michigan consumer sentiment|"
     r"cb consumer confidence|tankan|trade balance", re.I)
 # Minor variants of key events that would crowd the list
-MINOR = re.compile(r"\b(mom|yoy|qoq)\b.*\b(ex|excl|n\.s\.a|nsa)\b|\bindex n\.s\.a\b|\(tentative\)", re.I)
+MINOR = re.compile(r"n\.s\.a|\bex (tobacco|gas)|weekly|gdpnow|4-week|\(tentative\)", re.I)
 TAG = re.compile(r"<[^>]+>")
 
 
@@ -91,6 +92,15 @@ def tidy(d: str, rows: list[dict]) -> list[dict]:
               "a": clean(r.get("actual")) or None, "fc": clean(r.get("consensus")) or None, "pv": clean(r.get("previous")) or None,
               "key": key or None, "why": desc[:280] if key and desc else None}
         out.append({k: v for k, v in ev.items() if v is not None})
+    # The same release often comes twice (month-on-month and year-on-year); flag only the first as key
+    seen = set()
+    for ev in out:
+        if ev.get("key"):
+            k = (ev["c"], ev["n"])
+            if k in seen:
+                ev.pop("key", None)
+                ev.pop("why", None)
+            seen.add(k)
     return out
 
 

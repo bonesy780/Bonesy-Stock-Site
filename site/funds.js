@@ -28,7 +28,7 @@
     $("group-wrap").hidden = state.kind !== "etf";
     if (state.kind === "etf") {
       $("title").textContent = state.group || "Popular ETFs";
-      $("help").textContent = "Fee is the yearly cost as a share of what you hold (0.10% = $1 a year per $1,000). Tap Details for each fund's top holdings and sectors.";
+      $("help").textContent = "Fee is the yearly cost as a share of what you hold (0.10% = $1 a year per $1,000). Tap a fund for its top holdings and sectors.";
       const rows = D.etfs.filter((e) => !state.group || e.g === state.group);
       UI.table($("table"), [
         { key: "n", label: "Fund", left: true, sm: true, val: (r) => r.n, html: (r) => name(r, state.group ? r.cat : r.g) },
@@ -41,7 +41,7 @@
         { key: "yld", label: "Yield", val: (r) => r.yld, html: (r) => `<span class="num">${pc(r.yld)}</span>` },
         { key: "aum", label: "Size", title: "Total assets in the fund", val: (r) => r.aum, html: (r) => `<span class="num">${big(r.aum)}</span>` },
         { key: "spark", label: "30 days", html: (r) => spark(r.spark) },
-        { key: "x", label: "", sm: true, html: (r) => r.hold || r.sectors ? `<button class="btn small" data-open="${esc(r.t)}">Details</button>` : "" },
+        { key: "x", label: "", html: (r) => r.hold || r.sectors ? `<button class="btn small" data-open="${esc(r.t)}">Details</button>` : "" },
       ], rows, sorts.etf, { empty: "No funds in this group." });
     } else {
       $("title").textContent = "The 10 biggest cryptocurrencies";
@@ -82,7 +82,9 @@
   $("kind").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { state.kind = b.dataset.k; open = null; render(); } });
   $("group").addEventListener("change", () => { state.group = $("group").value; render(); });
   $("table").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-open]");
+    if (e.target.closest("a, .star")) return;
+    // The Details button, or anywhere else on the fund's row (phones hide the button column)
+    const b = e.target.closest("[data-open]") || (e.target.closest("tr") && e.target.closest("tr").querySelector("[data-open]"));
     if (!b) return;
     open = open === b.dataset.open ? null : b.dataset.open;
     detail();

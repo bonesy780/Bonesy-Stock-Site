@@ -1149,3 +1149,4 @@ body::before {
 .recap-week summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; }
 .recap-week .table-wrap { margin-top: 10px; }
 @media (max-width: 640px) { .recap-two { grid-template-columns: 1fr; } .recap-bars li { grid-template-columns: 110px 1fr 60px; } }
+#table tr:has([data-open]) { cursor: pointer; }
