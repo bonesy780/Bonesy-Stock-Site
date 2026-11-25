@@ -46,6 +46,15 @@
     return Array.isArray(out) ? out : [];
   }
 
+  // A stock's latest headlines, [{ title, url, source, time }], remembered for the visit
+  const newsCache = {};
+  function news(symbol) {
+    return (newsCache[symbol] ||= fetch(`${API}/news?symbol=${encodeURIComponent(symbol)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((x) => (Array.isArray(x) ? x : []))
+      .catch(() => { delete newsCache[symbol]; return []; }));
+  }
+
   // Run fn now and every `ms` while the tab is visible
   // (One refresh at a time: coming back to the tab while a refresh is still loading used to start a second
   // loop, doubling the requests every time it happened.)
@@ -67,5 +76,5 @@
 
   const stamp = (d) => d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
-  window.Live = { on, api: on ? API : null, quotes, chart, history, search, every, stamp };
+  window.Live = { on, api: on ? API : null, quotes, chart, history, search, news, every, stamp };
 })();

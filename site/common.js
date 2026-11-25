@@ -5,6 +5,7 @@
   const PAGES = [
     ["news.html", "Market News"],
     ["markets.html", "Markets"],
+    ["heatmap.html", "Heatmap"],
     ["stock.html", "Stock Lookup"],
     ["watchlist.html", "Watchlists"],
     ["portfolio.html", "Paper Trading"],
@@ -12,7 +13,6 @@
     ["movers.html", "Movers"],
     ["funds.html", "ETFs & Crypto"],
     ["brief.html", "Daily Brief", null, "Research"],
-    ["heatmap.html", "Heatmap", null, "Research"],
     ["signals.html", "Signals", null, "Research"],
     ["analysts.html", "Analysts", null, "Research"],
     ["dividends.html", "Dividends", null, "Research"],

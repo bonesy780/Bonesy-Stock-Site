@@ -478,7 +478,38 @@ section { margin-bottom: 40px; }
 .heat-box:hover, .heat-box:focus-visible { outline: 2px solid #fff; outline-offset: -2px; z-index: 1; }
 .hb-sym { font-weight: 700; white-space: nowrap; }
 .hb-chg { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .72em; margin-top: 2px; }
-.heat-tip { position: fixed; z-index: 10; white-space: normal; max-width: 300px; line-height: 1.5; }
+.heat-tip { position: fixed; z-index: 10; white-space: normal; width: 272px; max-width: calc(100vw - 16px); line-height: 1.45; pointer-events: auto; padding: 10px 12px; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+.heat-tip[hidden] { display: none; }
+.heat-tip .ht-head { display: flex; align-items: baseline; gap: 6px; }
+.heat-tip .ht-head strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.heat-tip .ht-head .star { margin-left: auto; font-size: 16px; padding: 0 2px; }
+.heat-tip .ht-price { margin-top: 4px; font-size: 15px; }
+.heat-tip .ht-moves { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; color: var(--muted); }
+.heat-tip .ht-spark { display: flex; flex-direction: column; margin: 6px 0 2px; }
+.heat-tip .ht-spark .spark { width: 100%; height: 36px; }
+.heat-tip .ht-news { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); font-size: 13px; }
+.heat-tip .ht-label { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.heat-tip .ht-story { display: block; color: var(--text); font-weight: 600; text-decoration: none; line-height: 1.35; }
+.heat-tip .ht-story:hover { color: var(--accent); text-decoration: underline; }
+.heat-tip .ht-item .tk { display: block; }
+.heat-tip .ht-item.more { margin-top: 6px; }
+.heat-tip .ht-item.more .ht-story { font-weight: 500; font-size: 12.5px; }
+.heat-tip .ht-loading { color: var(--muted); }
+.heat-tip .ht-open { display: none; margin-top: 8px; width: 100%; justify-content: center; box-sizing: border-box; }
+.heat-tip.pinned .ht-open { display: flex; }
+.heat-box.on { outline: 2px solid #fff; outline-offset: -2px; z-index: 1; }
+.heat.filtering .heat-box:not(.hit) { opacity: .18; }
+.heat.filtering .heat-box.hit { outline: 2px solid #fff; outline-offset: -2px; z-index: 1; }
+button.heat-sec-name { all: unset; box-sizing: border-box; display: block; width: 100%; height: 18px; padding: 1px 6px; font-size: 11px; font-weight: 600; color: #fff; background: rgba(0,0,0,.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: zoom-in; }
+button.heat-sec-name:hover, button.heat-sec-name:focus-visible { background: rgba(0,0,0,.6); text-decoration: underline; }
+button.heat-sec-name i { font-style: normal; opacity: .75; }
+.heat-tools { flex-wrap: wrap; gap: 8px; margin-top: -4px; }
+.heat-find { position: relative; flex: 0 1 220px; }
+.heat-find .field { width: 100%; box-sizing: border-box; padding: 6px 10px; }
+.heat-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 8px; }
+.heat-crumb[hidden] { display: none; }
+.heat-zoom strong { color: var(--text); }
+@media (max-width: 640px) { .heat-find { flex: 1 1 140px; } }
 .heat-legend { display: flex; border-radius: 6px; overflow: hidden; }
 .heat-legend span { font: 11px "JetBrains Mono", ui-monospace, monospace; color: #fff; padding: 3px 8px; text-shadow: 0 1px 1px rgba(0,0,0,.35); }
 
@@ -774,7 +805,12 @@ table.rot-table { min-width: 620px; font-size: 13px; }
   .top .menu .menu-wide { display: none; }
   .top .menu .menu-flat { display: flex; }
 }
-@media (min-width: 901px) { .top .menu { overflow: visible; } }
+@media (min-width: 901px) {
+  .top .menu { overflow: visible; }
+  /* Every page stays reachable: the row wraps rather than running off the right edge */
+  .top .menu .menu-wide { flex-wrap: wrap; row-gap: 2px; }
+  .top .menu .menu-wide > a, .top .menu .menu-wide .menu-btn { padding: 6px 10px; }
+}
 .menu-group { position: relative; }
 .menu-btn { all: unset; cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 8px; display: inline-flex; gap: 4px; align-items: center; }
 .menu-btn i { font-style: normal; font-size: 10px; }
