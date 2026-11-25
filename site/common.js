@@ -6,6 +6,7 @@
     ["news.html", "Market News"],
     ["markets.html", "Markets"],
     ["heatmap.html", "Heatmap"],
+    ["aerospace.html", "Aerospace & Defence", null, "Sectors"],
     ["stock.html", "Stock Lookup"],
     ["watchlist.html", "Watchlists"],
     ["portfolio.html", "Paper Trading"],
