@@ -2,7 +2,7 @@ name: Probe real estate sources (temporary)
 on:
   push:
     branches: [claude/project-thread-o4zdhp]
-    paths: ["scripts/probe_tmp.py", ".github/workflows/probe-tmp.yml"]
+    paths: ["scripts/build_re_invest.py", ".github/workflows/probe-tmp.yml"]
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -12,7 +12,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -q yfinance pandas requests lxml
+      - run: pip install -q -r requirements.txt
       - env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: timeout 15m python -u scripts/probe_tmp.py 2>&1 || true
+        run: |
+          timeout 15m python -u scripts/build_re_invest.py || true
+          echo "=====JSON====="
+          cat site/re/invest.json || true
+          echo
+          echo "=====END====="
