@@ -10,7 +10,7 @@ def g(u, t=30):
 key = os.environ.get("FRED_API_KEY", "")
 print("FRED key set:", bool(key))
 FRED = "DFEDTARU DFEDTARL DPRIME SOFR DGS5 DGS10 DBAA BAA MORTGAGE30US MORTGAGE15US OBMMIJUMBO30YF OBMMIC30YF OBMMIFHA30YF DRCRELEXFACBS SUBLPDRCSN SUBLPDRCSM SUBLPDRCSC COMREPUSQ159N TLRESCONS TLNRESCONS TLCOMCONS TLOFCONS TLLODGCONS TLMFGCONS TLHLTHCONS PRRESCONS PNRESCONS RRVRUSQ156N RHVRUSQ156N CUSR0000SEHA HOUST5F PERMIT5 DRSFRMACBS CREACBW027SBOG".split()
-for s in FRED:
+for s in FRED[:0]:
     if key:
         r = g(f"https://api.stlouisfed.org/fred/series/observations?series_id={s}&api_key={key}&file_type=json&sort_order=desc&limit=2")
         try:
@@ -21,6 +21,12 @@ for s in FRED:
     else:
         r = g(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={s}")
         print("FRED", s, r.status_code if r else None, (r.text.strip().splitlines()[-1] if r else ""))
+for u in ["https://markets.newyorkfed.org/api/rates/unsecured/effr/last/2.json", "https://markets.newyorkfed.org/api/rates/secured/sofr/last/2.json",
+          "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2026/all?type=daily_treasury_yield_curve&field_tdr_date_value=2026&page&_format=csv",
+          "https://api.db.nomics.world/v22/series/FED/H15/RIFSPFF_N.M?observations=1",
+          "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=c5025f4bbbed155a6f17c587772ed69e&lastobs=3&from=&to=&filetype=csv&label=include&layout=seriescolumn"]:
+    r = g(u)
+    print("URL", u[:80], r.status_code if r is not None else None, (r.text[:500].replace("\n", " | ") if r is not None else ""))
 # Census EITS construction spending
 r = g("https://api.census.gov/data/timeseries/eits/vip?get=cell_value,data_type_code,category_code,time_slot_id,seasonally_adj&time=2025-06")
 print("CENSUS", r.status_code if r else None)
