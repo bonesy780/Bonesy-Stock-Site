@@ -9,7 +9,7 @@
     UI.market().catch(() => ({ byTicker: {}, stocks: [] })),
   ]);
   const byT = Object.fromEntries(stocks.map((s) => [s.t, s]));
-  if (M.generated) $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  if (M.generated) UI.updated(M.generated);
 
   const fromUrl = new URLSearchParams(location.search).get("t");
   let picked = (fromUrl ? fromUrl.split(",") : store.get("compare", ["AAPL", "MSFT", "^GSPC"])).filter((t) => byT[t]).slice(0, MAX);

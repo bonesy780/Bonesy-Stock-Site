@@ -70,6 +70,30 @@
   // Worked out in the browser from the file's own timestamp, so it still shows if the refresh stops entirely.
   // Hours: full refreshes run weekday evenings and Sunday midday, so prices can be ~40 hours old over a weekend.
   const FRESH_HOURS = { "data.json": 44, "market.json": 44, "news.json": 3 };
+  // ---- "Updated …" stamp in the header. It shows how old the page's data is and counts up on its own
+  // ("Updated 4 min ago · 6:10 AM"), so it never reads like a clock that has fallen behind the reader's own.
+  // Live price updates replace it with their own "Live · time" stamp, which stops this one.
+  function updated(when, prefix = "Updated") {
+    const el = document.getElementById("updated");
+    const at = when instanceof Date ? when : new Date(when);
+    if (!el || isNaN(at)) return;
+    const span = document.createElement("span");
+    el.replaceChildren(span);
+    el.title = `Data gathered ${at.toLocaleString(undefined, { dateStyle: "full", timeStyle: "short" })}. The site gathers new data about every 15 minutes.`;
+    const draw = () => {
+      if (!el.contains(span)) return false;
+      const mins = Math.max(0, Math.floor((Date.now() - at) / 60000));
+      const time = at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      span.textContent = mins < 1 ? `${prefix} just now · ${time}`
+        : mins < 60 ? `${prefix} ${mins} min ago · ${time}`
+        : new Date().toDateString() === at.toDateString() ? `${prefix} ${Math.floor(mins / 60)} h ${mins % 60} min ago · ${time}`
+        : `${prefix} ${at.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
+      return true;
+    };
+    const tick = () => { if (draw()) setTimeout(tick, 60000 - (Date.now() % 60000) + 50); };
+    tick();
+  }
+
   function freshness(iso, maxHours) {
     const at = new Date(iso);
     if (!iso || isNaN(at) || (Date.now() - at) / 3600000 <= maxHours) return;
@@ -785,5 +809,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tickerTape); else tickerTape();
 
-  window.UI = { Push, Account, freshness, esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, typedTicker, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
+  window.UI = { Push, Account, freshness, updated, esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, typedTicker, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();

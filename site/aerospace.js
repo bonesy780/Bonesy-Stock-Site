@@ -10,7 +10,7 @@
     return;
   }
   UI.freshness(D.generated, 44);
-  const stamp = () => { $("updated").textContent = "Updated " + new Date(D.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); };
+  const stamp = () => { UI.updated(D.generated); };
   stamp();
   const state = { range: "y1", heat: "d1", region: "", seg: "", watch: "all", topic: "all", budget: "usd", ...store.get("aerospace", {}) };
   const save = () => store.set("aerospace", state);

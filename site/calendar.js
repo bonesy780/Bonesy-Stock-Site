@@ -10,7 +10,7 @@
     $("week").innerHTML = `<div class="panel empty">Stock data could not be loaded. Try again after the next data refresh.</div>`;
     return;
   }
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(M.generated);
 
   const KINDS = { earnings: "Earnings", exDiv: "Ex-dividend", econ: "Economy" };
   const state = { kind: "earnings", market: "", mine: false, keyOnly: true, ...store.get("calendar", {}) };

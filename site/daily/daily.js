@@ -37,12 +37,20 @@
     return m < 2 ? "just now" : m < 60 ? `${Math.round(m)} min ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
   };
   const gen = new Date(D.generated);
-  $("updated").textContent = `Updated ${gen.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} · ${gen.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
-  // The news refreshes every 15 minutes; say so plainly if it has fallen hours behind
-  if (Date.now() - gen > 3 * 3600000) {
-    $("updated").textContent += " · the news update is running behind";
-    $("updated").classList.add("stale-tag");
-  }
+  // How old the headlines are, counting up on its own, so it never reads like a clock running behind the reader's.
+  // The news refreshes every 15 minutes; say so plainly if it has fallen hours behind.
+  const stampUpdated = () => {
+    const mins = Math.max(0, Math.floor((Date.now() - gen) / 60000));
+    const time = gen.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    $("updated").textContent = (mins < 1 ? `Updated just now · ${time}`
+      : mins < 60 ? `Updated ${mins} min ago · ${time}`
+      : `Updated ${time} · ${gen.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`)
+      + (mins > 180 ? " · the news update is running behind" : "");
+    $("updated").classList.toggle("stale-tag", mins > 180);
+    setTimeout(stampUpdated, 60000 - (Date.now() % 60000) + 50);
+  };
+  $("updated").title = "The news is gathered about every 15 minutes.";
+  stampUpdated();
   const liveOutlets = D.outlets.filter((o) => o.n).length;
   $("dn-sub").textContent = `${S0.length.toLocaleString()} stories from ${liveOutlets} outlets and hundreds of local papers, past 48 hours. Pick what you care about below; your choices are remembered on this device.`;
   if (D.missing && D.missing.length) $("dn-missing").textContent = `Nothing came through this time from: ${D.missing.join(", ")}.`;

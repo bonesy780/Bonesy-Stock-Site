@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const M = await UI.market().catch(() => null);
   if (M) {
-    $("updated").textContent = "Prices from " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    UI.updated(M.generated, "Prices updated");
   }
   const stocks = await UI.load("stocks.json").catch(() => []);
   const byT = Object.fromEntries(stocks.map((s) => [s.t, s]));

@@ -9,7 +9,7 @@
     $("table").innerHTML = `<div class="empty">Insider trades haven't been gathered yet. They're collected every weekday after the US close.</div>`;
     return;
   }
-  $("updated").textContent = "Updated " + new Date(D.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(D.generated);
   if (M) $("market").innerHTML += M.indexes.map((i) => `<option value="${i.id}">${esc(i.name)}</option>`).join("");
   const now = (t) => (M && M.byTicker[t] ? M.byTicker[t].p : null);
 

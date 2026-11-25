@@ -9,7 +9,7 @@
     $("table").innerHTML = `<div class="empty">ETF and crypto prices haven't been gathered yet. They refresh every 15 minutes.</div>`;
     return;
   }
-  const stamp = () => { $("updated").textContent = "Updated " + new Date(D.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); };
+  const stamp = () => { UI.updated(D.generated); };
   stamp();
   $("group").innerHTML += (D.groups || []).filter((g) => D.etfs.some((e) => e.g === g)).map((g) => `<option>${esc(g)}</option>`).join("");
   const state = { kind: "etf", group: "", ...store.get("funds", {}) };

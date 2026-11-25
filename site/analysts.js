@@ -10,7 +10,7 @@
     $("table").innerHTML = `<div class="empty">Stock data could not be loaded. Try again after the next data refresh.</div>`;
     return;
   }
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(M.generated);
 
   // 1 = strong buy … 5 = sell, the scale Yahoo reports
   const BUCKETS = [
