@@ -208,6 +208,14 @@ jobs:
           RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python scripts/build_realestate.py
+      - name: Gather lending rates, REIT returns, construction and permits for the real estate overview
+        id: re_invest
+        if: steps.mode.outputs.full == 'true'
+        timeout-minutes: 15
+        continue-on-error: true
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python scripts/build_re_invest.py
       - name: Give the live service the Ask page's notes
         run: cp site/ask-kb.json worker/ask-kb.json
       - name: Deploy the live price service
@@ -255,7 +263,7 @@ jobs:
             "housing news": "${{ steps.housing_news.outcome }}", "daily news": "${{ steps.daily_news.outcome }}",
             "IPOs": "${{ steps.ipos.outcome }}", "price history": "${{ steps.history.outcome }}",
             "market facts": "${{ steps.market.outcome }}", "analyst ratings": "${{ steps.ratings.outcome }}",
-            "real estate": "${{ steps.realestate.outcome }}", "rates and funds": "${{ steps.macro.outcome }}", "aerospace": "${{ steps.aerospace.outcome }}",
+            "real estate": "${{ steps.realestate.outcome }}", "real estate investing": "${{ steps.re_invest.outcome }}", "rates and funds": "${{ steps.macro.outcome }}", "aerospace": "${{ steps.aerospace.outcome }}",
             "economic calendar": "${{ steps.econ.outcome }}", "weekly recap": "${{ steps.recap.outcome }}",
             "stock pages": "${{ steps.pages.outcome }}"}
         run: python scripts/check_site.py

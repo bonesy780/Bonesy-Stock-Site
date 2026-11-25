@@ -184,3 +184,95 @@ a.card:hover { border-color: var(--accent); }
     radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, .22), transparent) right center / 12px 100% no-repeat scroll,
     var(--surface);
 }
+
+/* ---- investor sections on the overview (invest.js) */
+.re { --heat-hot: #e8590c; --heat-cold: #1c7ed6; }
+@media (prefers-color-scheme: dark), (max-width: 640px) { :root:not([data-theme="light"]) .re { --heat-hot: #ff8a3d; --heat-cold: #4dabf7; } }
+:root[data-theme="dark"] .re { --heat-hot: #ff8a3d; --heat-cold: #4dabf7; }
+
+/* lending rates */
+.re-lend-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.re-lend { padding: 14px 16px 10px; }
+.re-lend-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.re-lend-head h3 { margin: 0; font-size: 17px; }
+.re-lend-head .re-flag { font-size: 22px; }
+.re-lend-group { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 0 2px; }
+.re-lend-row { display: grid; grid-template-columns: minmax(0, 1fr) 56px 58px 52px; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.re-lend-row:last-child { border-bottom: 0; }
+.re-lend-row b.num { text-align: right; font-size: 15px; }
+.re-lend-chg { text-align: right; font-size: 12px; }
+.re-lend-spark .spark { display: block; }
+.re-lend-name { min-width: 0; }
+.re-lend-eu { margin-top: 12px; padding: 14px 16px; }
+.re-lend-eu h3 { margin: 0 0 2px; font-size: 16px; }
+.re-lend-eu p { margin: 0 0 8px; }
+.re-bars-1 { padding: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.re-lend-eu .re-bar-row { grid-template-columns: 120px 1fr 104px; }
+
+/* heat map */
+.re-heat-tools { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 10px; }
+.re-heat-tools select.field { min-width: 240px; }
+.re-heat-tools select[hidden] { display: none; }
+.re-heat-key { white-space: nowrap; }
+.re-heat-key i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin: 0 3px 0 4px; }
+.re-heat-key i.hot { background: var(--heat-hot); }
+.re-heat-key i.cold { background: var(--heat-cold); }
+.re-heat th, .re-heat td { text-align: center; }
+.re-heat th.left, .re-heat td.left { text-align: left; }
+.re-heat td:nth-child(2), .re-heat th:nth-child(2) { text-align: center; }
+.re-heat-cell { font-size: 13px; min-width: 64px; }
+.re-heat-name { white-space: nowrap; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+.re-heat-name a.co { display: inline; }
+.re-heat-pill { display: inline-block; min-width: 34px; padding: 3px 6px; border-radius: 6px; font: 600 13px "JetBrains Mono", ui-monospace, monospace; }
+.re-heat-group { border-bottom: 1px solid var(--border); }
+.re-heat-types td.re-heat-cell { min-width: 52px; }
+.re-heat-more { display: flex; justify-content: center; padding: 10px; }
+
+/* property types */
+.re-types { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.re-type { gap: 8px; }
+.re-type-top { display: flex; align-items: center; gap: 8px; }
+.re-type-top h3 { margin: 0; font-size: 16px; flex: 1; min-width: 0; }
+.re-type-top .pill { flex: none; }
+.re-type-icon { font-size: 22px; line-height: 1; }
+.re-type-what { margin: 0; color: var(--muted); font-size: 13px; }
+.re-type-dl { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.re-type-dl div { background: var(--surface-2); border-radius: 8px; padding: 6px 8px; }
+.re-type-dl dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.re-type-dl dd { margin: 2px 0 0; font-size: 13px; font-weight: 600; }
+.re-type-live { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 13px; }
+.re-type-live .spark { margin-left: auto; }
+.re-type-names { margin: -4px 0 0; }
+.re-type-drv { margin: 0; }
+.re-types-note { margin-top: 10px; }
+
+/* health check tiles */
+.re-metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.re-metric { padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
+.re-metric .label { font-size: 12px; color: var(--muted); }
+.re-metric b.num { font-size: 22px; }
+.re-metric b.num.up { color: var(--up); }
+.re-metric b.num.down { color: var(--down); }
+
+/* construction spending and permits */
+.re-spend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+.re-spend { padding: 14px 16px; }
+.re-spend h3 { margin: 0 0 2px; font-size: 16px; }
+.re-spend > p { margin: 0 0 8px; }
+.re-spend-row { display: grid; grid-template-columns: 180px 1fr 64px 56px; gap: 10px; align-items: center; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+.re-spend-row .num { text-align: right; }
+.re-spend-row .re-small { text-align: right; }
+.re-spend-row .re-bar-track i { background: var(--cmp-3); }
+
+@media (max-width: 900px) {
+  .re-lend-grid { grid-template-columns: 1fr; }
+  .re-bars-1 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .re-bars-1 { grid-template-columns: 1fr; }
+  .re-heat-tools select.field { min-width: 0; flex: 1 1 100%; }
+  .re-heat-cell { min-width: 56px; font-size: 12px; }
+  .re-heat-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .re-spend-row { grid-template-columns: 110px 1fr 56px 48px; gap: 6px; }
+  .re-types { grid-template-columns: 1fr; }
+}

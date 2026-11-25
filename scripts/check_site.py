@@ -37,6 +37,7 @@ DATASETS = [
     ("aerospace.json", "Aerospace & Defence page", "generated", 3, lambda d: len(d.get("stocks") or []) >= 30),
     ("daily/news.json", "Daily News page", "generated", 3, lambda d: len(d.get("stories") or []) >= 200),
     ("re/data.json", "Real estate markets", "updated", 44, lambda d: len(d.get("markets") or []) >= 50),
+    ("re/invest.json", "Real estate lending rates and property types", "updated", 44, lambda d: sum(len(v) for v in (d.get("rates") or {}).values()) >= 10),
     ("re/news.json", "Housing news", "updated", 4, lambda d: sum(len(v) for v in (d.get("news") or {}).values()) >= 20),
     ("stocks.json", "Stock lookup search list", None, None, lambda d: len(d or []) >= 1000),
 ]

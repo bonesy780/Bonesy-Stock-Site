@@ -758,5 +758,34 @@
    "ai"
   ],
   "answer": "Claude, Anthropic's AI model, writes it on request from only the figures the site has saved for that stock: the company profile and financials, the last four quarters of earnings, insider trades and recent analyst rating changes. Each stock's explanation is kept for 12 hours. It's told not to guess numbers or give buy or sell advice, but it can still make mistakes."
+ },
+ {
+  "id": "re-invest",
+  "title": "Where do the real estate lending rates, heat map and property type figures come from?",
+  "page": "re/",
+  "keys": [
+   "lending",
+   "rates",
+   "mortgage",
+   "ecb",
+   "euribor",
+   "sofr",
+   "prime",
+   "commercial",
+   "cap rate",
+   "vacancy",
+   "reit",
+   "heat map",
+   "heatmap",
+   "investors",
+   "permits",
+   "construction",
+   "office",
+   "industrial",
+   "data center",
+   "hotel",
+   "multifamily"
+  ],
+  "answer": "scripts/build_re_invest.py builds re/invest.json in every full run. US rates: the Fed funds target range and SOFR from the New York Fed, prime (top of the Fed range plus 3 points), Freddie Mac's 30- and 15-year fixed mortgage rates and the US Treasury's 5- and 10-year yields. Canada: the Bank of Canada's policy rate, CORRA, posted 1-, 3- and 5-year mortgage rates, its estimated 5-year variable rate, the average rates chartered banks charged on new uninsured variable and 5-year fixed mortgages, new commercial (non-residential) mortgages and business loans, prime and the 5- and 10-year bond yields. Europe: the ECB's deposit and main refinancing rates, €STR, 3-month Euribor, euro area mortgage rates by fixation period and by country, loans to companies over €1 million and the 10-year AAA euro yield from the ECB data portal, plus the Bank of England's Bank Rate and UK 2- and 5-year fixed and standard variable mortgage rates. Each rate shows its change on a year ago. The investor heat map ranks every place on each figure against the others shown (house and commercial prices, rate changes, value, currency, Zillow demand figures for US metros, Statistics Canada building permits by type for Canadian cities) and the interest score averages those ranks. Property type cards show REIT returns and dividend yields from Yahoo Finance, grouped by type and region, alongside cap rates, vacancy and rent growth that are rounded ranges from public CBRE, Cushman & Wakefield, CMHC, STR and NIC reports, kept by hand in data/realestate/asset_classes.json with the period they are from. Construction spending by type is from the Census Bureau and commercial property prices from the BIS."
  }
 ]

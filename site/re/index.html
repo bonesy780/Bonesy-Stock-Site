@@ -49,6 +49,61 @@
 
   <section class="re-rates" id="rates" aria-label="Mortgage rates"></section>
 
+  <section id="lending">
+    <div class="section-head">
+      <h2>Key lending rates</h2>
+      <p>What it costs to borrow for property in the United States, Canada and Europe: central bank rates, home loans, and the benchmarks commercial loans are priced from. Change on a year ago in points; green means cheaper. Hover a rate for its source.</p>
+    </div>
+    <div id="lend"></div>
+  </section>
+
+  <section id="heatmap">
+    <div class="section-head">
+      <h2>Where investors are looking and spending</h2>
+      <p>A heat map of investor demand. Pick a region or a country to see its cities or states, or switch to property types. Each cell is coloured by where it ranks in its column: <span class="re-heat-key"><i class="hot"></i> hotter, more interest</span> <span class="re-heat-key"><i class="cold"></i> cooler</span>. Tap a column to sort.</p>
+    </div>
+    <div class="re-heat-tools">
+      <div class="seg" role="tablist" aria-label="Rows" id="heat-mode"></div>
+      <select class="field" id="heat-country" aria-label="Region or country"></select>
+    </div>
+    <p class="muted re-list-note" id="heat-note"></p>
+    <div class="panel" id="heat"></div>
+  </section>
+
+  <section id="types-sec">
+    <div class="section-head">
+      <h2>Property types</h2>
+      <p>Residential, multifamily, office, industrial, retail, data centers, hotels and more: typical cap rates (net income as a share of price), vacancy, rent growth and how listed property companies in each type are doing.</p>
+    </div>
+    <div class="toolbar"><div class="seg" role="tablist" aria-label="Region" id="types-region"></div></div>
+    <div class="cards re-types" id="types"></div>
+    <p class="muted re-small re-types-note" id="types-note"></p>
+  </section>
+
+  <section id="inv-metrics-sec">
+    <div class="section-head">
+      <h2>Investment health check</h2>
+      <p>Signals investors watch for property as a whole: commercial prices, loan troubles, how hard banks make it to borrow, mortgage spreads and valuations.</p>
+    </div>
+    <div class="re-metric-grid" id="inv-metrics"></div>
+  </section>
+
+  <section id="spend-sec">
+    <div class="section-head">
+      <h2>Where the money is being spent</h2>
+      <p>New construction by property type: what developers and investors are actually building.</p>
+    </div>
+    <div class="re-spend-grid" id="spend"></div>
+  </section>
+
+  <section id="cpp-sec">
+    <div class="section-head">
+      <h2>Commercial property prices by country</h2>
+      <p>The BIS commercial property price index: offices, shops and other commercial buildings, change over the past year in local currency.</p>
+    </div>
+    <div id="cpp"></div>
+  </section>
+
   <section id="world-teaser">
     <div class="section-head">
       <h2>Top world markets</h2>
@@ -112,6 +167,9 @@
       <li><b>States and provinces:</b> Zillow's typical home value and rent for each US state; Statistics Canada's New Housing Price Index and CMHC rents for each province.</li>
       <li><b>Mexico:</b> Sociedad Hipotecaria Federal's quarterly house prices by state. SHF only publishes PDF and Excel tables, so these are entered by hand each quarter.</li>
       <li><b>Who has the upper hand:</b> a score from −100 (buyer's market) to +100 (seller's market) that averages Zillow's heat index, sale-to-list ratio, share of price cuts, days to pending, supply change and 3-month price trend.</li>
+      <li><b>Lending rates:</b> the Federal Reserve, Freddie Mac and the US Treasury (through FRED), the Bank of Canada, and the European Central Bank's data portal (policy rates, €STR, Euribor and the MFI interest rate statistics for home and business loans), refreshed with each data update.</li>
+      <li><b>Investor heat map:</b> each figure is ranked against the other places shown, and the interest score averages those ranks (flipped where a lower figure means more demand, such as days to sell or price-to-income). It shows where demand and money are moving, not a forecast.</li>
+      <li><b>Property types:</b> REIT returns come from the market data; cap rates, vacancy and rent growth are rounded figures from public market reports, kept by hand with the date they are from.</li>
       <li><b>Gross rent yield:</b> a year of typical rent divided by the typical home value, before costs. A rough guide to whether owning pays.</li>
     </ul>
   </section>
@@ -119,10 +177,11 @@
   <p class="disclaimer">Market figures are monthly or quarterly statistics from public agencies and Zillow Research, not live prices. Buy ideas and market labels are worked out by fixed rules from those figures. They are not advice: talk to a licensed agent, lender or adviser before you buy.</p>
 </main>
 
-<footer class="wrap foot">Data: <a href="https://www.zillow.com/research/data/">Zillow Research</a>, <a href="https://www.bis.org/statistics/pp.htm">BIS</a> house prices, <a href="https://www.freddiemac.com/pmms">Freddie Mac</a>, <a href="https://fred.stlouisfed.org/">FRED</a>, <a href="https://www.statcan.gc.ca/">Statistics Canada</a> and CMHC, <a href="https://www.bankofcanada.ca/">Bank of Canada</a>, <a href="https://www.gob.mx/shf">Sociedad Hipotecaria Federal</a>. Not financial advice.</footer>
+<footer class="wrap foot">Data: <a href="https://www.zillow.com/research/data/">Zillow Research</a>, <a href="https://www.bis.org/statistics/pp.htm">BIS</a> house prices, <a href="https://www.freddiemac.com/pmms">Freddie Mac</a>, <a href="https://fred.stlouisfed.org/">FRED</a>, <a href="https://www.statcan.gc.ca/">Statistics Canada</a> and CMHC, <a href="https://www.bankofcanada.ca/">Bank of Canada</a>, <a href="https://www.gob.mx/shf">Sociedad Hipotecaria Federal</a>. European Central Bank, US Census Bureau, REIT prices from Yahoo Finance. Not financial advice.</footer>
 
 <script src="re-common.js?v=__V__"></script>
 <script src="home.js?v=__V__"></script>
+<script src="invest.js?v=__V__"></script>
 <script src="../theme.js?v=__V__" defer></script>
 </body>
 </html>

@@ -60,7 +60,7 @@
   };
   const cache = {};
   // Hours before each file counts as behind (market data refreshes daily, headlines every 15 minutes)
-  const FRESH_HOURS = { "data.json": 44, "news.json": 4 };
+  const FRESH_HOURS = { "data.json": 44, "news.json": 4, "invest.json": 44 };
   const load = (file) => (cache[file] ||= fetch(file, { cache: "no-cache" }).then((r) => {
     if (!r.ok) throw new Error(file + " " + r.status);
     return r.json();
