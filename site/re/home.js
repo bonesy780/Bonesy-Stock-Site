@@ -45,15 +45,15 @@
   document.getElementById("countries").innerHTML = `<div class="re-country-grid">${cards.join("")}</div>`;
 
   // ---- rates strip
+  // US, Canadian and European rates are in the "Key lending rates" section below (invest.js); this strip keeps Mexico and currencies
   const rates = [
-    ["US 30-year fixed", R.us30, "Freddie Mac weekly survey"], ["US 15-year fixed", R.us15, "Freddie Mac weekly survey"],
-    ["Canada 5-year fixed", R.ca5, "Bank of Canada, conventional posted rate"], ["Bank of Canada policy rate", R.caPolicy, "Bank of Canada target overnight rate"],
     ["Mexico interbank rate", R.mxRate, "Overnight interbank rate (OECD, via FRED); mortgage rates sit well above it"],
   ].filter((r) => r[1]);
   const fxs = [["US$1 in Canadian dollars", R.cad, "CAD"], ["US$1 in Mexican pesos", R.mxn, "MXN"]].filter((r) => r[1]);
   document.getElementById("rates").innerHTML = rates.length || fxs.length ? `<div class="re-rate-row">${rates.map(([l, r, t]) =>
     `<div class="panel re-rate" title="${esc(t)}. As of ${esc(r.at)}."><span class="label">${l}</span><b class="num">${r.v.toFixed(2)}%</b>${rateChg(r)}</div>`).join("")}
     ${fxs.map(([l, r]) => `<div class="panel re-rate" title="As of ${esc(r.at)}"><span class="label">${l}</span><b class="num">${r.v.toFixed(2)}</b></div>`).join("")}
+    <a class="panel re-rate re-rate-link" href="#lending"><span class="label">US, Canada, Europe</span><b>Lending rates ↓</b></a>
     <a class="panel re-rate re-rate-link" href="tools.html"><span class="label">What does it cost?</span><b>Mortgage tools →</b></a></div>` : "";
 
   // ---- top 10 lists
