@@ -392,7 +392,7 @@
    "tiles",
    "color"
   ],
-  "answer": "Each tile is a stock, sized by market cap and colored by its price change over the period you pick, grouped by Yahoo's sector for that company. The sector grid averages the members' changes for each period."
+  "answer": "Each tile is a stock, sized by market cap (or all the same size with the Equal size option) and colored by its price change over the period you pick, grouped by Yahoo's sector for that company. Click a sector name to zoom in, where stocks are grouped by industry. Hovering (or tapping) a tile shows its price, recent moves, a one-month chart and the latest headline about the company, from Yahoo Finance news. The sector grid averages the members' changes for each period, weighted by company size."
  },
  {
   "id": "news",

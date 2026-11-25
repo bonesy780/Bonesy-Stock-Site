@@ -10,6 +10,7 @@
 //     every daily close back to the listing plus the last 5 days of 5-minute prices (as /chart),
 //     so the lookup page can chart a stock that isn't in the site's own lists, such as a new IPO
 //   GET /search?q=anthropic                  -> [{ t, n, x, type }] stocks and funds matching a name or symbol
+//   GET /news?symbol=AAPL                    -> [{ title, url, source, time }] the stock's latest headlines (newest first)
 //   GET  /ask                                -> { ai: true|false } whether Claude answers are switched on
 //   POST /ask { question, history }          -> { answer } from Claude, using the site's notes on
 //     where its data comes from (ask-kb.json, copied in by the deploy workflow). Needs the
@@ -28,6 +29,7 @@ const QUOTE_TTL = 20;            // seconds
 const CHART_TTL = 60;
 const HISTORY_TTL = 300;
 const SEARCH_TTL = 3600;
+const NEWS_TTL = 900;
 const SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search";
 const SYMBOL = /^[\^A-Za-z0-9.\-=]{1,20}$/;
 
@@ -243,6 +245,24 @@ async function lookup(q) {
     .map((r) => ({ t: r.symbol, n: r.longname || r.shortname || r.symbol, x: r.exchDisp || null, type: r.quoteType }));
 }
 
+// A stock's latest headlines from Yahoo's search, for the heatmap's hover cards. Stories Yahoo tags with
+// the symbol come first; the search can also return general market stories, which are left out when tagged ones exist.
+async function news(symbol) {
+  const url = `${SEARCH_URL}?q=${encodeURIComponent(symbol)}&quotesCount=0&newsCount=8&listsCount=0&enableFuzzyQuery=false`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketLeaders/1.0)" },
+    cf: cacheOk(NEWS_TTL),
+  });
+  if (!res.ok) throw new Error(`yahoo ${res.status}`);
+  const items = ((await res.json())?.news || []).filter((n) => n && n.title && /^https?:\/\//.test(n.link || ""));
+  const sym = symbol.toUpperCase();
+  const tagged = items.filter((n) => (n.relatedTickers || []).some((r) => String(r).toUpperCase() === sym));
+  return (tagged.length ? tagged : items)
+    .sort((a, b) => (b.providerPublishTime || 0) - (a.providerPublishTime || 0))
+    .slice(0, 3)
+    .map((n) => ({ title: String(n.title).slice(0, 300), url: n.link, source: n.publisher || null, time: n.providerPublishTime || null }));
+}
+
 const fromSite = (request) => ASK_ORIGINS.some((re) => re.test(request.headers.get("Origin") || ""));
 const withCors = async (res) => {
   const out = new Response(res.body, res);
@@ -311,6 +331,13 @@ export default {
       catch (e) { return json({ error: String(e.message || e) }, 502); }
     }
 
-    return json({ ok: true, routes: ["/quote?symbols=AAPL,MSFT", "/chart?symbol=AAPL&range=1d", "/history?symbol=AAPL", "/search?q=apple", "/ask"] });
+    if (url.pathname === "/news") {
+      const symbol = url.searchParams.get("symbol") || "";
+      if (!SYMBOL.test(symbol)) return json({ error: "bad symbol" }, 400);
+      try { return json(await news(symbol), 200, NEWS_TTL); }
+      catch (e) { return json({ error: String(e.message || e) }, 502); }
+    }
+
+    return json({ ok: true, routes: ["/quote?symbols=AAPL,MSFT", "/chart?symbol=AAPL&range=1d", "/history?symbol=AAPL", "/search?q=apple", "/news?symbol=AAPL", "/ask"] });
   },
 };
