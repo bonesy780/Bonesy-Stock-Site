@@ -6,7 +6,7 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -15,4 +15,4 @@ jobs:
       - run: pip install -q yfinance pandas requests lxml
       - env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: python scripts/probe_tmp.py 2>&1 | grep -v "^$"
+        run: timeout 15m python -u scripts/probe_tmp.py 2>&1 || true

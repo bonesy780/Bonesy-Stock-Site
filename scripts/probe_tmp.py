@@ -1,9 +1,9 @@
 import csv, io, json, os, re, sys, zipfile, time
 import requests
 H = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", "Accept": "*/*"}
-def g(u, t=60):
+def g(u, t=30):
     try:
-        r = requests.get(u, headers=H, timeout=t)
+        t0 = time.time(); r = requests.get(u, headers=H, timeout=(10, t)); print("  t", round(time.time() - t0, 1), u[:90])
         return r
     except Exception as e:
         print("ERR", u, e); return None
@@ -95,8 +95,8 @@ if r is not None and r.status_code == 200:
     for d, v in j.get("dimension", {}).items():
         print("ESTATDIM", d, list(v.get("category", {}).get("label", {}).items())[:30])
 # StatCan building permits
-for pid in ["34100292", "34100066", "34100285"]:
-    r = g(f"https://www150.statcan.gc.ca/n1/tbl/csv/{pid}-eng.zip", 240)
+for pid in ["34100292"]:
+    r = g(f"https://www150.statcan.gc.ca/n1/tbl/csv/{pid}-eng.zip", 120)
     print("STATCAN", pid, r.status_code if r else None, len(r.content) // 1024 if r else 0, "KB")
     if r is not None and r.status_code == 200:
         with zipfile.ZipFile(io.BytesIO(r.content)) as z:
