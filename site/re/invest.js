@@ -62,6 +62,7 @@
       const w = W[c];
       if (w && w.pti != null) tiles.push({ name: `${nm} price-to-income`, val: `${w.pti.toFixed(0)}`, unit: "", sub: `vs its long-run average of 100 (OECD, ${when(w.ptiAt)})`, tone: w.pti > 110 ? "down" : w.pti < 95 ? "up" : "" });
     }
+    for (const r of ((I.reits || {}).broad || [])) tiles.push({ name: r.name + ", 1 yr", val: (r.r1y > 0 ? "+" : "") + r.r1y.toFixed(1), unit: "%", sub: `YTD ${r.ytd > 0 ? "+" : ""}${r.ytd.toFixed(1)}%, yield ${r.yld != null ? r.yld.toFixed(1) + "%" : "–"}`, tone: r.r1y >= 0 ? "up" : "down", tip: "Price change over the past year of a fund holding listed property companies." });
     if (C.US && C.US.rentVacancy) tiles.push({ name: "US rental vacancy", val: C.US.rentVacancy.v.toFixed(1), unit: "%", sub: `Census, ${when(C.US.rentVacancy.at)}` });
     if (!tiles.length) { $("inv-metrics-sec").hidden = true; return; }
     el.innerHTML = tiles.map((t) => `<div class="panel re-metric" title="${esc(t.tip || "")}">
@@ -81,7 +82,7 @@
   drawMetrics();
 
   // ---------------------------------------------------------------- heat map: where investors are looking and spending
-  const WORLD = (((D || {}).world || {}).countries || []).filter((c) => !c.agg && !c.stale);
+  const WORLD = (((D || {}).world || {}).countries || []).filter((c) => !c.agg && !c.stale && !c.note);
   const CPP = Object.fromEntries((I.cpp || []).map((c) => [c.code, c]));
   const EUM = Object.fromEntries((I.euroMortgage || []).map((c) => [c.code, c]));
   const M = (D || {}).markets || [];
@@ -177,16 +178,16 @@
     // Interest score: the average of each row's column percentiles, flipped where lower means more interest
     const scored = rows.map((r) => {
       const ps = cols.map((c) => { const p = rank[c[0]](c[2](r)); return p == null ? null : c[3] > 0 ? p : 1 - p; }).filter((p) => p != null);
-      return { r, ps, score: ps.length >= Math.min(2, cols.length) ? Math.round(ps.reduce((a, b) => a + b, 0) / ps.length * 100) : null };
+      return { r, ps, score: ps.length >= Math.min(3, cols.length) ? Math.round(ps.reduce((a, b) => a + b, 0) / ps.length * 100) : null };
     });
-    const key = hm.key && (hm.key === "score" || cols.find((c) => c[0] === hm.key)) ? hm.key : "score";
-    const val = key === "score" ? (x) => x.score : (x) => cols.find((c) => c[0] === key)[2](x.r);
+    const key = hm.key && (hm.key === "_int" || cols.find((c) => c[0] === hm.key)) ? hm.key : "_int";
+    const val = key === "_int" ? (x) => x.score : (x) => cols.find((c) => c[0] === key)[2](x.r);
     scored.sort((a, b) => { const x = val(a), y = val(b); return x == null ? 1 : y == null ? -1 : (x - y) * hm.dir; });
     const shown = hm.all ? scored : scored.slice(0, 25);
-    const th = (k, l, t) => `<th${k === "score" ? ' class="re-heat-score"' : ""} aria-sort="${k === key ? (hm.dir > 0 ? "ascending" : "descending") : "none"}"><button class="sort" data-k="${k}" title="${esc(t)}">${esc(l)}<i aria-hidden="true">${k === key ? (hm.dir > 0 ? "▲" : "▼") : ""}</i></button></th>`;
+    const th = (k, l, t) => `<th${k === "_int" ? ' class="re-heat-score"' : ""} aria-sort="${k === key ? (hm.dir > 0 ? "ascending" : "descending") : "none"}"><button class="sort" data-k="${k}" title="${esc(t)}">${esc(l)}<i aria-hidden="true">${k === key ? (hm.dir > 0 ? "▲" : "▼") : ""}</i></button></th>`;
     $("heat-note").textContent = V.note;
     $("heat").innerHTML = `<div class="table-wrap"><table class="grid-table re-heat">
-      <thead><tr><th class="left">Place</th>${th("score", "Interest", "Investor interest, 0 to 100: the average of where this place ranks on each column, with the colour direction shown in the key.")}${cols.map((c) => th(c[0], c[1], c[5])).join("")}</tr></thead>
+      <thead><tr><th class="left">Place</th>${th("_int", "Interest", "Investor interest, 0 to 100: the average of where this place ranks on each column, with the colour direction shown in the key.")}${cols.map((c) => th(c[0], c[1], c[5])).join("")}</tr></thead>
       <tbody>${shown.map(({ r, score }) => {
         const href = V.link(r);
         return `<tr><td class="left re-heat-name">${href ? `<a class="co" href="${href}">${V.name(r)}</a>` : V.name(r)}</td>
@@ -198,7 +199,7 @@
   function drawTypeHeat() {
     const C = (I.reits || {}).classes || [];
     const regions = [["US", "🇺🇸 US"], ["CA", "🇨🇦 Canada"], ["EU", "🇪🇺 Europe"]].filter(([k]) => C.some((c) => c[k]));
-    $("heat-note").textContent = "Listed property companies (REITs) by property type and region: what investors are paying up for right now. Returns include price only; the yield is the trailing dividend yield. Fundamentals are below.";
+    $("heat-note").textContent = "Listed property companies (REITs) by property type and region: what investors are paying up for right now. Returns are price changes; the yield is the trailing dividend yield, where a low yield means investors are paying up (so it shows hotter). Fundamentals are below.";
     const cols = [];
     for (const [k, l] of regions) for (const [f, fl] of [["r1m", "1 mo"], ["ytd", "YTD"], ["r1y", "1 yr"], ["yld", "Yield"]]) cols.push({ k, f, label: `${l} ${fl}`, region: l });
     const rank = Object.fromEntries(cols.map((c) => [c.k + c.f, ranker(C.map((x) => (x[c.k] || {})[c.f]))]));
@@ -206,7 +207,7 @@
       <thead><tr><th class="left">Property type</th>${regions.map(([, l]) => `<th colspan="4" class="re-heat-group">${l}</th>`).join("")}</tr>
       <tr><th class="left"></th>${cols.map((c) => `<th>${c.f === "r1m" ? "1 mo" : c.f === "ytd" ? "YTD" : c.f === "r1y" ? "1 yr" : "Yield"}</th>`).join("")}</tr></thead>
       <tbody>${C.map((x) => `<tr><td class="left re-heat-name">${x.icon || ""} ${esc(x.name)}</td>${cols.map((c) => {
-        const g = x[c.k] || {}, v = g[c.f], p = rank[c.k + c.f](v);
+        const g = x[c.k] || {}, v = g[c.f], p0 = rank[c.k + c.f](v), p = p0 == null ? null : c.f === "yld" ? 1 - p0 : p0;
         return `<td class="re-heat-cell num" style="${cellBg(p)}" title="${esc((g.names || []).join(", "))}">${v == null ? "–" : c.f === "yld" ? v.toFixed(1) + "%" : sgn(v, 0)}</td>`;
       }).join("")}</tr>`).join("")}</tbody></table></div>`;
   }
@@ -216,7 +217,7 @@
     if (e.target.closest("#heat-all")) { hm.all = !hm.all; drawHeat(); return; }
     const b = e.target.closest("button.sort");
     if (!b) return;
-    if (hm.key === b.dataset.k || (!hm.key && b.dataset.k === "score")) hm.dir = -hm.dir; else { hm.key = b.dataset.k; hm.dir = -1; }
+    if (hm.key === b.dataset.k || (!hm.key && b.dataset.k === "_int")) hm.dir = -hm.dir; else { hm.key = b.dataset.k; hm.dir = -1; }
     drawHeat();
   });
   drawHeat();

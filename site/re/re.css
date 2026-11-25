@@ -259,7 +259,7 @@ a.card:hover { border-color: var(--accent); }
 .re-spend { padding: 14px 16px; }
 .re-spend h3 { margin: 0 0 2px; font-size: 16px; }
 .re-spend > p { margin: 0 0 8px; }
-.re-spend-row { display: grid; grid-template-columns: 150px 1fr 64px 56px; gap: 10px; align-items: center; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
+.re-spend-row { display: grid; grid-template-columns: 180px 1fr 64px 56px; gap: 10px; align-items: center; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--border); }
 .re-spend-row .num { text-align: right; }
 .re-spend-row .re-small { text-align: right; }
 .re-spend-row .re-bar-track i { background: var(--cmp-3); }

@@ -398,7 +398,7 @@ def reits(classes):
 # ---------------------------------------------------------------- US construction spending (Census)
 CENSUS_TYPES = [  # column heading starts with: label shown
     ("New single family", "Single-family homes"), ("New multifamily", "Multifamily (apartments)"), ("Data center", "Data centers"),
-    ("Office", "Offices (incl. data centers)"), ("Warehouse", "Warehouses"), ("Multi-retail", "Shopping centres and stores"),
+    ("Office", "Offices, incl. data centers"), ("Warehouse", "Warehouses"), ("Multi-retail", "Shopping centres"),
     ("Lodging", "Hotels"), ("Health care", "Health care"), ("Manufacturing", "Factories"), ("Educational", "Schools and colleges"),
     ("Amusement and recreation", "Recreation"), ("Power", "Power and energy"),
 ]
@@ -578,7 +578,7 @@ def tiles(series, cpp_rows):
     for c, nm in (("US", "US"), ("XM", "Euro area"), ("CA", "Canada")):
         r = next((x for x in cpp_rows if x["code"] == c), None)
         if r and r.get("n1y") is not None:
-            out.append({"name": f"{nm} commercial property prices", "v": r["n1y"], "nd": 1, "unit": "%", "at": r["asof"], "src": "BIS",
+            out.append({"name": f"{nm} commercial property prices, 1 yr", "v": r["n1y"], "nd": 1, "unit": "%", "at": r["asof"], "src": "BIS",
                         "tip": "Change in the commercial property price index over the past year." + (f" {r['offPeak']:+.0f}% from its peak." if r.get("offPeak") is not None else ""),
                         "chg": None, "label": "1 yr"})
     if fred_key():
