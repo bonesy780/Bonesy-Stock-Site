@@ -421,7 +421,8 @@ def census():
         m = re.match(r"([A-Z][a-z]{2})-(\d{2})", rw[0])
         if not m:
             continue
-        d = datetime.strptime(f"{m.group(1)} 20{m.group(2)}", "%b %Y").date()
+        yy = int(m.group(2))
+        d = datetime.strptime(f"{m.group(1)} {2000 + yy if 2000 + yy <= TODAY.year else 1900 + yy}", "%b %Y").date()
         data.append((d, rw))
     data.sort(key=lambda x: x[0])
     if len(data) < 13:

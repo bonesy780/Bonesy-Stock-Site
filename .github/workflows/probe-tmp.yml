@@ -21,3 +21,10 @@ jobs:
           cat site/re/invest.json || true
           echo
           echo "=====END====="
+          mkdir -p out && cp site/re/invest.json out/ || true
+          for f in data.json hist.json; do curl -sf "https://www.topticker.ca/re/$f" -o "out/$f" || true; done
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: re-data
+          path: out
