@@ -1186,3 +1186,92 @@ body::before {
 .recap-week .table-wrap { margin-top: 10px; }
 @media (max-width: 640px) { .recap-two { grid-template-columns: 1fr; } .recap-bars li { grid-template-columns: 110px 1fr 60px; } }
 #table tr:has([data-open]) { cursor: pointer; }
+
+/* ---- Aerospace & Defence page (aerospace.js) */
+.ad-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.ad-plane { color: var(--accent); opacity: .85; flex: none; }
+.ad-sec { margin-top: 36px; }
+.ad-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.ad-head .seg { margin-bottom: 16px; }
+.ad-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.ad-kpi { padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ad-kpi .label, .ad-sky-now .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.ad-kpi .value { font-size: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ad-kpi .value .num { font-size: 18px; }
+.ad-kpi .value a, .ad-kpi .sub a { color: inherit; }
+.ad-kpi .sub { color: var(--muted); font-size: 13px; }
+.ad-kpi .ad-big { font-size: 20px; }
+.ad-chart-wrap { padding: 12px 12px 10px; position: relative; }
+.ad-chart { position: relative; }
+.ad-chart svg { display: block; touch-action: pan-y; }
+.ad-grid { stroke: var(--border); stroke-width: 1; }
+.ad-base { stroke: var(--muted); stroke-width: 1; opacity: .6; }
+.ad-cross { stroke: var(--muted); stroke-width: 1; }
+.ad-axis { fill: var(--muted); font-size: 11px; font-family: Inter, system-ui, sans-serif; }
+.ad-tip { position: absolute; top: 8px; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+.ad-tip i, .ad-legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.ad-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; padding: 8px 4px 0; }
+.ad-heat-legend span { padding: 1px 8px; border-radius: 4px; color: #fff; }
+.ad-rec { font-size: 12px; font-weight: 600; }
+.ad-rec.up { color: var(--up); } .ad-rec.down { color: var(--down); }
+.ad-rank { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.ad-rank li a { color: inherit; text-decoration: none; } .ad-rank li a:hover { color: var(--accent); text-decoration: underline; }
+.ad-rank li { display: list-item; } .ad-rank li .num { float: right; }
+.ad-filter { margin-bottom: 10px; }
+.ad-timeline { list-style: none; margin: 0; padding: 4px 0; }
+.ad-ev { display: flex; gap: 14px; padding: 10px 16px; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.ad-ev:last-child { border-bottom: 0; }
+.ad-date { flex: none; width: 76px; display: flex; flex-direction: column; font-size: 12px; color: var(--muted); }
+.ad-date b { font-size: 15px; color: var(--text); }
+.ad-ev.ad-show .ad-date b { color: var(--accent); }
+.ad-ev.ad-policy .ad-date b { color: var(--warn); }
+.ad-ev-body { min-width: 0; }
+.ad-ev-body .nm { font-weight: 600; }
+.ad-ev-body .nm a { color: inherit; } .ad-ev-body .tk { color: var(--muted); font-size: 13px; font-weight: 400; }
+.ad-more { padding: 10px 16px; list-style: none; grid-column: 1 / -1; text-align: center; }
+.ad-deal-list { list-style: none; margin: 0; padding: 0; }
+.ad-deal-list li { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.ad-deal-list li:last-child { border-bottom: 0; }
+.ad-deal-list a { color: inherit; font-weight: 600; text-decoration: none; } .ad-deal-list a:hover { color: var(--accent); text-decoration: underline; }
+.ad-deal-list .story-meta { margin-top: 4px; }
+.ad-deal-list .story-meta a.tag, .ad-tags a.tag { font-weight: 500; text-decoration: none; }
+.ad-deal-ico { font-size: 18px; line-height: 1.4; }
+.ad-story h3 a { color: inherit; text-decoration: none; } .ad-story h3 a:hover { color: var(--accent); }
+.ad-story:hover { transform: none; }
+.ad-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ad-budgets { padding: 14px 16px; }
+.ad-bars { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.ad-bars li { display: grid; grid-template-columns: 150px 1fr 70px 70px; gap: 10px; align-items: center; font-size: 14px; }
+.ad-bar { position: relative; height: 12px; background: var(--surface-2); border-radius: 6px; overflow: visible; }
+.ad-bar i { display: block; height: 100%; border-radius: 6px; background: var(--accent); }
+.ad-bar em { position: absolute; top: -3px; bottom: -3px; border-left: 2px dashed var(--warn); }
+.ad-bars b { text-align: right; }
+.ad-bar-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ad-prog { margin: 0; font-size: 14px !important; line-height: 1.45; }
+.ad-sky { display: grid; grid-template-columns: minmax(260px, 1fr) 2fr; gap: 12px; align-items: start; }
+.ad-sky-now { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.ad-sky-n { font-size: 40px !important; font-weight: 600; line-height: 1.1; color: var(--accent); }
+.ad-sky-spark { display: flex; align-items: center; gap: 8px; }
+.ad-sky-now .fd-bars { margin: 0; }
+.ad-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.ad-fact { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.ad-fact span { font-size: 26px; }
+.ad-fact p { margin: 0; font-size: 14px; line-height: 1.5; }
+.ad > .disclaimer { margin: 36px 0 32px; }
+@media (max-width: 760px) {
+  .ad-sky { grid-template-columns: 1fr; }
+  .ad-bars li { grid-template-columns: 96px 1fr 56px; font-size: 13px; }
+  .ad-bar-g { display: none; }
+}
+@media (max-width: 640px) {
+  .ad-plane { display: none; }
+  .ad-sec { margin-top: 28px; }
+  .ad-kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ad-kpi { padding: 10px 12px; }
+  .ad-kpi .value, .ad-kpi .ad-big { font-size: 16px; }
+  .ad-kpi .sub { font-size: 12px; }
+  .ad-ev { padding: 10px 12px; gap: 10px; }
+  .ad-date { width: 62px; }
+  .ad-head .seg { margin-bottom: 12px; }
+}
+.ad-tags .tag .up, .story-meta .tag .up { color: var(--up); } .ad-tags .tag .down, .story-meta .tag .down { color: var(--down); }

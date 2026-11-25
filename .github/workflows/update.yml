@@ -143,6 +143,13 @@ jobs:
         env:
           FULL: ${{ steps.mode.outputs.full == 'true' && '1' || '0' }}
         run: python scripts/build_macro.py
+      - name: Gather aerospace and defence prices, news, events and budgets
+        id: aerospace
+        timeout-minutes: 8
+        continue-on-error: true
+        env:
+          FULL: ${{ steps.mode.outputs.full == 'true' && '1' || '0' }}
+        run: python scripts/build_aerospace.py
       - name: Gather the economic calendar
         id: econ
         timeout-minutes: 4
@@ -256,7 +263,7 @@ jobs:
             "housing news": "${{ steps.housing_news.outcome }}", "daily news": "${{ steps.daily_news.outcome }}",
             "IPOs": "${{ steps.ipos.outcome }}", "price history": "${{ steps.history.outcome }}",
             "market facts": "${{ steps.market.outcome }}", "analyst ratings": "${{ steps.ratings.outcome }}",
-            "real estate": "${{ steps.realestate.outcome }}", "real estate investing": "${{ steps.re_invest.outcome }}", "rates and funds": "${{ steps.macro.outcome }}",
+            "real estate": "${{ steps.realestate.outcome }}", "real estate investing": "${{ steps.re_invest.outcome }}", "rates and funds": "${{ steps.macro.outcome }}", "aerospace": "${{ steps.aerospace.outcome }}",
             "economic calendar": "${{ steps.econ.outcome }}", "weekly recap": "${{ steps.recap.outcome }}",
             "stock pages": "${{ steps.pages.outcome }}"}
         run: python scripts/check_site.py
