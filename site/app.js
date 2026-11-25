@@ -41,7 +41,7 @@
   };
 
   const when = new Date(data.generated);
-  $("updated").textContent = "Updated " + when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(when);
 
   // Index tabs
   // Always open on the first index (TSX)

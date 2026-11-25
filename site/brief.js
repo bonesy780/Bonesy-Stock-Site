@@ -11,7 +11,7 @@
     return;
   }
   const when = new Date(M.generated);
-  $("updated").textContent = "Updated " + when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(when);
   $("lede").textContent = `The last session across the eight markets, in plain words. Written ${when.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}.`;
 
   const name = (i) => i.name.replace(/ \(.*\)/, "");

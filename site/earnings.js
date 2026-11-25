@@ -10,7 +10,7 @@
     $("days").innerHTML = `<div class="panel empty">Stock data could not be loaded. Try again after the next data refresh.</div>`;
     return;
   }
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(M.generated);
 
   const RANGES = [
     { id: "today", label: "Today", from: 0, to: 0 },

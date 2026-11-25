@@ -12,7 +12,7 @@
   }
   const stocksList = await UI.load("stocks.json").catch(() => []);
   const names = Object.fromEntries(stocksList.map((s) => [s.t, s]));
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(M.generated);
 
   const live = {};
   const sort = store.get("watchSort", { key: "pos", dir: 1 });

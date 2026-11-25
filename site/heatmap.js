@@ -10,7 +10,7 @@
     $("heat").innerHTML = `<div class="empty">Stock data could not be loaded. Try again after the next data refresh.</div>`;
     return;
   }
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(M.generated);
 
   const PERIODS = [["d1", "Day", 3], ["w1", "Week", 6], ["m1", "Month", 10], ["m3", "3 months", 20], ["ytd", "YTD", 30], ["cx", "Custom", 10]];
   const state = { market: "sp500", period: "d1", size: "cap", watch: false, ...store.get("heatmap", {}) };

@@ -10,7 +10,7 @@
     return;
   }
   const gen = new Date(R.generated);
-  $("updated").textContent = "Updated " + gen.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(gen);
   const wk = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
   $("lede").textContent = `The week of ${wk(R.weekOf)} in markets, and an honest check on how the site's past buy and sell ideas have done since they were picked.`;
   const out = [];

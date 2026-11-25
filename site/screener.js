@@ -10,7 +10,7 @@
     $("table").innerHTML = `<div class="empty">Stock data could not be loaded. Try again after the next data refresh.</div>`;
     return;
   }
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(M.generated);
 
   // Each filter works on one number. unit: "B" means billions of US dollars, "%" a percent, "x" a ratio
   const F = [

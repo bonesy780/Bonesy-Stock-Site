@@ -22,7 +22,7 @@
   const pct = (v) => v == null ? "" :
     `<span class="num ${v >= 0 ? "up" : "down"}">${v >= 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
 
-  $("updated").textContent = "Updated " + new Date(data.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(data.generated);
 
   // "Top stories" from the big financial outlets comes first, then one tab per market
   const sources = (data.sources || []).filter((x) => x.stories.length);
@@ -90,7 +90,7 @@
   });
   render();
 
-  // While the page stays open, look for a newer copy of the headlines every 5 minutes and offer to show it
+  // While the page stays open, look for a newer copy of the headlines every 2 minutes and offer to show it
   (function watchForNews(stamp) {
     let shown = false;
     const check = async () => {
@@ -105,7 +105,7 @@
         document.body.appendChild(b);
       } catch {}
     };
-    setInterval(check, 5 * 60e3);
+    setInterval(check, 2 * 60e3);
     document.addEventListener("visibilitychange", check);
   })(data.generated);
 })();
