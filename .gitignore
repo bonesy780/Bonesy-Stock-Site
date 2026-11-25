@@ -24,6 +24,7 @@ site/status.json
 site/stocks/
 site/macro.json
 site/funds.json
+site/aerospace.json
 site/econ.json
 site/recap.json
 site/surprises.json

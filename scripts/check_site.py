@@ -34,6 +34,7 @@ DATASETS = [
     ("data.json", "Top stocks, buy and sell ideas", "generated", 44, lambda d: sum(len(i.get("top") or []) for i in d.get("indexes") or []) >= 40),
     ("market.json", "Screener, heatmap, movers and tools", "generated", 44, lambda d: len(d.get("stocks") or []) >= 1000),
     ("news.json", "Market news", "generated", 3, lambda d: sum(len(m.get("stories") or []) for m in d.get("markets") or []) >= 20),
+    ("aerospace.json", "Aerospace & Defence page", "generated", 3, lambda d: len(d.get("stocks") or []) >= 30),
     ("daily/news.json", "Daily News page", "generated", 3, lambda d: len(d.get("stories") or []) >= 200),
     ("re/data.json", "Real estate markets", "updated", 44, lambda d: len(d.get("markets") or []) >= 50),
     ("re/news.json", "Housing news", "updated", 4, lambda d: sum(len(v) for v in (d.get("news") or {}).values()) >= 20),

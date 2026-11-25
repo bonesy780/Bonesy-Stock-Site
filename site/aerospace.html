@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
+<meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
+<title>Aerospace &amp; Defence Stocks · TopTicker</title>
+<meta name="description" content="Aerospace and defence stocks from around the world: live prices, a sector heatmap, news, contract deals, air shows and earnings to watch, A&amp;D ETFs and defence budgets by country.">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="canonical" href="https://www.topticker.ca/aerospace.html">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TopTicker">
+<meta property="og:title" content="Aerospace &amp; Defence Stocks · TopTicker">
+<meta property="og:description" content="Aerospace and defence stocks from around the world: live prices, a sector heatmap, news, contract deals, air shows and earnings to watch, A&amp;D ETFs and defence budgets by country.">
+<meta property="og:url" content="https://www.topticker.ca/aerospace.html">
+<meta property="og:image" content="https://www.topticker.ca/img/share-stocks.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TopTicker">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=__V__">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="./" aria-label="TopTicker home"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker</span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main id="main" class="wrap ad">
+  <section class="hero ad-hero">
+    <div>
+      <h1>Aerospace &amp; Defence</h1>
+      <p>The world's plane makers, engine builders, defence contractors and space companies in one place: how they're trading, what's moving them, the deals being signed and what's coming up. For information only, not financial advice.</p>
+    </div>
+    <div class="ad-plane" aria-hidden="true"><svg viewBox="0 0 120 60" width="120" height="60"><path d="M4 40c18-2 38-3 56-3l22-24h9l-12 24c9 0 17 1 24 3 3 1 3 3 0 4-7 2-15 3-24 3l12 9h-8l-20-9c-18 0-38-1-55-3-3-1-3-3-4-4z" fill="currentColor"/><path d="M2 46c26 4 60 4 88 1" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" fill="none" opacity=".5"/></svg></div>
+  </section>
+
+  <section class="ad-kpis" id="kpis" aria-label="Sector at a glance"></section>
+
+  <section class="ad-sec" aria-labelledby="h-chart">
+    <div class="section-head ad-head">
+      <div><h2 id="h-chart">Sector vs the S&amp;P 500</h2>
+      <p>Aerospace and defence funds against the whole US market, each starting at 100 at the beginning of the period.</p></div>
+      <div class="seg" id="chart-range" role="tablist" aria-label="Period"></div>
+    </div>
+    <div class="panel ad-chart-wrap"><div id="chart" class="ad-chart"></div><div id="chart-legend" class="ad-legend"></div></div>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-heat">
+    <div class="section-head ad-head">
+      <div><h2 id="h-heat">Heatmap</h2>
+      <p>Every company on this page, grouped by region and sized by company value in US dollars. Green is up, red is down.</p></div>
+      <div class="seg" id="heat-period" role="tablist" aria-label="Period"></div>
+    </div>
+    <div class="panel heat-wrap"><div class="heat" id="heat"></div></div>
+    <div class="legend ad-heat-legend" id="heat-legend" aria-hidden="true"></div>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-stocks">
+    <div class="section-head"><h2 id="h-stocks">Aerospace &amp; defence stocks worldwide</h2>
+      <p>Prices are in each company's home currency; company value is in US dollars. Upside is the gap to the analysts' average price target.</p></div>
+    <div class="toolbar">
+      <div class="seg" id="region" role="tablist" aria-label="Region"></div>
+      <span class="spacer"></span>
+      <label class="hint">Type <select class="field" id="segment"><option value="">All types</option></select></label>
+    </div>
+    <div class="panel table-wrap" id="table"></div>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-ideas">
+    <div class="section-head"><h2 id="h-ideas">Ideas to research</h2>
+      <p>Automatic screens on the stocks above, refreshed with every update. A starting point for your own research, not a recommendation.</p></div>
+    <div class="cards ad-ideas" id="ideas"></div>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-watch">
+    <div class="section-head"><h2 id="h-watch">Things to watch</h2>
+      <p>Earnings reports, air shows, defence trade fairs and budget dates coming up. Air shows are where the big plane orders get announced; trade fairs are where governments shop.</p></div>
+    <div class="chips ad-filter" id="watch-kind"></div>
+    <ol class="panel ad-timeline" id="watch"></ol>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-deals">
+    <div class="section-head"><h2 id="h-deals">Big agreements &amp; deals</h2>
+      <p>Contract awards, aircraft orders, takeovers and partnerships from the past week's headlines, picked out automatically.</p></div>
+    <div class="ad-deals" id="deals"></div>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-news">
+    <div class="section-head"><h2 id="h-news">Sector news</h2><p>The latest aerospace, defence and space headlines, refreshed every 15 minutes.</p></div>
+    <div class="chips ad-filter" id="news-topic"></div>
+    <div class="story-grid ad-news" id="news"></div>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-etfs">
+    <div class="section-head"><h2 id="h-etfs">Aerospace &amp; defence ETFs</h2>
+      <p>One purchase that holds a basket of these companies. Fee is the yearly cost as a share of what you hold.</p></div>
+    <div class="panel table-wrap" id="etfs"></div>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-budget">
+    <div class="section-head ad-head">
+      <div><h2 id="h-budget">Defence budgets by country</h2>
+      <p id="budget-note">Military spending is the demand behind defence stocks. NATO members agreed in 2025 to reach 5% of GDP by 2035 (3.5% on core defence).</p></div>
+      <div class="seg" id="budget-mode" role="tablist" aria-label="Measure"></div>
+    </div>
+    <div class="panel ad-budgets" id="budgets"></div>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-programs">
+    <div class="section-head"><h2 id="h-programs">Big programmes to know</h2>
+      <p>Multi-decade projects worth billions a year to the companies that build them. News on any of these can move the stocks.</p></div>
+    <div class="cards ad-programs" id="programs"></div>
+  </section>
+
+  <section class="ad-sec" aria-labelledby="h-sky">
+    <div class="section-head ad-head">
+      <div><h2 id="h-sky">Aviation corner</h2><p>Live air traffic and some things worth knowing about flight.</p></div>
+      <button class="btn small" type="button" id="more-facts">More facts ↻</button>
+    </div>
+    <div class="ad-sky">
+      <div class="panel ad-sky-now" id="sky"></div>
+      <div class="ad-facts" id="facts"></div>
+    </div>
+  </section>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Prices, company facts and analyst targets come from Yahoo Finance and refresh every 15 minutes (every minute with live prices on). Headlines come from Yahoo Finance and Google News, and deals are picked out by keyword, so check the story. Military spending: SIPRI, via the World Bank. Live air traffic: The OpenSky Network. Event dates come from organisers and can change.</p>
+</main>
+
+<footer class="wrap foot">Data: Yahoo Finance via yfinance, Google News, SIPRI and the World Bank, The OpenSky Network.</footer>
+
+<script src="common.js?v=__V__"></script>
+<script src="live.js?v=__V__"></script>
+<script src="aerospace.js?v=__V__"></script>
+<script src="theme.js?v=__V__" defer></script>
+</body>
+</html>
