@@ -10,6 +10,7 @@
     ["stock.html", "Stock Lookup"],
     ["watchlist.html", "Watchlists"],
     ["portfolio.html", "Paper Trading"],
+    ["plan.html", "Invest Plan"],
     ["screener.html", "Screener"],
     ["movers.html", "Movers"],
     ["funds.html", "ETFs & Crypto"],
