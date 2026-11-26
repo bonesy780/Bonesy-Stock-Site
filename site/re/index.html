@@ -3,26 +3,43 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
+<meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
 <title>TopTicker Homes · Real Estate Across North America</title>
 <meta name="description" content="Home prices, rents, mortgage rates and the hottest and coolest housing markets across the United States, Canada and Mexico.">
 <link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="canonical" href="https://www.topticker.ca/re/">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TopTicker">
+<meta property="og:title" content="TopTicker Homes · Real Estate Across North America">
+<meta property="og:description" content="Home prices, rents, mortgage rates and the hottest and coolest housing markets across the United States, Canada and Mexico.">
+<meta property="og:url" content="https://www.topticker.ca/re/">
+<meta property="og:image" content="https://www.topticker.ca/img/share-homes.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TopTicker">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../styles.css?v=__V__">
 <link rel="stylesheet" href="re.css?v=__V__">
+<link rel="stylesheet" href="world.css?v=__V__">
 </head>
 <body class="re">
+<a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="wrap top-inner">
-    <a class="brand" href="../" title="Home: choose stocks or real estate"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><path d="M6 16.5 16 8l10 8.5" fill="none" stroke="#22c55e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 15v10h13V15" fill="#22c55e" fill-opacity=".85"/><rect x="14" y="19" width="4" height="6" rx=".8" fill="#0b1330"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker <span class="brand-tag">Homes</span></span></a>
+    <a class="brand" href="../" aria-label="TopTicker home" title="Home: choose stocks or real estate"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><path d="M6 16.5 16 8l10 8.5" fill="none" stroke="#22c55e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 15v10h13V15" fill="#22c55e" fill-opacity=".85"/><rect x="14" y="19" width="4" height="6" rx=".8" fill="#0b1330"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker <span class="brand-tag">Homes</span></span></a>
     <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a market…" aria-label="Go to a market" spellcheck="false"></div>
     <div class="updated" id="updated">Loading data…</div>
   </div>
   <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
 </header>
 
-<main class="wrap">
+<main id="main" class="wrap">
   <section class="hero">
     <h1>Housing markets across North America</h1>
     <p>Home prices, rents, supply and mortgage rates for <span id="count">the biggest</span> markets in the United States, Canada and Mexico, with the top 10 lists, buy ideas and markets to watch. Updated with the stock data.</p>
@@ -31,6 +48,69 @@
   <section class="re-countries" id="countries" aria-label="Countries"></section>
 
   <section class="re-rates" id="rates" aria-label="Mortgage rates"></section>
+
+  <section id="lending">
+    <div class="section-head">
+      <h2>Key lending rates</h2>
+      <p>What it costs to borrow for property in the United States, Canada and Europe: central bank rates, home loans, and the benchmarks commercial loans are priced from. Change on a year ago in points; green means cheaper. Hover a rate for its source.</p>
+    </div>
+    <div id="lend"></div>
+  </section>
+
+  <section id="heatmap">
+    <div class="section-head">
+      <h2>Where investors are looking and spending</h2>
+      <p>A heat map of investor demand. Pick a region or a country to see its cities or states, or switch to property types. Each cell is coloured by where it ranks in its column: <span class="re-heat-key"><i class="hot"></i> hotter, more interest</span> <span class="re-heat-key"><i class="cold"></i> cooler</span>. Tap a column to sort.</p>
+    </div>
+    <div class="re-heat-tools">
+      <div class="seg" role="tablist" aria-label="Rows" id="heat-mode"></div>
+      <select class="field" id="heat-country" aria-label="Region or country"></select>
+    </div>
+    <p class="muted re-list-note" id="heat-note"></p>
+    <div class="panel" id="heat"></div>
+  </section>
+
+  <section id="types-sec">
+    <div class="section-head">
+      <h2>Property types</h2>
+      <p>Residential, multifamily, office, industrial, retail, data centers, hotels and more: typical cap rates (net income as a share of price), vacancy, rent growth and how listed property companies in each type are doing.</p>
+    </div>
+    <div class="toolbar"><div class="seg" role="tablist" aria-label="Region" id="types-region"></div></div>
+    <div class="cards re-types" id="types"></div>
+    <p class="muted re-small re-types-note" id="types-note"></p>
+  </section>
+
+  <section id="inv-metrics-sec">
+    <div class="section-head">
+      <h2>Investment health check</h2>
+      <p>Signals investors watch for property as a whole: commercial prices, loan troubles, how hard banks make it to borrow, mortgage spreads and valuations.</p>
+    </div>
+    <div class="re-metric-grid" id="inv-metrics"></div>
+  </section>
+
+  <section id="spend-sec">
+    <div class="section-head">
+      <h2>Where the money is being spent</h2>
+      <p>New construction by property type: what developers and investors are actually building.</p>
+    </div>
+    <div class="re-spend-grid" id="spend"></div>
+  </section>
+
+  <section id="cpp-sec">
+    <div class="section-head">
+      <h2>Commercial property prices by country</h2>
+      <p>The BIS commercial property price index: offices, shops and other commercial buildings, change over the past year in local currency.</p>
+    </div>
+    <div id="cpp"></div>
+  </section>
+
+  <section id="world-teaser">
+    <div class="section-head">
+      <h2>Top world markets</h2>
+      <p>The five highest investor scores among about 60 countries: real price momentum, long-run growth, value, interest rates and currency. <a href="world.html">See the world rankings →</a></p>
+    </div>
+    <div class="re-world-mini" id="world-mini"></div>
+  </section>
 
   <section>
     <div class="section-head">
@@ -70,12 +150,13 @@
     <div class="panel pad-h" id="bis"></div>
   </section>
 
-  <section id="mexico">
+  <section id="regions">
     <div class="section-head">
-      <h2>Mexico by state</h2>
-      <p id="mx-note">Average and middle prices of homes valued for a mortgage, from Sociedad Hipotecaria Federal.</p>
+      <h2>By state and province</h2>
+      <p id="reg-note">Every US state, Canadian province and Mexican state on one measure at a time.</p>
     </div>
-    <div class="re-mx" id="mx"></div>
+    <div class="re-region-tools"><div class="seg" role="tablist" aria-label="Country" id="reg-country"></div><div class="seg" role="tablist" aria-label="Measure" id="reg-metric"></div></div>
+    <div class="re-mx" id="reg"></div>
   </section>
 
   <section class="method">
@@ -83,8 +164,12 @@
     <ul>
       <li><b>United States:</b> Zillow's typical home value (ZHVI, middle third of homes), rents (ZORI), homes for sale, new listings, days to pending, price cuts, sale-to-list ratio, market heat index and 12-month forecast, for the 150 biggest metro areas.</li>
       <li><b>Canada:</b> Statistics Canada's New Housing Price Index for each city (new homes only; Canada's resale MLS® figures are licensed and can't be republished), CMHC's average two-bedroom rent, and the Bank of Canada's 5-year mortgage rate.</li>
+      <li><b>States and provinces:</b> Zillow's typical home value and rent for each US state; Statistics Canada's New Housing Price Index and CMHC rents for each province.</li>
       <li><b>Mexico:</b> Sociedad Hipotecaria Federal's quarterly house prices by state. SHF only publishes PDF and Excel tables, so these are entered by hand each quarter.</li>
       <li><b>Who has the upper hand:</b> a score from −100 (buyer's market) to +100 (seller's market) that averages Zillow's heat index, sale-to-list ratio, share of price cuts, days to pending, supply change and 3-month price trend.</li>
+      <li><b>Lending rates:</b> the Federal Reserve, Freddie Mac and the US Treasury (through FRED), the Bank of Canada, and the European Central Bank's data portal (policy rates, €STR, Euribor and the MFI interest rate statistics for home and business loans), refreshed with each data update.</li>
+      <li><b>Investor heat map:</b> each figure is ranked against the other places shown, and the interest score averages those ranks (flipped where a lower figure means more demand, such as days to sell or price-to-income). It shows where demand and money are moving, not a forecast.</li>
+      <li><b>Property types:</b> REIT returns come from the market data; cap rates, vacancy and rent growth are rounded figures from public market reports, kept by hand with the date they are from.</li>
       <li><b>Gross rent yield:</b> a year of typical rent divided by the typical home value, before costs. A rough guide to whether owning pays.</li>
     </ul>
   </section>
@@ -92,9 +177,11 @@
   <p class="disclaimer">Market figures are monthly or quarterly statistics from public agencies and Zillow Research, not live prices. Buy ideas and market labels are worked out by fixed rules from those figures. They are not advice: talk to a licensed agent, lender or adviser before you buy.</p>
 </main>
 
-<footer class="wrap foot">Data: <a href="https://www.zillow.com/research/data/">Zillow Research</a>, <a href="https://www.bis.org/statistics/pp.htm">BIS</a> house prices, <a href="https://www.freddiemac.com/pmms">Freddie Mac</a>, <a href="https://fred.stlouisfed.org/">FRED</a>, <a href="https://www.statcan.gc.ca/">Statistics Canada</a> and CMHC, <a href="https://www.bankofcanada.ca/">Bank of Canada</a>, <a href="https://www.gob.mx/shf">Sociedad Hipotecaria Federal</a>. Not financial advice.</footer>
+<footer class="wrap foot">Data: <a href="https://www.zillow.com/research/data/">Zillow Research</a>, <a href="https://www.bis.org/statistics/pp.htm">BIS</a> house prices, <a href="https://www.freddiemac.com/pmms">Freddie Mac</a>, <a href="https://fred.stlouisfed.org/">FRED</a>, <a href="https://www.statcan.gc.ca/">Statistics Canada</a> and CMHC, <a href="https://www.bankofcanada.ca/">Bank of Canada</a>, <a href="https://www.gob.mx/shf">Sociedad Hipotecaria Federal</a>. European Central Bank, US Census Bureau, REIT prices from Yahoo Finance. Not financial advice.</footer>
 
 <script src="re-common.js?v=__V__"></script>
 <script src="home.js?v=__V__"></script>
+<script src="invest.js?v=__V__"></script>
+<script src="../theme.js?v=__V__" defer></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 
   const M = await UI.market().catch(() => null);
   if (M) {
-    $("updated").textContent = "Prices from " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    UI.updated(M.generated, "Prices updated");
   } else $("updated").textContent = "";
 
   // ---- Black-Scholes (European, no dividends)
@@ -136,14 +136,14 @@
     $("legs").innerHTML = state.legs.map((l, i) => {
       const e = est(l);
       return `<tr data-i="${i}">
-        <td class="left"><select class="field" data-k="side"><option value="buy" ${l.side === "buy" ? "selected" : ""}>Buy</option><option value="sell" ${l.side === "sell" ? "selected" : ""}>Sell</option></select></td>
-        <td class="left"><select class="field" data-k="type"><option value="call" ${l.type === "call" ? "selected" : ""}>Call</option><option value="put" ${l.type === "put" ? "selected" : ""}>Put</option><option value="stock" ${l.type === "stock" ? "selected" : ""}>Shares</option></select></td>
-        <td>${l.type === "stock" ? `<span class="muted">–</span>` : `<input class="field num" type="number" min="0" step="any" data-k="strike" value="${l.strike}">`}</td>
-        <td><input class="field num" type="number" min="1" step="1" data-k="qty" value="${l.qty}"></td>
-        <td><input class="field num" type="number" min="0" step="any" data-k="premium" value="${l.premium}" title="${l.type === "stock" ? "Price paid per share" : "Price per share of the option (×100 per contract)"}"></td>
+        <td class="left"><select class="field" data-k="side" aria-label="Leg ${i + 1}: buy or sell"><option value="buy" ${l.side === "buy" ? "selected" : ""}>Buy</option><option value="sell" ${l.side === "sell" ? "selected" : ""}>Sell</option></select></td>
+        <td class="left"><select class="field" data-k="type" aria-label="Leg ${i + 1}: type"><option value="call" ${l.type === "call" ? "selected" : ""}>Call</option><option value="put" ${l.type === "put" ? "selected" : ""}>Put</option><option value="stock" ${l.type === "stock" ? "selected" : ""}>Shares</option></select></td>
+        <td>${l.type === "stock" ? `<span class="muted">–</span>` : `<input class="field num" type="number" min="0" step="any" data-k="strike" value="${l.strike}" aria-label="Leg ${i + 1}: strike price">`}</td>
+        <td><input class="field num" type="number" min="1" step="1" data-k="qty" value="${l.qty}" aria-label="Leg ${i + 1}: quantity"></td>
+        <td><input class="field num" type="number" min="0" step="any" data-k="premium" value="${l.premium}" aria-label="Leg ${i + 1}: premium" title="${l.type === "stock" ? "Price paid per share" : "Price per share of the option (×100 per contract)"}"></td>
         <td class="num hide-sm">${e.price.toFixed(2)}</td>
         <td class="num hide-sm">${(e.delta * (l.side === "buy" ? 1 : -1)).toFixed(2)}</td>
-        <td><button class="x" data-rm="${i}" aria-label="Remove leg">✕</button></td></tr>`;
+        <td><button class="x" data-rm="${i}" aria-label="Remove leg ${i + 1}">✕</button></td></tr>`;
     }).join("") || `<tr><td colspan="8" class="left muted">Add a call, put or shares, or pick a strategy above.</td></tr>`;
     if (!state.legs.length) { $("result").innerHTML = ""; $("chart").innerHTML = ""; $("legend").innerHTML = ""; return; }
     results();

@@ -2,12 +2,13 @@
   const $ = (id) => document.getElementById(id);
   let data;
   try {
-    const res = await fetch("data.json", { cache: "no-store" });
+    const res = await fetch("data.json", { cache: "no-cache" });
     data = await res.json();
   } catch (e) {
     $("updated").textContent = "Data could not be loaded.";
     return;
   }
+  if (window.UI && UI.freshness) UI.freshness(data.generated, 44);
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const pct = (v) => v == null ? '<span class="num">–</span>' :
@@ -22,7 +23,7 @@
   };
   const divYield = (s) => s.divYield != null ? `<span class="num">${s.divYield.toFixed(2)}%</span>` : s.divFreq === "None" ? '<span class="num muted">0%</span>' : '<span class="num">–</span>';
   const divFreq = (s) => `<span class="${s.divFreq === "None" ? "muted" : ""}">${esc(s.divFreq || "–")}</span>`;
-  const link = (s) => `<a href="stock.html?t=${encodeURIComponent(s.ticker)}">${esc(s.name)}</a>`;
+  const link = (s) => `<a href="${UI.stockUrl(s.ticker)}">${esc(s.name)}</a>`;
   const pillClass = (r) => /buy/i.test(r) ? "buy" : /sell|under/i.test(r) ? "sell" : "";
   const spark = (pts, w = 96, h = 28) => {
     if (!pts || pts.length < 2) return "";
@@ -40,7 +41,7 @@
   };
 
   const when = new Date(data.generated);
-  $("updated").textContent = "Updated " + when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(when);
 
   // Index tabs
   // Always open on the first index (TSX)
@@ -98,7 +99,7 @@
       </tr>`).join("");
     $("index-view").innerHTML = `
       <div class="panel summary">
-        <div><h2>${esc(ix.name)}</h2><div class="region">${esc(ix.region)} · ${ix.members} members · prices in ${ix.currency}</div></div>
+        <div><h2>${esc(ix.name)}</h2><div class="region">${esc(ix.region)} · ${ix.members} members · prices in ${ix.currency}${ix.stale ? ` · <span class="stale-tag" title="Prices for this market didn't come back in the latest update, so this is the last good list">as of ${esc(new Date(ix.stale).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }))}</span>` : ""}</div></div>
         <div class="stats">
           <div class="stat"><div class="label">Level</div><div class="value num">${ix.level ? ix.level.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "–"}</div></div>
           <div class="stat"><div class="label">Day</div><div class="value">${pct(ix.chg1d)}</div></div>
@@ -114,7 +115,7 @@
           <thead><tr><th>#</th><th>Company</th><th>Mkt cap (USD)</th><th>Price</th><th>Day</th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>From 52W high</th><th>Div yield</th><th>Pays</th><th>3M trend</th></tr></thead>
           <tbody>${bigRows}</tbody></table>` : `<div class="empty">No market cap data for this index today.</div>`}
       </div>
-      <div class="subhead"><h3>Top 10 ranked</h3><p>Ranked on 3-month performance, then analyst ratings, then company size.</p></div>
+      <div class="subhead"><h3>Top 10 ranked</h3><p>Ranked on 3, 6 and 12-month momentum, then analyst ratings, company size and steadiness. A screen, not a recommendation.</p></div>
       <div class="panel table-wrap">
         ${ix.top.length ? `<table class="ranked">
           <thead><tr><th>#</th><th>Company</th><th>Price</th><th>1W</th><th>1M</th><th>3M</th><th>YTD</th><th>Analysts</th><th>Upside</th><th>Mkt cap</th><th>Div yield</th><th>Pays</th><th>Score</th><th>3M trend</th></tr></thead>
@@ -163,7 +164,7 @@
     $("markets").innerHTML = data.indexes.map((i) => `
       <button class="mkt ${i.id === current ? "on" : ""}" data-id="${i.id}">
         <span class="mkt-name">${esc(i.name.replace(/ \(.*\)/, ""))}</span>
-        ${(() => { const h = window.UI && UI.session(i.id); return h ? `<span class="mkt-hours ${h.open ? "open" : ""}" title="${esc(h.city)} time ${esc(h.local)}. Regular hours only; holidays not shown."><i></i>${h.open ? "Open" : "Closed"} · ${esc(h.label.replace(/ in /, " ").replace(/^./, (c) => c.toLowerCase()))}</span>` : ""; })()}
+        ${(() => { const h = window.UI && UI.session(i.id); return h ? `<span class="mkt-hours ${h.open ? "open" : ""}" title="${esc(h.city)} time ${esc(h.local)}. Regular trading hours${i.id === "kospi200" || i.id === "twse50" ? "; holidays not shown" : " and exchange holidays"}."><i></i>${h.open ? "Open" : "Closed"} · ${esc(h.label.replace(/ in /, " ").replace(/^(Opens|Closes|Lunch)/, (c) => c.toLowerCase()))}</span>` : ""; })()}
         <span class="num">${i.level ? i.level.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "–"}</span>
         ${pct(i.chg1d)}
       </button>`).join("");
@@ -180,7 +181,7 @@
     const list = ((data.snapshots || {})[period] || []);
     const key = period === "day" ? "chg1d" : "chg1w";
     $("snaps").innerHTML = list.length ? list.map((s) => `
-      <a class="panel snapcard" href="stock.html?t=${encodeURIComponent(s.ticker)}">
+      <a class="panel snapcard" href="${UI.stockUrl(s.ticker)}">
         <div class="tk">${esc(s.symbol)} · ${esc((s.markets || s.indexes || [])[0] || "")}</div>
         <div class="nm">${esc(s.name)}</div>
         <div class="snap-chg ${s[key] >= 0 ? "up" : "down"} num">${s[key] >= 0 ? "+" : ""}${s[key].toFixed(1)}%</div>
@@ -197,9 +198,13 @@
 
   const st = data.settings;
   $("method").innerHTML = [
-    `Each index's ${st.candidates} best performers over the last 3 months are scored. Performance counts for ${st.weights.perf * 100}%, the average analyst rating for ${st.weights.analyst * 100}% and market cap for ${st.weights.mcap * 100}%. The 10 highest scores make the list.`,
-    `Buy ideas need an analyst consensus of Buy or better from at least 5 analysts, 10% or more upside to the average price target, a positive 3-month return and a price above the 50-day average.`,
-    `Sell ideas are stocks down over the last 3 months and below their 50-day average, where analysts rate them Hold or worse (at least 3 analysts) or the price is above the average target.`,
+    st.weights.steady != null
+      ? `Each stock gets a momentum rank within its index from its 3-month, 6-month and 12-month returns (the 12-month return leaves out the latest month, which tends to reverse). The ${st.candidates} strongest in each index are scored: momentum counts for ${st.weights.perf * 100}%, the average analyst rating for ${st.weights.analyst * 100}%, company size for ${st.weights.mcap * 100}% and steadiness (smaller daily swings) for ${st.weights.steady * 100}%. A rating from only one or two analysts is pulled toward neutral, since a single opinion is weak evidence. The 10 highest scores make the list.`
+      : `Each index's ${st.candidates} best performers over the last 3 months are scored. Performance counts for ${st.weights.perf * 100}%, the average analyst rating for ${st.weights.analyst * 100}% and market cap for ${st.weights.mcap * 100}%. The 10 highest scores make the list.`,
+    `Buy ideas need an analyst consensus of Buy or better from at least 5 analysts, 10% or more upside to the average price target, a positive 3-month return and a price above both the 50-day and 200-day averages. Upcoming earnings are flagged because they can move the price sharply either way.`,
+    `Sell ideas are stocks down over the last 3 months and below their 50-day average, where at least 3 analysts rate them Hold or worse on average, or the price is above their average target.`,
+    `Stocks that haven't traded for over a week (halted or being taken over) are left out, and so are price targets more than 150% above or 70% below the price, which are almost always bad data. Dividend yields leave out one-off special dividends.`,
+    `Buy and sell ideas are automatic screens of public data, not recommendations. They don't know your goals, taxes or how much risk you can take, and analyst targets are often wrong. Momentum can reverse quickly.`,
     `Dividend yield is the last year of regular payments divided by today's price. Pays shows how often the company pays, based on its recent payment dates.`,
     `TSX Venture has no published member list, so it uses the 250 largest companies on the TSX Venture Exchange, with lower price and size floors for the picks since most are small. Taiwan 50 is approximated by the 50 largest companies on the Taiwan Stock Exchange. Member lists are refreshed from public sources when available.`,
   ].map((t) => `<li>${esc(t)}</li>`).join("");

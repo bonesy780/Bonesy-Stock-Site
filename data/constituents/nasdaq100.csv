@@ -3,100 +3,100 @@ AAPL,Apple Inc.
 NVDA,NVIDIA Corporation
 MSFT,Microsoft Corporation
 AMZN,"Amazon.com, Inc."
+TSLA,"Tesla, Inc."
 MU,"Micron Technology, Inc."
 AMD,"Advanced Micro Devices, Inc."
-TSLA,"Tesla, Inc."
+WMT,Walmart Inc.
 META,"Meta Platforms, Inc."
 GOOGL,Alphabet Inc.
-WMT,Walmart Inc.
-AVGO,Broadcom Inc.
-SPCX,Space Exploration Technologies Corp.
 GOOG,Alphabet Inc.
+SPCX,Space Exploration Technologies Corp.
+AVGO,Broadcom Inc.
 COST,Costco Wholesale Corporation
 PLTR,Palantir Technologies Inc.
 CSCO,"Cisco Systems, Inc."
 INTC,Intel Corporation
-AMAT,"Applied Materials, Inc."
-LRCX,Lam Research Corporation
-TXN,Texas Instruments Incorporated
 PANW,"Palo Alto Networks, Inc."
-NFLX,"Netflix, Inc."
+AMAT,"Applied Materials, Inc."
 AMGN,Amgen Inc.
+LRCX,Lam Research Corporation
+NFLX,"Netflix, Inc."
 LIN,Linde plc
-CRWD,"CrowdStrike Holdings, Inc."
+TXN,Texas Instruments Incorporated
 GILD,"Gilead Sciences, Inc."
-KLAC,KLA Corporation
+CRWD,"CrowdStrike Holdings, Inc."
 PEP,"PepsiCo, Inc."
-ADI,"Analog Devices, Inc."
 TMUS,"T-Mobile US, Inc."
+KLAC,KLA Corporation
 QCOM,QUALCOMM Incorporated
 SHOP,Shopify Inc.
 ISRG,"Intuitive Surgical, Inc."
-ASML,ASML Holding N.V.
-MRVL,"Marvell Technology, Inc."
+ADI,"Analog Devices, Inc."
 VRTX,Vertex Pharmaceuticals Incorporated
-SNDK,Sandisk Corporation
-APP,AppLovin Corporation
+ASML,ASML Holding N.V.
 ADP,"Automatic Data Processing, Inc."
 SBUX,Starbucks Corporation
+APP,AppLovin Corporation
+MRVL,"Marvell Technology, Inc."
 BKNG,Booking Holdings Inc.
 STX,Seagate Technology Holdings plc
 MAR,"Marriott International, Inc."
-WDC,Western Digital Corporation
-CEG,Constellation Energy Corporation
-ADBE,Adobe Inc.
 REGN,"Regeneron Pharmaceuticals, Inc."
-CSX,CSX Corporation
-INTU,Intuit Inc.
+WDC,Western Digital Corporation
 FTNT,"Fortinet, Inc."
-MNST,Monster Beverage Corporation
-CTAS,Cintas Corporation
+CSX,CSX Corporation
+ADBE,Adobe Inc.
+SNDK,Sandisk Corporation
 MRNA,"Moderna, Inc."
+CTAS,Cintas Corporation
 CMCSA,Comcast Corporation
+CEG,Constellation Energy Corporation
+MDLZ,"Mondelez International, Inc."
+MNST,Monster Beverage Corporation
 CDNS,"Cadence Design Systems, Inc."
 SNPS,"Synopsys, Inc."
-MDLZ,"Mondelez International, Inc."
-ARM,Arm Holdings plc
-ABNB,"Airbnb, Inc."
-MELI,"MercadoLibre, Inc."
 ORLY,"O'Reilly Automotive, Inc."
+INTU,Intuit Inc.
+MELI,"MercadoLibre, Inc."
+ABNB,"Airbnb, Inc."
 ROST,"Ross Stores, Inc."
 HON,Honeywell International Inc.
+ARM,Arm Holdings plc
 AEP,"American Electric Power Company, Inc."
 DASH,"DoorDash, Inc."
-MPWR,"Monolithic Power Systems, Inc."
 NXPI,NXP Semiconductors N.V.
 FAST,Fastenal Company
-DDOG,"Datadog, Inc."
-PCAR,PACCAR Inc
-IDXX,"IDEXX Laboratories, Inc."
-ADSK,"Autodesk, Inc."
-LITE,Lumentum Holdings Inc.
+MPWR,"Monolithic Power Systems, Inc."
 PDD,PDD Holdings Inc.
-HONA,Honeywell Aerospace Inc.
-FANG,"Diamondback Energy, Inc."
+IDXX,"IDEXX Laboratories, Inc."
+PCAR,PACCAR Inc
+DDOG,"Datadog, Inc."
+ADSK,"Autodesk, Inc."
 CCEP,Coca-Cola Europacific Partners PLC
 XEL,Xcel Energy Inc.
-PYPL,"PayPal Holdings, Inc."
+FANG,"Diamondback Energy, Inc."
+HONA,Honeywell Aerospace Inc.
 KDP,Keurig Dr Pepper Inc.
-BKR,Baker Hughes Company
+PYPL,"PayPal Holdings, Inc."
 EXC,Exelon Corporation
 ROP,"Roper Technologies, Inc."
+BKR,Baker Hughes Company
+LITE,Lumentum Holdings Inc.
 FER,Ferrovial N.V.
 TTWO,"Take-Two Interactive Software, Inc."
-TRI,Thomson Reuters Corporation
 PAYX,"Paychex, Inc."
-MSTR,Strategy Inc
+TRI,Thomson Reuters Corporation
+GEHC,GE HealthCare Technologies Inc.
+ODFL,"Old Dominion Freight Line, Inc."
+WDAY,"Workday, Inc."
 TER,"Teradyne, Inc."
 ALAB,"Astera Labs, Inc."
-WDAY,"Workday, Inc."
-GEHC,GE HealthCare Technologies Inc.
-RKLB,Rocket Lab Corporation
-ODFL,"Old Dominion Freight Line, Inc."
-MCHP,Microchip Technology Incorporated
 DXCM,"DexCom, Inc."
+MCHP,Microchip Technology Incorporated
 CPRT,"Copart, Inc."
-NBIS,Nebius Group N.V.
+MSTR,Strategy Inc
+RKLB,Rocket Lab Corporation
 AXON,"Axon Enterprise, Inc."
-CRWV,"CoreWeave, Inc."
 ALNY,"Alnylam Pharmaceuticals, Inc."
+NBIS,Nebius Group N.V.
+CRWV,"CoreWeave, Inc."

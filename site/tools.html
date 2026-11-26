@@ -3,31 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
+<meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
 <title>Calculators · TopTicker</title>
 <meta name="description" content="Trading calculators: position size, profit and loss, average cost, dividend income, compound growth, options payoff and currency conversion.">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="canonical" href="https://www.topticker.ca/tools.html">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TopTicker">
+<meta property="og:title" content="Calculators · TopTicker">
+<meta property="og:description" content="Trading calculators: position size, profit and loss, average cost, dividend income, compound growth, options payoff and currency conversion.">
+<meta property="og:url" content="https://www.topticker.ca/tools.html">
+<meta property="og:image" content="https://www.topticker.ca/img/share-stocks.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TopTicker">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=__V__">
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="wrap top-inner">
-    <a class="brand" href="./"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker</span></a>
+    <a class="brand" href="./" aria-label="TopTicker home"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker</span></a>
     <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
     <div class="updated" id="updated">Loading…</div>
   </div>
   <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
 </header>
 
-<main class="wrap">
+<main id="main" class="wrap">
   <section class="hero">
     <h1>Calculators</h1>
     <p>Quick tools for planning trades: how many shares to buy for the risk you want, what a trade made or lost, your new average cost, dividend income, long-term growth and option payoffs. Pick a stock in any calculator to fill in its latest price.</p>
   </section>
 
-  <nav class="tabs" id="calc-tabs" aria-label="Calculators"></nav>
+  <div class="tabs" id="calc-tabs" role="tablist" aria-label="Calculators"></div>
   <div class="calc-grid" id="calcs"></div>
 
   <p class="disclaimer"><strong>Not financial advice.</strong> These calculators do simple math on the numbers you enter. They leave out taxes, and returns are never guaranteed. Options can lose their whole cost, and selling options can lose more than you receive.</p>
@@ -38,5 +54,6 @@
 <script src="common.js?v=__V__"></script>
 <script src="live.js?v=__V__"></script>
 <script src="tools.js?v=__V__"></script>
+<script src="theme.js?v=__V__" defer></script>
 </body>
 </html>

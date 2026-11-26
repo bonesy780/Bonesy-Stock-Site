@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
+<meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
+<title>TopTicker News · Your Morning Read</title>
+<meta name="description" content="The day's headlines from about 90 news outlets in one place: world, U.S. and Canadian news by state and province, business, markets, sports, betting, tech, science, entertainment and more.">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="canonical" href="https://www.topticker.ca/daily/">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TopTicker">
+<meta property="og:title" content="TopTicker News · Your Morning Read">
+<meta property="og:description" content="The day's headlines from about 90 news outlets in one place: world, U.S. and Canadian news by state and province, business, markets, sports, betting, tech, science, entertainment and more.">
+<meta property="og:url" content="https://www.topticker.ca/daily/">
+<meta property="og:image" content="https://www.topticker.ca/img/share-news.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TopTicker">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css?v=__V__">
+<link rel="stylesheet" href="daily.css?v=__V__">
+</head>
+<body class="dn">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="../?choose" aria-label="TopTicker home" title="Home: choose news, stocks or real estate"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="7" y="8" width="18" height="17" rx="2" fill="none" stroke="#22c55e" stroke-width="2.2"/><path d="M10.5 13h11M10.5 17h11M10.5 21h7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker <span class="brand-tag">News</span></span></a>
+    <div class="jump lookup"><input id="dn-q" type="search" placeholder="Search headlines… (press /)" aria-label="Search headlines" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading news…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages">
+    <div class="menu-wide"><a href="./" aria-current="page">Daily News</a><a href="../news.html">Stocks ↗</a><a href="../re/">Real Estate ↗</a></div>
+    <div class="menu-flat"><a href="./" aria-current="page">Daily News</a><a href="../news.html">Stocks ↗</a><a href="../re/">Real Estate ↗</a></div>
+  </nav>
+</header>
+
+<main id="main" class="wrap">
+  <section class="dn-hero">
+    <div>
+      <p class="dn-date" id="dn-date"></p>
+      <h1 id="dn-hello">Good morning</h1>
+      <p class="muted" id="dn-sub">Gathering the day's headlines…</p>
+    </div>
+    <div class="dn-hero-tools">
+      <button class="btn primary" type="button" id="dn-brief">⚡ 2-minute briefing</button>
+      <button class="btn" type="button" id="dn-surprise">🎲 Surprise me</button>
+      <div class="dn-ring" id="dn-ring" title="Stories you've opened today"></div>
+    </div>
+  </section>
+
+  <section class="dn-big" aria-label="Big stories everyone is covering">
+    <div class="dn-sec-head"><h2>🔥 Everyone's talking about</h2><span class="muted dn-small">Stories three or more outlets are covering. Tap one to compare how each tells it.</span></div>
+    <div class="dn-big-row" id="dn-big"></div>
+  </section>
+
+  <section class="dn-controls panel" aria-label="Filters">
+    <div class="dn-row">
+      <div class="seg" role="tablist" aria-label="Region" id="dn-region"></div>
+      <div class="seg" role="tablist" aria-label="How recent" id="dn-time"></div>
+    </div>
+    <div class="dn-map" id="dn-map" hidden></div>
+    <div class="dn-genres" id="dn-genres" role="group" aria-label="Genres"></div>
+    <div class="dn-row dn-row-2">
+      <div class="seg" role="tablist" aria-label="Show" id="dn-tab"></div>
+      <label class="dn-sel">Order <select class="field" id="dn-sort"><option value="mix">Mix the outlets</option><option value="new">Newest first</option></select></label>
+      <div class="seg" role="tablist" aria-label="Layout" id="dn-view"></div>
+      <label class="dn-check"><input type="checkbox" id="dn-hide-read"> Hide stories I've opened</label>
+      <button class="btn small" type="button" id="dn-src-btn" aria-expanded="false">📰 Outlets</button>
+    </div>
+    <div class="dn-sources" id="dn-sources" hidden></div>
+    <div class="dn-trend" id="dn-trend"></div>
+  </section>
+
+  <p class="muted dn-small" id="dn-count" aria-live="polite"></p>
+  <section id="dn-feed" class="dn-feed"></section>
+  <div class="dn-more" id="dn-more"></div>
+
+  <p class="disclaimer">Headlines, short summaries and pictures link to the original publishers and are gathered automatically from their public news feeds (or, for outlets without one, from Google News). They are not checked or endorsed by this site; open a story to read it on the publisher's own site. 🔒 Subscription means the outlet needs a paid subscription; 🔑 Sign-in means it gives a few free stories before asking you to sign in or subscribe. Genres and places are tagged from each outlet's section and the words in the headline, so a few will be off. <span id="dn-missing"></span></p>
+</main>
+
+<dialog class="dn-dialog panel" id="dn-dialog"><div id="dn-dialog-body"></div></dialog>
+<div class="toast-host" id="dn-toast" aria-live="polite"></div>
+
+<footer class="wrap foot" id="dn-foot">Not financial advice.</footer>
+<script src="../paywall.js?v=__V__"></script>
+<script src="daily.js?v=__V__"></script>
+<script src="../theme.js?v=__V__" defer></script>
+</body>
+</html>

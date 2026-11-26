@@ -5,7 +5,7 @@
   let D;
   try { D = await RE.data(); } catch { el.innerHTML = `<div class="empty">The real estate data hasn't been built yet.</div>`; return; }
   const params = new URLSearchParams(location.search);
-  const f = { c: params.get("c") || store.get("re-all-country", "US"), region: "", max: null, yld: null, side: "", saved: false };
+  const f = { c: params.get("c") || store.get("re-all-country", "US"), region: params.get("region") || "", max: null, yld: null, side: "", saved: false };
   const state = store.get("re-all-sort", { key: "rank", dir: 1 });
   const rows = D.markets.filter((m) => !["us", "ca", "mx"].includes(m.id));
   const seg = document.getElementById("f-country");

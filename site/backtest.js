@@ -9,7 +9,7 @@
     UI.market().catch(() => ({ byTicker: {}, stocks: [] })),
   ]);
   const byT = Object.fromEntries(stocks.map((s) => [s.t, s]));
-  if (M.generated) $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  if (M.generated) UI.updated(M.generated);
 
   const benches = stocks.filter((s) => s.index);
   const label = (t) => { const x = byT[t] || {}; return x.index ? x.n.replace(/ \(.*\)/, "").replace(/ index$/, "") : x.s || t; };
@@ -39,7 +39,7 @@
   const hist = {};
   async function loadHist(t) {
     if (!hist[t]) {
-      hist[t] = fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })
+      hist[t] = fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-cache" })
         .then((r) => r.json()).then((j) => j.d || []).catch(() => []);
     }
     return hist[t];

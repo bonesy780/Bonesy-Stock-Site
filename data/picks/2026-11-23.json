@@ -1,0 +1,487 @@
+{
+ "week":"2026-11-23",
+ "savedAt":"2026-11-24T05:24+00:00",
+ "bench":{
+  "tsx":34082.1015625,
+  "tsxv":712.6300048828125,
+  "sp500":7237.169921875,
+  "nasdaq100":26746.099609375,
+  "dow":49595.30859375,
+  "nikkei225":58688.26171875,
+  "kospi200":786.02001953125,
+  "twse50":40160.19140625
+ },
+ "picks":[
+  {
+   "t":"4578.T",
+   "s":"4578",
+   "n":"OTSUKA HLDGS CO LTD",
+   "k":"buy",
+   "p":12380.0,
+   "cur":"JPY",
+   "why":[
+    "up 3% in 3 months",
+    "13 analysts rate it Buy",
+    "average target 19% above today's price"
+   ]
+  },
+  {
+   "t":"WST",
+   "s":"WST",
+   "n":"West Pharmaceutical Services, I",
+   "k":"buy",
+   "p":399.3,
+   "cur":"USD",
+   "why":[
+    "up 15% in 3 months",
+    "15 analysts rate it Strong Buy",
+    "average target 18% above today's price"
+   ]
+  },
+  {
+   "t":"V",
+   "s":"V",
+   "n":"Visa Inc.",
+   "k":"buy",
+   "p":409.4,
+   "cur":"USD",
+   "why":[
+    "up 7% in 3 months",
+    "37 analysts rate it Strong Buy",
+    "average target 10% above today's price"
+   ]
+  },
+  {
+   "t":"MCK",
+   "s":"MCK",
+   "n":"McKesson Corporation",
+   "k":"buy",
+   "p":1048.42,
+   "cur":"USD",
+   "why":[
+    "up 16% in 3 months",
+    "14 analysts rate it Buy",
+    "average target 12% above today's price"
+   ]
+  },
+  {
+   "t":"068270.KS",
+   "s":"068270",
+   "n":"Celltrion",
+   "k":"buy",
+   "p":209000.0,
+   "cur":"KRW",
+   "why":[
+    "up 9% in 3 months",
+    "22 analysts rate it Buy",
+    "average target 33% above today's price"
+   ]
+  },
+  {
+   "t":"CAH",
+   "s":"CAH",
+   "n":"Cardinal Health, Inc.",
+   "k":"buy",
+   "p":271.97,
+   "cur":"USD",
+   "why":[
+    "up 14% in 3 months",
+    "15 analysts rate it Buy",
+    "average target 11% above today's price"
+   ]
+  },
+  {
+   "t":"X.TO",
+   "s":"X",
+   "n":"TMX GROUP LIMITED",
+   "k":"buy",
+   "p":61.2,
+   "cur":"CAD",
+   "why":[
+    "up 14% in 3 months",
+    "7 analysts rate it Strong Buy",
+    "average target 14% above today's price"
+   ]
+  },
+  {
+   "t":"028050.KS",
+   "s":"028050",
+   "n":"SamsungE&A",
+   "k":"buy",
+   "p":59100.0,
+   "cur":"KRW",
+   "why":[
+    "up 31% in 3 months",
+    "21 analysts rate it Strong Buy",
+    "average target 32% above today's price"
+   ]
+  },
+  {
+   "t":"ATZ.TO",
+   "s":"ATZ",
+   "n":"ARITZIA INC",
+   "k":"buy",
+   "p":144.74,
+   "cur":"CAD",
+   "why":[
+    "up 8% in 3 months",
+    "16 analysts rate it Buy",
+    "average target 29% above today's price"
+   ]
+  },
+  {
+   "t":"POW.TO",
+   "s":"POW",
+   "n":"POWER CORPORATION OF CANADA, SV",
+   "k":"buy",
+   "p":93.17,
+   "cur":"CAD",
+   "why":[
+    "up 2% in 3 months",
+    "10 analysts rate it Buy",
+    "average target 13% above today's price"
+   ]
+  },
+  {
+   "t":"3402.T",
+   "s":"3402",
+   "n":"TORAY INDUSTRIES INC",
+   "k":"buy",
+   "p":1313.0,
+   "cur":"JPY",
+   "why":[
+    "up 3% in 3 months",
+    "10 analysts rate it Buy",
+    "average target 12% above today's price"
+   ]
+  },
+  {
+   "t":"003490.KS",
+   "s":"003490",
+   "n":"KAL",
+   "k":"buy",
+   "p":30850.0,
+   "cur":"KRW",
+   "why":[
+    "up 20% in 3 months",
+    "11 analysts rate it Buy",
+    "average target 26% above today's price"
+   ]
+  },
+  {
+   "t":"AP-UN.TO",
+   "s":"AP.UN",
+   "n":"ALLIED PROPERTIES REAL ESTATE I",
+   "k":"sell",
+   "p":3.97,
+   "cur":"CAD",
+   "why":[
+    "down 57% in 3 months",
+    "trading below its 50-day and 200-day averages",
+    "9 analysts rate it Hold"
+   ]
+  },
+  {
+   "t":"SKYD",
+   "s":"SKYD",
+   "n":"Skydance Corporation",
+   "k":"sell",
+   "p":6.33,
+   "cur":"USD",
+   "why":[
+    "down 41% in 3 months",
+    "trading below its 50-day and 200-day averages",
+    "18 analysts rate it Hold"
+   ]
+  },
+  {
+   "t":"6753.T",
+   "s":"6753",
+   "n":"SHARP CORP",
+   "k":"sell",
+   "p":486.0,
+   "cur":"JPY",
+   "why":[
+    "down 21% in 3 months",
+    "trading below its 50-day and 200-day averages",
+    "7 analysts rate it Underperform"
+   ]
+  },
+  {
+   "t":"8267.T",
+   "s":"8267",
+   "n":"AEON CO LTD",
+   "k":"sell",
+   "p":1190.0,
+   "cur":"JPY",
+   "why":[
+    "down 13% in 3 months",
+    "trading below its 50-day and 200-day averages",
+    "10 analysts rate it Hold"
+   ]
+  },
+  {
+   "t":"7201.T",
+   "s":"7201",
+   "n":"NISSAN MOTOR CO",
+   "k":"sell",
+   "p":272.4,
+   "cur":"JPY",
+   "why":[
+    "down 14% in 3 months",
+    "trading below its 50-day and 200-day averages",
+    "17 analysts rate it Hold"
+   ]
+  },
+  {
+   "t":"NKE",
+   "s":"NKE",
+   "n":"Nike, Inc.",
+   "k":"sell",
+   "p":33.76,
+   "cur":"USD",
+   "why":[
+    "down 14% in 3 months",
+    "trading below its 50-day and 200-day averages",
+    "38 analysts rate it Hold"
+   ]
+  },
+  {
+   "t":"FTNT",
+   "s":"FTNT",
+   "n":"Fortinet, Inc.",
+   "k":"sell",
+   "p":131.1,
+   "cur":"USD",
+   "why":[
+    "down 15% in 3 months",
+    "trading below its 50-day and 200-day averages",
+    "37 analysts rate it Hold"
+   ]
+  },
+  {
+   "t":"6526.T",
+   "s":"6526",
+   "n":"SOCIONEXT INC",
+   "k":"sell",
+   "p":1649.5,
+   "cur":"JPY",
+   "why":[
+    "down 13% in 3 months",
+    "trading below its 50-day and 200-day averages",
+    "5 analysts rate it Hold"
+   ]
+  },
+  {
+   "t":"9107.T",
+   "s":"9107",
+   "n":"KAWASAKI KISEN KAISHA",
+   "k":"sell",
+   "p":3038.0,
+   "cur":"JPY",
+   "why":[
+    "down 4% in 3 months",
+    "trading below its 50-day average",
+    "11 analysts rate it Hold",
+    "price is 1% above the average analyst target"
+   ]
+  },
+  {
+   "t":"7272.T",
+   "s":"7272",
+   "n":"YAMAHA MOTOR CO",
+   "k":"sell",
+   "p":1766.5,
+   "cur":"JPY",
+   "why":[
+    "down 6% in 3 months",
+    "trading below its 50-day average",
+    "10 analysts rate it Hold"
+   ]
+  },
+  {
+   "t":"9101.T",
+   "s":"9101",
+   "n":"NIPPON YUSEN KABUSHIKI KAISHA",
+   "k":"sell",
+   "p":6646.0,
+   "cur":"JPY",
+   "why":[
+    "down 1% in 3 months",
+    "trading below its 50-day average",
+    "11 analysts rate it Hold"
+   ]
+  },
+  {
+   "t":"SLG.V",
+   "s":"SLG",
+   "n":"SAN LORENZO GOLD CORP",
+   "k":"watch",
+   "p":5.34,
+   "cur":"CAD",
+   "why":[
+    "reports earnings Thu Nov 26",
+    "moved -14% last week"
+   ]
+  },
+  {
+   "t":"ECU.V",
+   "s":"ECU",
+   "n":"ELEMENT 29 RESOURCES INC",
+   "k":"watch",
+   "p":1.58,
+   "cur":"CAD",
+   "why":[
+    "reports earnings Thu Nov 26",
+    "moved -16% last week"
+   ]
+  },
+  {
+   "t":"OKTA",
+   "s":"OKTA",
+   "n":"Okta, Inc.",
+   "k":"watch",
+   "p":206.28,
+   "cur":"USD",
+   "why":[
+    "reports earnings Tue Dec 01",
+    "moved +16% last week"
+   ]
+  },
+  {
+   "t":"TTS.V",
+   "s":"TTS",
+   "n":"TINTINA MINES LTD",
+   "k":"watch",
+   "p":1.22,
+   "cur":"CAD",
+   "why":[
+    "reports earnings Tue Dec 01",
+    "moved -13% last week"
+   ]
+  },
+  {
+   "t":"ENA.V",
+   "s":"ENA",
+   "n":"ENABLENCE TECHNOLOGIES INC",
+   "k":"watch",
+   "p":6.65,
+   "cur":"CAD",
+   "why":[
+    "reports earnings Tue Nov 24",
+    "moved +23% last week"
+   ]
+  },
+  {
+   "t":"SRL.V",
+   "s":"SRL",
+   "n":"SALAZAR RESOURCES LIMITED",
+   "k":"watch",
+   "p":0.28,
+   "cur":"CAD",
+   "why":[
+    "reports earnings Thu Nov 26",
+    "moved -12% last week"
+   ]
+  },
+  {
+   "t":"WI.V",
+   "s":"WI",
+   "n":"THE WESTERN INVESTMENT CO OF CD",
+   "k":"watch",
+   "p":1.35,
+   "cur":"CAD",
+   "why":[
+    "reports earnings Tue Nov 24"
+   ]
+  },
+  {
+   "t":"WN.TO",
+   "s":"WN",
+   "n":"WESTON GEORGE",
+   "k":"watch",
+   "p":113.96,
+   "cur":"CAD",
+   "why":[
+    "reports earnings Tue Nov 24"
+   ]
+  },
+  {
+   "t":"AXL.V",
+   "s":"AXL",
+   "n":"ARROW EXPLORATION CORP",
+   "k":"watch",
+   "p":0.57,
+   "cur":"CAD",
+   "why":[
+    "reports earnings Thu Nov 26"
+   ]
+  },
+  {
+   "t":"2887.TW",
+   "s":"2887",
+   "n":"TS FINANCIAL HOLDING CO LTD",
+   "k":"watch",
+   "p":36.3,
+   "cur":"TWD",
+   "why":[
+    "reports earnings Fri Nov 27"
+   ]
+  },
+  {
+   "t":"SPRQ.V",
+   "s":"SPRQ",
+   "n":"SPARQ SYSTEMS INC",
+   "k":"watch",
+   "p":0.96,
+   "cur":"CAD",
+   "why":[
+    "reports earnings Thu Nov 26"
+   ]
+  },
+  {
+   "t":"ADI",
+   "s":"ADI",
+   "n":"Analog Devices, Inc.",
+   "k":"watch",
+   "p":378.75,
+   "cur":"USD",
+   "why":[
+    "reports earnings Tue Nov 24"
+   ]
+  },
+  {
+   "t":"2882.TW",
+   "s":"2882",
+   "n":"CATHAY FINANCIAL HLDG CO",
+   "k":"watch",
+   "p":104.5,
+   "cur":"TWD",
+   "why":[
+    "reports earnings Fri Nov 27"
+   ]
+  },
+  {
+   "t":"2892.TW",
+   "s":"2892",
+   "n":"FIRST FINANCIAL HOLDING CO LTD",
+   "k":"watch",
+   "p":40.95,
+   "cur":"TWD",
+   "why":[
+    "reports earnings Fri Nov 27"
+   ]
+  },
+  {
+   "t":"2881.TW",
+   "s":"2881",
+   "n":"FUBON FINANCIAL HLDG CO LTD",
+   "k":"watch",
+   "p":143.5,
+   "cur":"TWD",
+   "why":[
+    "reports earnings Mon Nov 30"
+   ]
+  }
+ ]
+}

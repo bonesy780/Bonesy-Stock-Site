@@ -29,7 +29,8 @@
     if (f.debtToEquity != null) out.push(f.debtToEquity > 200 ? "It carries a lot of debt compared with shareholders' equity." : f.debtToEquity < 50 ? "It has little debt compared with shareholders' equity." : "");
     if (m.divYield) out.push(`It pays a ${m.divYield.toFixed(2)}% dividend yield${f.payoutRatio != null ? `, using ${(f.payoutRatio * 100).toFixed(0)}% of its earnings` : ""}.`);
     if (f.recommendationMean != null && f.numberOfAnalystOpinions) {
-      const up = f.targetMeanPrice && m.p ? (f.targetMeanPrice / m.p - 1) * 100 : null;
+      let up = f.targetMeanPrice && m.p ? (f.targetMeanPrice / m.p - 1) * 100 : null;
+      if (up != null && (up > 150 || up < -70)) up = null; // a target that far off is almost always bad data
       out.push(`${f.numberOfAnalystOpinions} analysts rate it ${rating(f.recommendationMean)} on average${up != null ? `, with an average price target ${Math.abs(up).toFixed(0)}% ${up >= 0 ? "above" : "below"} today's price` : ""}.`);
     }
     return out.filter(Boolean).join(" ");
@@ -105,14 +106,89 @@
         ${acts.length > 10 ? `<p class="hint pad"><button class="btn small" id="ra-all">Show all ${acts.length}</button></p>` : ""}` : `<p class="muted">No rating changes by named firms in the past year.</p>`}
     </div>`;
   }
-  async function ratings(t, cur, price) {
+  // ---- earnings: the last four quarters' EPS against what analysts expected, and the stock's move when it reported
+  const qName = (iso) => { const d = new Date(iso + "T12:00:00Z"); return `Q${Math.floor(d.getUTCMonth() / 3) + 1} ${d.getUTCFullYear()}`; };
+  function epsHistory(eps, cur) {
+    if (!eps || !eps.length) return "";
+    const rows = eps.slice().reverse();
+    const known = rows.filter((e) => e.sp != null);
+    const beats = known.filter((e) => e.sp > 0).length;
+    const moves = rows.filter((e) => e.mv != null);
+    const avgMove = moves.length ? moves.reduce((a, e) => a + Math.abs(e.mv), 0) / moves.length : null;
+    const hi = Math.max(...rows.flatMap((e) => [Math.abs(e.a), Math.abs(e.e ?? 0)]), 1e-9);
+    const bar = (v, cls) => `<i class="eh-bar ${cls}${v < 0 ? " neg" : ""}" style="height:${Math.max(4, Math.abs(v) / hi * 56).toFixed(0)}px" title="${cls === "act" ? "Actual" : "Expected"} ${money(v, cur)}"></i>`;
+    return `<div class="eh">
+      <h3>Earnings: beat or miss</h3>
+      <p class="hint">Earnings per share each quarter against what analysts expected beforehand.${known.length ? ` It beat expectations in <b>${beats} of the last ${known.length}</b> quarters.` : ""}${avgMove != null ? ` On average the stock moved <b>${avgMove.toFixed(1)}%</b> (up or down) on the day the market reacted.` : ""}</p>
+      <div class="eh-chart" role="img" aria-label="Actual versus expected earnings per share, last ${rows.length} quarters">${rows.map((e) => `<div class="eh-q">
+        <div class="eh-bars">${e.e != null ? bar(e.e, "est") : ""}${bar(e.a, "act " + (e.sp == null ? "" : e.sp >= 0 ? "beat" : "miss"))}</div>
+        <span class="eh-label">${qName(e.q)}</span>
+        ${e.sp != null ? `<span class="pill ${e.sp >= 0 ? "buy" : "sell"}">${e.sp >= 0 ? "Beat" : "Missed"} ${Math.abs(e.sp).toFixed(0)}%</span>` : ""}
+      </div>`).join("")}</div>
+      <div class="eh-legend"><span><b class="eh-key est"></b>Expected</span><span><b class="eh-key beat"></b>Actual (beat)</span><span><b class="eh-key miss"></b>Actual (missed)</span></div>
+      <div class="table-wrap"><table class="grid-table"><thead><tr><th class="left">Quarter</th><th>Expected EPS</th><th>Actual EPS</th><th>Surprise</th><th title="The busiest trading day in the weeks after the quarter ended, when the market reacted to the report">Reaction day</th><th>Move that day</th></tr></thead>
+      <tbody>${eps.map((e) => `<tr><td class="left">${qName(e.q)} <span class="muted">(ended ${new Date(e.q + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })})</span></td>
+        <td class="num">${e.e != null ? money(e.e, cur) : "–"}</td><td class="num"><b>${money(e.a, cur)}</b></td><td>${e.sp != null ? pct(e.sp, 1) : "–"}</td>
+        <td class="num">${e.rd ? new Date(e.rd + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "–"}</td><td>${e.mv != null ? pct(e.mv, 1) : "–"}</td></tr>`).join("")}</tbody></table></div>
+      <p class="hint">The reaction day is worked out from trading volume (the busiest day after the quarter closed), so it can be off for a stock with other big news around then.</p>
+    </div>`;
+  }
+
+  // ---- insider trades: officers, directors and big holders buying or selling their own company's shares
+  const KINDS = { buy: ["Bought", "up"], sell: ["Sold", "down"], exercise: ["Exercised options", ""], award: ["Granted shares", ""], gift: ["Gift", ""], other: ["Other", ""] };
+  function insiderTrades(ins, cur) {
+    if (!ins) return "";
+    const tr = ins.trades || [], six = ins.six || {};
+    const buys = tr.filter((x) => x.k === "buy"), sells = tr.filter((x) => x.k === "sell");
+    const sum = (a) => a.reduce((n, x) => n + (x.v || 0), 0);
+    const mood = six.bn || six.sn ? (six.bn > six.sn ? "more insiders bought than sold" : six.bn < six.sn ? "more insiders sold than bought" : "as many insiders bought as sold") : null;
+    return `<div class="ins">
+      <h3>Insider trades</h3>
+      <p class="hint">Company officers, directors and big shareholders must report when they trade the stock. Buying with their own money is often read as confidence; selling is common (taxes, diversifying) and says less.${mood ? ` Over the last six months, <b>${mood}</b>: ${six.bn || 0} buys and ${six.sn || 0} sales.` : ""}${buys.length || sells.length ? ` In the past year: ${buys.length} open-market buys worth ${big(sum(buys), "")} and ${sells.length} sales worth ${big(sum(sells), "")} (${esc(cur)}).` : ""}</p>
+      ${tr.length ? `<div class="table-wrap"><table class="grid-table"><thead><tr><th class="left">Date</th><th class="left">Who</th><th class="left">Trade</th><th>Shares</th><th class="hide-sm">Price</th><th>Value</th></tr></thead>
+        <tbody>${tr.map((x, i) => { const k = KINDS[x.k] || KINDS.other; return `<tr${i >= 10 ? ' class="ins-more" hidden' : ""}><td class="left num">${new Date(x.d + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" })}</td>
+          <td class="left">${esc(x.who)}<span class="tk"> ${esc(x.rel || "")}</span></td><td class="left"><span class="ra-act ${k[1]}">${k[0]}</span></td>
+          <td class="num">${UI.compact(x.sh)}</td><td class="num hide-sm">${x.pr ? money(x.pr, cur) : "–"}</td><td class="num">${x.v ? big(x.v, "") : "–"}</td></tr>`; }).join("")}</tbody></table></div>
+        ${tr.length > 10 ? `<p class="hint pad"><button class="btn small" id="ins-all">Show all ${tr.length}</button></p>` : ""}` : `<p class="muted">No insider trades filed in the past year.</p>`}
+      <p class="hint"><a href="insiders.html">Insider buying across all markets →</a></p>
+    </div>`;
+  }
+
+  async function ratings(t, cur, price, analysts) {
     let r = null;
-    try { const res = await fetch(`ratings/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" }); if (res.ok) r = await res.json(); } catch {}
+    try { const res = await fetch(`ratings/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-cache" }); if (res.ok) r = await res.json(); } catch {}
     const box = document.getElementById("rating-acts");
     if (showing !== t || !box || !r) return;
-    box.innerHTML = actions(r, cur, price);
+    box.innerHTML = (analysts ? actions(r, cur, price) : "") + epsHistory(r.eps, cur) + insiderTrades(r.ins, cur);
     const all = document.getElementById("ra-all");
     if (all) all.onclick = () => { box.querySelectorAll(".ra-more").forEach((x) => (x.hidden = false)); all.parentElement.remove(); };
+    const ia = document.getElementById("ins-all");
+    if (ia) ia.onclick = () => { box.querySelectorAll(".ins-more").forEach((x) => (x.hidden = false)); ia.parentElement.remove(); };
+  }
+
+  // ---- "Explain this stock": Claude writes a plain-language take from the site's own figures (worker /explain)
+  let aiOn = null;
+  const aiReady = () => aiOn ?? (aiOn = window.Live && Live.on
+    ? fetch(Live.api + "/ask").then((r) => r.json()).then((d) => !!d.ai).catch(() => false) : Promise.resolve(false));
+  async function explainButton(t) {
+    const slot = document.getElementById("explain-slot");
+    if (!slot || !(await aiReady()) || showing !== t) return;
+    slot.innerHTML = `<button class="btn small explain-btn" id="explain" type="button">✨ Explain this stock</button>`;
+    document.getElementById("explain").onclick = async () => {
+      const out = document.getElementById("explain-out");
+      out.hidden = false;
+      out.innerHTML = `<p class="muted">Reading the numbers…</p>`;
+      try {
+        const res = await fetch(Live.api + "/explain", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t }) });
+        const d = await res.json();
+        if (showing !== t) return;
+        if (!res.ok || !d.text) throw new Error(d.error || "no answer");
+        out.innerHTML = `<div class="explain-text">${d.text.split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")}</p>`).join("")}</div>
+          <p class="hint">Written by Claude from this page's figures${d.asOf ? ` (as of ${esc(new Date(d.asOf).toLocaleDateString(undefined, { dateStyle: "medium" }))})` : ""}. It can make mistakes, and it isn't financial advice.</p>`;
+      } catch (e) {
+        out.innerHTML = `<p class="muted">The explanation isn't available right now (${esc(e.message || e)}). Try again in a minute.</p>`;
+      }
+    };
   }
 
   async function render(t, s) {
@@ -122,7 +198,7 @@
     if (s.index) { box.innerHTML = ""; return; }
     box.innerHTML = `<div class="panel fund"><div class="empty">Loading company facts…</div></div>`;
     let f = null, m = {};
-    try { f = await (await fetch(`fund/${encodeURIComponent(t)}.json`, { cache: "no-store" })).json(); } catch {}
+    try { f = await (await fetch(`fund/${encodeURIComponent(t)}.json`, { cache: "no-cache" })).json(); } catch {}
     let all = [];
     try { const mk = await UI.market(); m = mk.byTicker[t] || {}; all = mk.stocks; } catch {}
     if (showing !== t) return;
@@ -139,9 +215,11 @@
           <a class="btn small" href="portfolio.html?t=${encodeURIComponent(t)}">Paper trade</a>
           <a class="btn small" href="compare.html?t=${encodeURIComponent(t)},^GSPC">Compare</a>
           <a class="btn small" href="alerts.html?t=${encodeURIComponent(t)}">Set alert</a>
+          <span id="explain-slot"></span>
         </div>
       </div>
       <p class="fund-summary">${summary(f, m, cur)}</p>
+      <div class="explain-out" id="explain-out" hidden aria-live="polite"></div>
       <div class="fund-profile">
         <div class="tags">${[f.sector, f.industry, [f.city, f.country].filter(Boolean).join(", "), f.fullTimeEmployees ? f.fullTimeEmployees.toLocaleString() + " employees" : ""].filter(Boolean).map((x) => `<span class="tag">${esc(x)}</span>`).join("")}${f.website && /^https?:\/\//.test(f.website) ? `<a class="tag" href="${esc(f.website)}" target="_blank" rel="noopener">Website ↗</a>` : ""}</div>
         ${desc ? `<details class="fund-desc"><summary>${esc(desc.slice(0, 220))}${desc.length > 220 ? "… <span>Read more</span>" : ""}</summary>${desc.length > 220 ? `<p>${esc(desc)}</p>` : ""}</details>` : ""}
@@ -191,7 +269,8 @@
       ${peers(t, m, all)}
       <p class="hint">Figures from Yahoo Finance as of ${new Date(f.asOf).toLocaleDateString(undefined, { dateStyle: "medium" })}. Amounts are in ${esc(cur)}. Hover a figure for what it means.</p>
     </div>`;
-    if (f.recommendationMean != null || f.numberOfAnalystOpinions) ratings(t, cur, price);
+    ratings(t, cur, price, f.recommendationMean != null || f.numberOfAnalystOpinions);
+    explainButton(t);
   }
 
   window.renderFund = render;

@@ -3,26 +3,32 @@
 (function () {
   // [href, label, other file names that count as this page, menu group]
   const PAGES = [
-    ["news.html", "News"],
+    ["news.html", "Market News"],
     ["markets.html", "Markets"],
+    ["heatmap.html", "Heatmap"],
+    ["aerospace.html", "Aerospace & Defence", null, "Sectors"],
     ["stock.html", "Stock Lookup"],
     ["watchlist.html", "Watchlists"],
     ["portfolio.html", "Paper Trading"],
     ["screener.html", "Screener"],
     ["movers.html", "Movers"],
+    ["funds.html", "ETFs & Crypto"],
     ["brief.html", "Daily Brief", null, "Research"],
-    ["heatmap.html", "Heatmap", null, "Research"],
     ["signals.html", "Signals", null, "Research"],
     ["analysts.html", "Analysts", null, "Research"],
     ["dividends.html", "Dividends", null, "Research"],
     ["earnings.html", "Earnings", null, "Research"],
     ["calendar.html", "Calendar", null, "Research"],
+    ["insiders.html", "Insiders", null, "Research"],
+    ["recap.html", "Weekly Recap", null, "Research"],
     ["compare.html", "Compare", null, "Tools"],
     ["backtest.html", "Backtest", null, "Tools"],
     ["options.html", "Options", null, "Tools"],
     ["alerts.html", "Alerts", null, "Tools"],
     ["tools.html", "Calculators", null, "Tools"],
     ["ask.html", "Ask"],
+    ["account.html", "Account"],
+    ["daily/", "Daily News ↗"],
     ["re/", "Real Estate ↗"],
   ];
 
@@ -52,23 +58,74 @@
     const color = pts[pts.length - 1] >= pts[0] ? "var(--up)" : "var(--down)";
     return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="${color}" stroke-width="1.6" points="${d}"/></svg>`;
   };
-  const stockUrl = (t) => "stock.html?t=" + encodeURIComponent(t);
+  // Each stock has its own search-friendly page (stocks/AAPL.html, build_stock_pages.py). Indexes, futures and
+  // currencies don't, so they open the lookup directly; a missing page falls back to the lookup through 404.html.
+  const stockUrl = (t) => /^[A-Za-z0-9][A-Za-z0-9.\-]{0,19}$/.test(t) && !/=|^\^/.test(t) ? "stocks/" + encodeURIComponent(t) + ".html" : "stock.html?t=" + encodeURIComponent(t);
   const store = {
     get(k, fallback) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   };
 
+  // ---- notice when a page's data is older than it should be (the automatic refresh fell behind).
+  // Worked out in the browser from the file's own timestamp, so it still shows if the refresh stops entirely.
+  // Hours: full refreshes run weekday evenings and Sunday midday, so prices can be ~40 hours old over a weekend.
+  const FRESH_HOURS = { "data.json": 44, "market.json": 44, "news.json": 3 };
+  // ---- "Updated …" stamp in the header. It shows how old the page's data is and counts up on its own
+  // ("Updated 4 min ago · 6:10 AM"), so it never reads like a clock that has fallen behind the reader's own.
+  // Live price updates replace it with their own "Live · time" stamp, which stops this one.
+  function updated(when, prefix = "Updated") {
+    const el = document.getElementById("updated");
+    const at = when instanceof Date ? when : new Date(when);
+    if (!el || isNaN(at)) return;
+    const span = document.createElement("span");
+    el.replaceChildren(span);
+    el.title = `Data gathered ${at.toLocaleString(undefined, { dateStyle: "full", timeStyle: "short" })}. The site gathers new data about every 15 minutes.`;
+    const draw = () => {
+      if (!el.contains(span)) return false;
+      const mins = Math.max(0, Math.floor((Date.now() - at) / 60000));
+      const time = at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      span.textContent = mins < 1 ? `${prefix} just now · ${time}`
+        : mins < 60 ? `${prefix} ${mins} min ago · ${time}`
+        : new Date().toDateString() === at.toDateString() ? `${prefix} ${Math.floor(mins / 60)} h ${mins % 60} min ago · ${time}`
+        : `${prefix} ${at.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
+      return true;
+    };
+    const tick = () => { if (draw()) setTimeout(tick, 60000 - (Date.now() % 60000) + 50); };
+    tick();
+  }
+
+  function freshness(iso, maxHours) {
+    const at = new Date(iso);
+    if (!iso || isNaN(at) || (Date.now() - at) / 3600000 <= maxHours) return;
+    if (document.getElementById("stale-note")) return;
+    const main = document.querySelector("main") || document.body;
+    const note = document.createElement("div");
+    note.id = "stale-note";
+    note.className = "stale-note";
+    note.setAttribute("role", "status");
+    note.textContent = `Some figures on this page are from ${at.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. ` +
+      "The automatic update is running behind; the page will catch up on its own once it does.";
+    main.prepend(note);
+  }
   // ---- data files, fetched once per page
   const cache = {};
-  const load = (file) => (cache[file] ||= fetch(file, { cache: "no-store" }).then((r) => {
+  const load = (file) => (cache[file] ||= fetch(file, { cache: "no-cache" }).then((r) => {
     if (!r.ok) throw new Error(file + " " + r.status);
     return r.json();
+  }).then((d) => {
+    if (FRESH_HOURS[file] && d && d.generated) freshness(d.generated, FRESH_HOURS[file]);
+    return d;
   }));
   // Every stock's facts from market.json, by ticker
   let marketMap = null;
   async function market() {
     const m = await load("market.json");
-    if (!marketMap) marketMap = Object.fromEntries(m.stocks.map((s) => [s.t, s]));
+    if (!marketMap) {
+      // New listings outside the indexes can arrive without a market list; give every stock one so pages
+      // that filter by market (heatmap, screener, movers...) never stop on them
+      for (const s of m.stocks) if (!Array.isArray(s.ix)) s.ix = [];
+      marketMap = Object.fromEntries(m.stocks.map((s) => [s.t, s]));
+    }
     return { ...m, byTicker: marketMap };
   }
 
@@ -114,6 +171,23 @@
     }
   });
 
+  // A share button: the phone's share sheet where there is one, otherwise copy the link
+  const shareBtn = (label = "Share") => `<button class="star share-btn" type="button" data-share title="Share a link to this page"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${esc(label)}</span></button>`;
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-share]");
+    if (!b) return;
+    e.preventDefault();
+    const url = location.href, title = document.title;
+    if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+      try { await navigator.share({ title, url }); } catch {}
+      return;
+    }
+    const span = b.querySelector("span"), was = span.textContent;
+    try { await navigator.clipboard.writeText(url); span.textContent = "Link copied ✓"; }
+    catch { span.textContent = "Copy failed"; }
+    setTimeout(() => { span.textContent = was; }, 2000);
+  });
+
   // ---- stock search (stocks.json), shared by the header box and the pages
   const norm = (s) => s.toLowerCase().normalize("NFKD").replace(/[^\w ]/g, "");
   async function search(text, n = 8) {
@@ -130,8 +204,47 @@
     return scored.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, n).map((x) => x[2]);
   }
 
-  // A search box with a drop-down of matches; onPick gets the stocks.json entry
-  function picker(input, onPick) {
+  // ---- stocks this reader looked up lately (newest first), kept in this browser
+  const Recent = {
+    list() { const v = store.get("recentStocks", []); return Array.isArray(v) ? v.filter((t) => typeof t === "string") : []; },
+    add(t) { store.set("recentStocks", [t, ...Recent.list().filter((x) => x !== t)].slice(0, 8)); },
+    async stocks(n = 6, skip) {
+      const l = Recent.list().filter((t) => t !== skip);
+      if (!l.length) return [];
+      const by = new Map((await load("stocks.json")).map((s) => [s.t, s]));
+      return l.map((t) => by.get(t)).filter(Boolean).slice(0, n);
+    },
+  };
+
+  // Where a stock trades, for search results and headings: its indexes, or for one outside
+  // them (a new listing, or a symbol found through the price service) its exchange
+  function where(s) {
+    if (s.index) return s.region;
+    if (s.ix && s.ix.length) return s.ix.join(", ");
+    const ipo = s.ipo && s.ipo.d && Date.now() - Date.parse(s.ipo.d) < 183 * 86400000
+      ? "IPO " + new Date(s.ipo.d + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
+    return [s.x || s.region, ipo].filter(Boolean).join(" · ");
+  }
+
+  // Symbols from the price service that aren't in stocks.json, shaped like its entries
+  const fromLive = (r) => ({ t: r.t, s: r.t, n: r.n || r.t, x: r.x, ix: [], region: "", live: true });
+  async function searchLive(text, have) {
+    if (!(window.Live && Live.on) || text.trim().length < 2) return [];
+    const seen = new Set(have.map((s) => s.t.toUpperCase()));
+    return (await Live.search(text.trim()).catch(() => [])).filter((r) => !seen.has(r.t.toUpperCase())).map(fromLive);
+  }
+
+  // What was typed, as a symbol to try on the stock lookup, when no search knows it yet
+  const typedTicker = (text) => {
+    const t = text.trim().toUpperCase();
+    return window.Live && Live.on && /^[A-Z][A-Z0-9.\-]{0,9}$/.test(t)
+      ? [{ t, s: t, n: `Look up ${t}`, x: "Any exchange, including today's IPOs", ix: [], region: "", live: true }] : [];
+  };
+
+  // A search box with a drop-down of matches; onPick gets the stocks.json entry.
+  // opts.any: also list symbols the price service finds anywhere (for boxes that open the
+  // stock lookup, which can chart any symbol; other tools need the site's own files)
+  function picker(input, onPick, opts = {}) {
     const wrap = input.parentElement;
     const list = document.createElement("ul");
     list.className = "panel results";
@@ -143,14 +256,14 @@
     input.setAttribute("aria-controls", list.id);
     input.setAttribute("aria-expanded", "false");
     input.autocomplete = "off";
-    let matches = [], active = -1, seq = 0;
+    let matches = [], active = -1, seq = 0, recent = false;
     const show = () => {
       list.hidden = !matches.length;
       input.setAttribute("aria-expanded", String(matches.length > 0));
-      list.innerHTML = matches.map((s, n) => `
+      list.innerHTML = (recent && matches.length ? `<li role="presentation" class="res-head">Recently viewed</li>` : "") + matches.map((s, n) => `
         <li role="option" id="${list.id}-${n}" aria-selected="${n === active}" data-n="${n}">
           <span class="nm">${esc(s.n)}</span>
-          <span class="tk">${esc(s.t)} · ${esc(s.index ? s.region : s.ix.join(", "))}</span>
+          <span class="tk">${esc(s.t)}${where(s) ? " · " + esc(where(s)) : ""}</span>
         </li>`).join("");
       if (active >= 0) input.setAttribute("aria-activedescendant", `${list.id}-${active}`); else input.removeAttribute("aria-activedescendant");
     };
@@ -159,7 +272,24 @@
       const mine = ++seq;
       const m = await search(input.value).catch(() => []);
       if (mine !== seq) return;
-      matches = m; active = m.length ? 0 : -1; show();
+      recent = false; matches = m; active = m.length ? 0 : -1; show();
+      // Then whatever else the price service knows, after a pause in typing
+      if (!opts.any || m.length >= 8) return;
+      await new Promise((r) => setTimeout(r, 250));
+      if (mine !== seq) return;
+      const more = await searchLive(input.value, m);
+      if (mine !== seq) return;
+      if (!m.length && !more.length) more.push(...typedTicker(input.value));
+      if (!more.length) return;
+      matches = m.concat(more).slice(0, 10); if (active < 0) active = 0; show();
+    });
+    // An empty box lists the stocks looked up lately
+    input.addEventListener("focus", async () => {
+      if (input.value.trim()) return;
+      const mine = ++seq;
+      const m = await Recent.stocks(6).catch(() => []);
+      if (mine !== seq || input.value.trim() || document.activeElement !== input) return;
+      recent = true; matches = m; active = -1; show();
     });
     input.addEventListener("keydown", (e) => {
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -175,7 +305,7 @@
       }
     });
     list.addEventListener("mousedown", (e) => {
-      const li = e.target.closest("li");
+      const li = e.target.closest("li[data-n]");
       if (li) { e.preventDefault(); choose(matches[+li.dataset.n]); }
     });
     input.addEventListener("blur", () => setTimeout(() => { matches = []; show(); }, 100));
@@ -258,7 +388,7 @@
       if (on && getComputedStyle(menu.querySelector(".menu-flat")).display !== "none") on.scrollIntoView({ block: "nearest", inline: "center" });
     }
     const box = document.getElementById("jump");
-    if (box) picker(box, (s) => { location.href = stockUrl(s.t); });
+    if (box) picker(box, (s) => { location.href = stockUrl(s.t); }, { any: true });
     // Press "/" anywhere to jump to the stock search
     if (box) {
       box.placeholder = "Go to a stock… (press /)";
@@ -274,41 +404,100 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", header); else header();
 
-  // ---- trading hours of the eight markets (regular sessions; exchange holidays aren't known here)
+  // ---- trading hours of the eight markets (regular sessions), with New York, Toronto and Tokyo exchange holidays
   const HOURS = {
-    tsx: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto" },
-    tsxv: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto" },
-    sp500: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
-    nasdaq100: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
-    dow: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York" },
-    nikkei225: { tz: "Asia/Tokyo", s: [["09:00", "11:30"], ["12:30", "15:30"]], name: "Tokyo" },
+    tsx: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto", hol: "ca" },
+    tsxv: { tz: "America/Toronto", s: [["09:30", "16:00"]], name: "Toronto", hol: "ca" },
+    sp500: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York", hol: "us" },
+    nasdaq100: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York", hol: "us" },
+    dow: { tz: "America/New_York", s: [["09:30", "16:00"]], name: "New York", hol: "us" },
+    nikkei225: { tz: "Asia/Tokyo", s: [["09:00", "11:30"], ["12:30", "15:30"]], name: "Tokyo", hol: "jp" },
     kospi200: { tz: "Asia/Seoul", s: [["09:00", "15:30"]], name: "Seoul" },
     twse50: { tz: "Asia/Taipei", s: [["09:00", "13:30"]], name: "Taipei" },
   };
-  // { open, label, local } for a market id, e.g. { open: true, label: "Closes in 2h 10m", local: "11:20 AM" }
-  function session(id, now = new Date()) {
+  // Full-day closures (exchange's local date) and early closes, from the NYSE, TMX and JPX calendars.
+  // Add the next year's dates each autumn; Seoul and Taipei follow the lunar calendar and aren't listed.
+  const HOLIDAYS = {
+    us: {
+      closed: {
+        "2026-01-01": "New Year's Day", "2026-01-19": "Martin Luther King Jr. Day", "2026-02-16": "Presidents' Day", "2026-04-03": "Good Friday",
+        "2026-05-25": "Memorial Day", "2026-06-19": "Juneteenth", "2026-07-03": "Independence Day", "2026-09-07": "Labor Day",
+        "2026-11-26": "Thanksgiving", "2026-12-25": "Christmas",
+        "2027-01-01": "New Year's Day", "2027-01-18": "Martin Luther King Jr. Day", "2027-02-15": "Presidents' Day", "2027-03-26": "Good Friday",
+        "2027-05-31": "Memorial Day", "2027-06-18": "Juneteenth", "2027-07-05": "Independence Day", "2027-09-06": "Labor Day",
+        "2027-11-25": "Thanksgiving", "2027-12-24": "Christmas",
+      },
+      early: { "2026-11-27": "13:00", "2026-12-24": "13:00", "2027-11-26": "13:00" },
+    },
+    ca: {
+      closed: {
+        "2026-01-01": "New Year's Day", "2026-02-16": "Family Day", "2026-04-03": "Good Friday", "2026-05-18": "Victoria Day",
+        "2026-07-01": "Canada Day", "2026-08-03": "Civic Holiday", "2026-09-07": "Labour Day", "2026-10-12": "Thanksgiving",
+        "2026-12-25": "Christmas", "2026-12-28": "Boxing Day",
+        "2027-01-01": "New Year's Day", "2027-02-15": "Family Day", "2027-03-26": "Good Friday", "2027-05-24": "Victoria Day",
+        "2027-07-01": "Canada Day", "2027-08-02": "Civic Holiday", "2027-09-06": "Labour Day", "2027-10-11": "Thanksgiving",
+        "2027-12-27": "Christmas", "2027-12-28": "Boxing Day",
+      },
+    },
+    jp: {
+      closed: {
+        "2026-01-01": "New Year", "2026-01-02": "New Year", "2026-01-12": "Coming of Age Day", "2026-02-11": "National Foundation Day",
+        "2026-02-23": "Emperor's Birthday", "2026-03-20": "Vernal Equinox Day", "2026-04-29": "Showa Day", "2026-05-04": "Greenery Day",
+        "2026-05-05": "Children's Day", "2026-05-06": "Constitution Day (observed)", "2026-07-20": "Marine Day", "2026-08-11": "Mountain Day",
+        "2026-09-21": "Respect for the Aged Day", "2026-09-22": "National holiday", "2026-09-23": "Autumnal Equinox Day", "2026-10-12": "Sports Day",
+        "2026-11-03": "Culture Day", "2026-11-23": "Labor Thanksgiving Day", "2026-12-31": "Year-end holiday",
+        "2027-01-01": "New Year", "2027-01-11": "Coming of Age Day", "2027-02-11": "National Foundation Day", "2027-02-23": "Emperor's Birthday",
+        "2027-03-22": "Vernal Equinox Day (observed)", "2027-04-29": "Showa Day", "2027-05-03": "Constitution Day", "2027-05-04": "Greenery Day",
+        "2027-05-05": "Children's Day", "2027-07-19": "Marine Day", "2027-08-11": "Mountain Day", "2027-09-20": "Respect for the Aged Day",
+        "2027-09-23": "Autumnal Equinox Day", "2027-10-11": "Sports Day", "2027-11-03": "Culture Day", "2027-11-23": "Labor Thanksgiving Day",
+        "2027-12-31": "Year-end holiday",
+      },
+    },
+  };
+  const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const toS = (t) => +t.slice(0, 2) * 3600 + +t.slice(3) * 60;
+  // A market's sessions on a local calendar date (y, m, d), or [] when it's shut: weekends and listed holidays
+  function sessionsOn(h, y, m, d) {
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    const wd = dt.getUTCDay();
+    if (wd === 0 || wd === 6) return [];
+    const key = dt.toISOString().slice(0, 10), cal = HOLIDAYS[h.hol];
+    if (cal && cal.closed[key]) return [];
+    const early = cal && cal.early && cal.early[key];
+    return early ? h.s.filter(([a]) => toS(a) < toS(early)).map(([a, b]) => [a, toS(b) > toS(early) ? early : b]) : h.s;
+  }
+  // Where a market stands now: { open, secs to the next open or close, next: "open" | "reopen" | "close",
+  // day and at (the next open's weekday and time), holiday (today's holiday name), early (today's early close) }
+  function clock(id, now = new Date()) {
     const h = HOURS[id];
     if (!h) return null;
-    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: h.tz, weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
-      .formatToParts(now).map((p) => [p.type, p.value]));
-    const mins = +parts.hour * 60 + +parts.minute;
-    const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday);
-    const toMin = (t) => +t.slice(0, 2) * 60 + +t.slice(3);
-    const fmt = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`);
-    const local = now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" });
-    const weekday = day >= 1 && day <= 5;
-    if (weekday) {
-      for (const [a, b] of h.s) {
-        if (mins >= toMin(a) && mins < toMin(b)) return { open: true, label: `Closes in ${fmt(toMin(b) - mins)}`, local, city: h.name };
-      }
-      const next = h.s.find(([a]) => toMin(a) > mins);
-      if (next) return { open: false, label: h.s.length > 1 && mins >= toMin(h.s[0][1]) ? `Lunch break, reopens in ${fmt(toMin(next[0]) - mins)}` : `Opens in ${fmt(toMin(next[0]) - mins)}`, local, city: h.name };
+    const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: h.tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })
+      .formatToParts(now).map((x) => [x.type, x.value]));
+    const y = +p.year, mo = +p.month, d = +p.day;
+    const secs = +p.hour * 3600 + +p.minute * 60 + +p.second;
+    const key = `${p.year}-${p.month}-${p.day}`, cal = HOLIDAYS[h.hol];
+    const extra = { holiday: (cal && cal.closed[key]) || null, early: (cal && cal.early && cal.early[key]) || null };
+    const today = sessionsOn(h, y, mo, d);
+    for (const [a, b] of today) if (secs >= toS(a) && secs < toS(b)) return { open: true, secs: toS(b) - secs, next: "close", ...extra };
+    const nx = today.find(([a]) => toS(a) > secs);
+    if (nx) return { open: false, secs: toS(nx[0]) - secs, next: today.length > 1 && secs >= toS(today[0][1]) ? "reopen" : "open", day: null, at: nx[0], ...extra };
+    for (let add = 1; add < 15; add++) {
+      const ses = sessionsOn(h, y, mo, d + add);
+      if (ses.length) return { open: false, secs: add * 86400 - secs + toS(ses[0][0]), next: "open", day: DAYS[new Date(Date.UTC(y, mo - 1, d + add)).getUTCDay()], at: ses[0][0], ...extra };
     }
-    // Next weekday's open
-    let add = 1;
-    while (![1, 2, 3, 4, 5].includes((day + add) % 7)) add++;
-    const wait = add * 1440 - mins + toMin(h.s[0][0]);
-    return { open: false, label: wait < 1440 ? `Opens in ${fmt(wait)}` : `Opens ${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][(day + add) % 7]} ${h.s[0][0]}`, local, city: h.name };
+    return { open: false, secs: 0, next: "open", ...extra };
+  }
+  // { open, label, local } for a market id, e.g. { open: true, label: "Closes in 2h 10m", local: "11:20 AM" }
+  function session(id, now = new Date()) {
+    const h = HOURS[id], c = clock(id, now);
+    if (!c) return null;
+    const m = Math.round(c.secs / 60);
+    const fmt = (v) => (v >= 60 ? `${Math.floor(v / 60)}h ${v % 60}m` : `${v}m`);
+    const local = now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" });
+    const label = c.open ? `Closes in ${fmt(m)}${c.early ? " (early close)" : ""}`
+      : c.next === "reopen" ? `Lunch break, reopens in ${fmt(m)}`
+      : (c.holiday ? `${c.holiday}, ` : "") + (m < 1440 ? `${c.holiday ? "opens" : "Opens"} in ${fmt(m)}` : `${c.holiday ? "opens" : "Opens"} ${c.day} ${c.at}`);
+    return { open: c.open, label, local, city: h.name, holiday: c.holiday };
   }
 
   // ---- price alerts, kept in this browser and checked on every page while it's open
@@ -372,24 +561,162 @@
     setInterval(() => { if (!document.hidden && window.Live && Live.on) watchAlerts(); }, 60000);
   });
 
+  // ---- push alerts: the live service checks saved alerts every 5 minutes and pushes the ones that go off,
+  // so they arrive with the site closed. sw.js shows them. Turned on from the Alerts page; kept in step here.
+  const Push = {
+    supported() { return !!(window.Live && Live.on && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window); },
+    on() { return !!store.get("pushOn", false); },
+    async reg() { return navigator.serviceWorker.register("sw.js?api=" + encodeURIComponent(Live.api)); },
+    async enable() {
+      if (!this.supported()) throw new Error("This browser can't receive push notifications");
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") throw new Error("Notifications are blocked for this site in your browser settings");
+      const reg = await this.reg();
+      await navigator.serviceWorker.ready;
+      const { key } = await (await fetch(Live.api + "/push/key")).json();
+      const raw = Uint8Array.from(atob(key.replace(/-/g, "+").replace(/_/g, "/") + "==".slice(0, (4 - key.length % 4) % 4)), (c) => c.charCodeAt(0));
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
+      store.set("pushOn", true);
+      await this.sync(true);
+    },
+    async disable() {
+      store.set("pushOn", false);
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (sub) {
+          await fetch(Live.api + "/push/remove", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
+          await sub.unsubscribe();
+        }
+      } catch {}
+    },
+    async sub() {
+      const reg = await navigator.serviceWorker.getRegistration();
+      return reg ? reg.pushManager.getSubscription() : null;
+    },
+    // Send this browser's active alerts to the service
+    async sync(now) {
+      if (!this.on() || !this.supported()) return;
+      clearTimeout(this.t);
+      if (!now) { this.t = setTimeout(() => this.sync(true), 1500); return; }
+      const sub = await this.sub().catch(() => null);
+      if (!sub) return;
+      await fetch(Live.api + "/push/sync", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sub: sub.toJSON(), alerts: Alerts.all().active }) }).catch(() => {});
+    },
+    // Alerts the service already pushed move to "triggered" here too, without a second pop-up
+    async reconcile() {
+      if (!this.on() || !this.supported()) return;
+      const sub = await this.sub().catch(() => null);
+      if (!sub) return;
+      try {
+        const d = await (await fetch(`${Live.api}/push/inbox?ep=${encodeURIComponent(sub.endpoint)}`)).json();
+        const done = new Map((d.fired || []).map((a) => [a.id, a]));
+        const v = Alerts.all();
+        const gone = v.active.filter((a) => done.has(a.id));
+        if (!gone.length) return;
+        v.active = v.active.filter((a) => !done.has(a.id));
+        v.fired.push(...gone.map((a) => ({ ...a, firedAt: done.get(a.id).firedAt, firedPrice: done.get(a.id).firedPrice, firedChg: done.get(a.id).firedChg })));
+        Alerts.save(v);
+      } catch {}
+    },
+  };
+  window.addEventListener("alerts", () => Push.sync());
+  window.addEventListener("load", () => setTimeout(() => Push.reconcile(), 1500));
+
+  // ---- accounts: one account key (made on the Account page) keeps watchlists, notes, alerts, paper portfolios,
+  // saved screens, chart drawings and settings the same on every device. The newest copy of each item wins.
+  const SYNC_KEYS = ["watchlists", "watchNotes", "alerts", "portfolios", "savedScreens", "recentStocks", "clocks", "calcs", "backtest", "compare"];
+  const SYNC_PREFIX = ["lookupDraw:"];
+  const hashOf = (s) => { let h = 5381; for (let i = 0; i < (s || "").length; i++) h = (h * 33 + s.charCodeAt(i)) | 0; return s == null ? "null" : String(h >>> 0) + ":" + s.length; };
+  const Account = {
+    SYNC_KEYS,
+    key() { return store.get("acctKey", null); },
+    status() { return store.get("acctStatus", {}); },
+    names() {
+      const out = new Set(SYNC_KEYS);
+      try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (SYNC_PREFIX.some((p) => k.startsWith(p))) out.add(k); } } catch {}
+      for (const k of Object.keys(store.get("acctMeta", {}))) out.add(k);
+      return [...out];
+    },
+    async call(path, body) {
+      if (!(window.Live && Live.on)) throw new Error("Accounts need the live price service, which isn't set up");
+      const res = await fetch(Live.api + "/account/" + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "The account service didn't answer (" + res.status + ")");
+      return d;
+    },
+    async create() {
+      const { key } = await this.call("create");
+      store.set("acctKey", key); store.set("acctMeta", {}); store.set("acctFresh", false);
+      await this.sync();
+      return key;
+    },
+    // Sign in on another device: what's saved in the account wins over what's in this browser
+    async signIn(key) {
+      key = String(key || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/(.{4})(?=.)/g, "$1-");
+      await this.call("get", { key });
+      store.set("acctKey", key); store.set("acctMeta", {}); store.set("acctFresh", true);
+      return this.sync();
+    },
+    signOut() { ["acctKey", "acctMeta", "acctFresh", "acctStatus"].forEach((k) => { try { localStorage.removeItem(k); } catch {} }); },
+    async remove() { const key = this.key(); if (key) await this.call("delete", { key }); this.signOut(); },
+    async sync(beacon) {
+      const key = this.key();
+      if (!key || this.busy) return 0;
+      this.busy = true;
+      try {
+        const meta = store.get("acctMeta", {}), fresh = store.get("acctFresh", false), now = Date.now();
+        const changed = {};
+        for (const name of this.names()) {
+          let raw = null;
+          try { raw = localStorage.getItem(name); } catch {}
+          const h = hashOf(raw);
+          if (meta[name] && meta[name].h === h) continue;
+          if (raw == null && !meta[name]) continue;
+          // On a newly signed-in device, this browser's items count as older than the account's
+          const at = fresh ? 1 : now;
+          let v = null;
+          try { v = raw == null ? null : JSON.parse(raw); } catch { v = raw; }
+          changed[name] = { v, at };
+          meta[name] = { h, at };
+        }
+        const d = await this.call("put", { key, data: changed });
+        let pulled = 0;
+        for (const [name, item] of Object.entries(d.data || {})) {
+          if (!/^[\w:.\-^=]+$/.test(name) || !(SYNC_KEYS.includes(name) || SYNC_PREFIX.some((p) => name.startsWith(p)))) continue;
+          const raw = item.v == null ? null : JSON.stringify(item.v);
+          if (meta[name] && meta[name].h === hashOf(raw)) { meta[name].at = Math.max(meta[name].at || 0, item.at); continue; }
+          if ((meta[name] && meta[name].at > item.at)) continue;
+          try { if (raw == null) localStorage.removeItem(name); else localStorage.setItem(name, raw); } catch {}
+          meta[name] = { h: hashOf(raw), at: item.at };
+          pulled++;
+        }
+        store.set("acctMeta", meta); store.set("acctFresh", false);
+        store.set("acctStatus", { at: new Date().toISOString(), items: Object.keys(d.data || {}).length });
+        if (pulled) { window.dispatchEvent(new CustomEvent("watchlists")); window.dispatchEvent(new CustomEvent("alerts")); window.dispatchEvent(new CustomEvent("synced", { detail: { pulled } })); }
+        return pulled;
+      } catch (e) {
+        store.set("acctStatus", { ...this.status(), error: String(e.message || e), errAt: new Date().toISOString() });
+        if (!beacon) throw e;
+        return 0;
+      } finally { this.busy = false; }
+    },
+  };
+  window.addEventListener("load", () => {
+    if (!Account.key()) return;
+    setTimeout(() => Account.sync(true).catch(() => {}), 800);
+    setInterval(() => { if (!document.hidden) Account.sync(true).catch(() => {}); }, 60000);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) Account.sync(true).catch(() => {}); });
+    let t = null;
+    const soon = () => { clearTimeout(t); t = setTimeout(() => Account.sync(true).catch(() => {}), 2500); };
+    window.addEventListener("watchlists", soon);
+    window.addEventListener("alerts", soon);
+  });
+
   // Seconds until the next open or close for a market id: { open, secs, next: "close" | "open" | "reopen" }
-  function countdown(id, now = new Date()) {
-    const h = HOURS[id];
-    if (!h) return null;
-    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: h.tz, weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" })
-      .formatToParts(now).map((p) => [p.type, p.value]));
-    const secs = +parts.hour * 3600 + +parts.minute * 60 + +parts.second;
-    const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parts.weekday);
-    const toS = (t) => +t.slice(0, 2) * 3600 + +t.slice(3) * 60;
-    if (day >= 1 && day <= 5) {
-      for (const [a, b] of h.s) if (secs >= toS(a) && secs < toS(b)) return { open: true, secs: toS(b) - secs, next: "close" };
-      const nx = h.s.find(([a]) => toS(a) > secs);
-      if (nx) return { open: false, secs: toS(nx[0]) - secs, next: h.s.length > 1 && secs >= toS(h.s[0][1]) ? "reopen" : "open" };
-    }
-    let add = 1;
-    while (![1, 2, 3, 4, 5].includes((day + add) % 7)) add++;
-    return { open: false, secs: add * 86400 - secs + toS(h.s[0][0]), next: "open" };
-  }
+  const countdown = (id, now = new Date()) => clock(id, now);
 
   // ---- market clock strip under the menu on every page, one toggle per market
   const CLOCKS = [["tsx", "TSX"], ["tsxv", "TSXV"], ["sp500", "S&P 500"], ["nasdaq100", "Nasdaq"], ["dow", "Dow"], ["nikkei225", "Nikkei"], ["kospi200", "KOSPI"], ["twse50", "Taiwan"]];
@@ -414,7 +741,7 @@
         const c = countdown(id, now), h = HOURS[id];
         const shown = on.has(id);
         const what = c.next === "close" ? "Closes in" : c.next === "reopen" ? "Reopens in" : "Opens in";
-        const tip = `${name}: ${c.open ? "open" : "closed"}. ${h.name} time ${now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" })}. Regular hours only; exchange holidays aren't included. Tap to ${shown ? "hide" : "show"} the timer.`;
+        const tip = `${name}: ${c.open ? "open" : "closed"}. ${c.holiday ? `Closed today for ${c.holiday}. ` : ""}${c.early ? `Closes early today, at ${c.early}. ` : ""}${h.name} time ${now.toLocaleTimeString(undefined, { timeZone: h.tz, hour: "numeric", minute: "2-digit" })}. Regular hours${h.hol ? " and exchange holidays" : "; exchange holidays aren't included"}. Tap to ${shown ? "hide" : "show"} the timer.`;
         return `<button type="button" class="mc ${c.open ? "open" : ""} ${shown ? "on" : ""}" data-mc="${id}" aria-pressed="${shown}" title="${esc(tip)}">
           <i aria-hidden="true"></i><b>${esc(name)}</b>${shown ? `<span class="mc-t">${what} <span class="num">${dur(c.secs)}</span></span>` : ""}</button>`;
       }).join("");
@@ -443,8 +770,10 @@
     const top = document.querySelector("header.top");
     if (!top || document.getElementById("tape")) return;
     const names = Object.fromEntries(CLOCKS);
-    load("tape.json").then((d) => {
-      const items = (d.items || []).filter((x) => x.p != null);
+    Promise.all([load("tape.json"), load("macro.json").catch(() => ({ items: [] }))]).then(([d, mac]) => {
+      // Rates, oil, gold, the dollar and Bitcoin after the indexes and their top stocks
+      const macro = (mac.items || []).filter((m) => m.p != null).map((m) => ({ t: m.t, s: m.s, p: m.p, c: m.d1, mac: true }));
+      const items = (d.items || []).filter((x) => x.p != null).concat(macro);
       if (!items.length) return;
       const tape = document.createElement("div");
       tape.className = "tape";
@@ -457,7 +786,7 @@
         const label = x.ix ? names[x.ix] || x.t : x.s || x.t;
         const c = x.c == null ? "" : `<i class="${x.c >= 0 ? "u" : "d"}">${x.c >= 0 ? "▲" : "▼"} ${Math.abs(x.c).toFixed(2)}%</i>`;
         const inner = `<b>${esc(label)}</b><span class="num">${num(x.p)}</span>${c}`;
-        return x.ix ? `<span class="tk ix">${inner}</span>` : `<a class="tk" href="${stockUrl(x.t)}">${inner}</a>`;
+        return x.ix ? `<span class="tk ix">${inner}</span>` : `<a class="tk${x.mac ? " mac" : ""}" href="${stockUrl(x.t)}">${inner}</a>`;
       };
       const draw = () => {
         const row = items.map(cell).join("");
@@ -480,5 +809,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", tickerTape); else tickerTape();
 
-  window.UI = { esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, picker, star, Watch, table, Alerts, toast, session, countdown, PAGES };
+  window.UI = { Push, Account, freshness, updated, esc, money, plain, pct, big, compact, fixed, spark, stockUrl, store, load, market, search, searchLive, typedTicker, where, picker, Recent, star, shareBtn, Watch, table, Alerts, toast, session, countdown, PAGES };
 })();

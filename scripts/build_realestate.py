@@ -13,6 +13,10 @@ Every source is free to use with credit:
   - Bank of Canada Valet API: 5-year conventional mortgage rate, policy rate.
   - Sociedad Hipotecaria Federal (Mexico): state house prices, kept by hand in
     data/realestate/mexico_shf.csv because SHF publishes PDF and Excel only.
+  - BIS data portal: residential property prices (nominal and real) for every
+    country it covers, central bank policy rates and US dollar exchange rates;
+    OECD house price database: price-to-income and price-to-rent ratios.
+    Zillow state files: typical home value and rent by US state.
   - RentCast API (optional, US only): real active for-sale listings, when the
     RENTCAST_API_KEY secret is set. Its free plan allows 50 requests a month, so
     listings are fetched once a week and saved in data/realestate/listings.json.
@@ -40,6 +44,9 @@ from pathlib import Path
 from urllib.parse import quote_plus
 
 import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_io import read_json, write_json  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "data" / "realestate"
@@ -308,6 +315,9 @@ ZMETRICS = {
     "stl": ["mean_sale_to_list/Metro_mean_sale_to_list_uc_sfrcondo_sm_month.csv", "mean_sale_to_list/Metro_mean_sale_to_list_uc_sfrcondo_month.csv"],
     "heat": ["market_temp_index/Metro_market_temp_index_uc_sfrcondo_month.csv", "market_temp_index/Metro_market_temp_index_uc_sfrcondo_sm_month.csv"],
     "fc": ["zhvf_growth/Metro_zhvf_growth_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"],
+    # State level, for the by-state chart
+    "st_zhvi": ["zhvi/State_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"],
+    "st_zori": ["zori/State_zori_uc_sfrcondomfr_sm_month.csv", "zori/State_zori_uc_sfrcondomfr_sm_sa_month.csv"],
 }
 _discovered: list[str] | None = None
 
@@ -326,7 +336,8 @@ def zillow(key: str):
     """{RegionID: {name, type, state, rank, series: [(date, v)], cols}} for one metric."""
     paths = ZMETRICS[key]
     urls = [ZILLOW + p for p in paths]
-    folder = paths[0].split("/")[0]
+    folder, fname = paths[0].split("/")
+    level = fname.split("_")[0]  # Metro or State
     r = None
     for u in urls:
         r = get(u, tries=1, timeout=90)
@@ -334,7 +345,7 @@ def zillow(key: str):
             break
     if not r:
         for u in discover_zillow():
-            if f"/{folder}/Metro_" in u and "_uc_sfrcondo" in u:
+            if f"/{folder}/{level}_" in u and "_uc_sfrcondo" in u:
                 r = get(u, tries=1, timeout=90)
                 if r:
                     break
@@ -374,7 +385,7 @@ def thin(series, years=HIST_YEARS):
 
 
 def build_us():
-    Z = {k: zillow(k) for k in ZMETRICS}
+    Z = {k: zillow(k) for k in ZMETRICS if not k.startswith("st_")}
     zhvi = Z.get("zhvi") or {}
     markets, hist = [], {}
     nation = None
@@ -383,7 +394,8 @@ def build_us():
         if z["type"] not in ("msa", "country"):
             continue
         is_us = z["type"] == "country"
-        if not is_us and len([m for m in markets if m["id"] != "us"]) >= US_MARKETS:
+        # The biggest US_MARKETS metros, plus the biggest metro of any state they leave out (so every state can be looked up)
+        if not is_us and len([m for m in markets if m["id"] != "us"]) >= US_MARKETS and z["state"] in {m["region"] for m in markets}:
             continue
         s = z["series"]
         if len(s) < 13:
@@ -436,7 +448,8 @@ PRAIRIE = "Prairie Region"
 
 
 def statcan_table(pid: str):
-    r = get(f"https://www150.statcan.gc.ca/n1/tbl/csv/{pid}-eng.zip", timeout=180)
+    # StatCan sometimes stops answering for a minute or two, so try for longer than other sources
+    r = get(f"https://www150.statcan.gc.ca/n1/tbl/csv/{pid}-eng.zip", tries=5, timeout=180)
     if not r:
         log("  StatCan failed", pid)
         return []
@@ -468,6 +481,9 @@ def bank_of_canada(series: str):
         if d and v is not None:
             out.append((d, v))
     return out
+
+
+PROVINCE_ROWS: list[dict] = []
 
 
 def build_canada():
@@ -502,6 +518,15 @@ def build_canada():
             continue
         is_ca = geo == "Canada"
         if not is_ca and (geo in PROVINCES or geo in (ATLANTIC, PRAIRIE)):
+            if geo in PROVINCES:  # kept for the by-province chart
+                v = s[-1][1]
+                rs = sorted(rents.get(geo_key(geo), []))
+                PROVINCE_ROWS.append({
+                    "code": PROVINCES[geo], "name": geo, "asof": s[-1][0].strftime("%Y-%m"), "idx": rnd(v, 1),
+                    "v1y": rnd(pct(v, at(s, 12))), "v5y": rnd(pct(v, at(s, 60))), "offPeak": rnd(pct(v, max(x for _, x in s))),
+                    "rent": rnd(rs[-1][1], 0) if rs else None,
+                    "rent1y": rnd(pct(rs[-1][1], rs[-2][1])) if len(rs) >= 2 else None,
+                })
             continue
         v = s[-1][1]
         city = "Canada" if is_ca else re.sub(r"\s*\(.*\)", "", geo.split(",")[0]).strip()
@@ -552,6 +577,303 @@ def build_mexico():
                 m["metroYoy"] = {"name": z["name"], "yoy": z["yoy"]}
     log(f"Mexico markets: {len(markets)}")
     return [nat] + markets, meta
+
+
+# ---------------------------------------------------------------- US states (for the by-state chart)
+US_STATES = {"Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR", "California": "CA", "Colorado": "CO",
+             "Connecticut": "CT", "Delaware": "DE", "District of Columbia": "DC", "Florida": "FL", "Georgia": "GA", "Hawaii": "HI",
+             "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA", "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA",
+             "Maine": "ME", "Maryland": "MD", "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS",
+             "Missouri": "MO", "Montana": "MT", "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ",
+             "New Mexico": "NM", "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK",
+             "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC", "South Dakota": "SD",
+             "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT", "Virginia": "VA", "Washington": "WA",
+             "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY"}
+
+
+def build_states():
+    """Typical home value and rent for every US state, from Zillow's state files."""
+    zh, zr = zillow("st_zhvi"), zillow("st_zori")
+    rent_by = {z["name"]: z["series"] for z in zr.values()}
+    out = []
+    for z in zh.values():
+        code = US_STATES.get(z["name"])
+        s = z["series"]
+        if not code or len(s) < 13:
+            continue
+        v = s[-1][1]
+        rs = rent_by.get(z["name"]) or []
+        rent = rs[-1][1] if rs else None
+        out.append({
+            "code": code, "name": z["name"], "asof": s[-1][0].strftime("%Y-%m"), "v": rnd(v, 0),
+            "v1y": rnd(pct(v, at(s, 12))), "v5y": rnd(pct(v, at(s, 60))), "v10y": rnd(pct(v, at(s, 120))),
+            "offPeak": rnd(pct(v, max(x for _, x in s))),
+            "rent": rnd(rent, 0), "rent1y": rnd(pct(rent, at(rs, 12))) if rs else None,
+            "yield": rnd(rent * 12 / v * 100) if rent and v else None,
+            "spark": [rnd(x, 0) for _, x in s[-24:]],
+        })
+    log(f"US states: {len(out)}")
+    return sorted(out, key=lambda x: x["name"])
+
+
+# ---------------------------------------------------------------- world house prices (BIS, with OECD valuations)
+# ISO code: (name, region, ISO3). Aggregates are kept as benchmarks only.
+WORLD = {
+    "US": ("United States", "Americas", "USA"), "CA": ("Canada", "Americas", "CAN"), "MX": ("Mexico", "Americas", "MEX"),
+    "BR": ("Brazil", "Americas", "BRA"), "CL": ("Chile", "Americas", "CHL"), "CO": ("Colombia", "Americas", "COL"),
+    "PE": ("Peru", "Americas", "PER"), "AR": ("Argentina", "Americas", "ARG"),
+    "GB": ("United Kingdom", "Europe", "GBR"), "IE": ("Ireland", "Europe", "IRL"), "FR": ("France", "Europe", "FRA"),
+    "DE": ("Germany", "Europe", "DEU"), "NL": ("Netherlands", "Europe", "NLD"), "BE": ("Belgium", "Europe", "BEL"),
+    "LU": ("Luxembourg", "Europe", "LUX"), "CH": ("Switzerland", "Europe", "CHE"), "AT": ("Austria", "Europe", "AUT"),
+    "IT": ("Italy", "Europe", "ITA"), "ES": ("Spain", "Europe", "ESP"), "PT": ("Portugal", "Europe", "PRT"),
+    "GR": ("Greece", "Europe", "GRC"), "MT": ("Malta", "Europe", "MLT"), "CY": ("Cyprus", "Europe", "CYP"),
+    "DK": ("Denmark", "Europe", "DNK"), "SE": ("Sweden", "Europe", "SWE"), "NO": ("Norway", "Europe", "NOR"),
+    "FI": ("Finland", "Europe", "FIN"), "IS": ("Iceland", "Europe", "ISL"), "EE": ("Estonia", "Europe", "EST"),
+    "LV": ("Latvia", "Europe", "LVA"), "LT": ("Lithuania", "Europe", "LTU"), "PL": ("Poland", "Europe", "POL"),
+    "CZ": ("Czechia", "Europe", "CZE"), "SK": ("Slovakia", "Europe", "SVK"), "SI": ("Slovenia", "Europe", "SVN"),
+    "HU": ("Hungary", "Europe", "HUN"), "HR": ("Croatia", "Europe", "HRV"), "RO": ("Romania", "Europe", "ROU"),
+    "BG": ("Bulgaria", "Europe", "BGR"), "RS": ("Serbia", "Europe", "SRB"), "MK": ("North Macedonia", "Europe", "MKD"),
+    "RU": ("Russia", "Europe", "RUS"), "TR": ("Türkiye", "Europe", "TUR"),
+    "JP": ("Japan", "Asia-Pacific", "JPN"), "KR": ("South Korea", "Asia-Pacific", "KOR"), "CN": ("China", "Asia-Pacific", "CHN"),
+    "HK": ("Hong Kong", "Asia-Pacific", "HKG"), "TW": ("Taiwan", "Asia-Pacific", "TWN"), "SG": ("Singapore", "Asia-Pacific", "SGP"),
+    "MY": ("Malaysia", "Asia-Pacific", "MYS"), "TH": ("Thailand", "Asia-Pacific", "THA"), "ID": ("Indonesia", "Asia-Pacific", "IDN"),
+    "PH": ("Philippines", "Asia-Pacific", "PHL"), "IN": ("India", "Asia-Pacific", "IND"), "AU": ("Australia", "Asia-Pacific", "AUS"),
+    "NZ": ("New Zealand", "Asia-Pacific", "NZL"),
+    "IL": ("Israel", "Middle East & Africa", "ISR"), "AE": ("United Arab Emirates", "Middle East & Africa", "ARE"),
+    "SA": ("Saudi Arabia", "Middle East & Africa", "SAU"), "ZA": ("South Africa", "Middle East & Africa", "ZAF"),
+    "MA": ("Morocco", "Middle East & Africa", "MAR"),
+    "XM": ("Euro area", "Benchmark", None),
+}
+ISO3 = {v[2]: k for k, v in WORLD.items() if v[2]}
+# Shown in the tables but left out of the investor score
+NOT_INVESTABLE = {"RU": "Under international sanctions: most foreign investors can't buy or move money out"}
+
+
+def sdmx_csv(url: str, timeout=120) -> list[dict]:
+    r = get(url, tries=2, timeout=timeout, headers=BROWSER)
+    if not r:
+        return []
+    rows = list(csv.DictReader(io.StringIO(r.content.decode("utf-8-sig"))))
+    log(f"  {len(rows)} rows, columns {list(rows[0].keys())[:12] if rows else []}")
+    return rows
+
+
+def qdate(p: str) -> date | None:
+    m = re.match(r"(\d{4})-Q(\d)$", p or "")
+    if m:
+        return date(int(m.group(1)), int(m.group(2)) * 3 - 2, 1)
+    m = re.match(r"(\d{4})-(\d{2})", p or "")
+    return date(int(m.group(1)), int(m.group(2)), 1) if m else None
+
+
+def bis_bulk(flow: str, key: str, start: str, dims: list[str]) -> dict[tuple, list]:
+    """{(dim values...): [(date, v)]} for a whole BIS dataflow in one request, DBnomics as a backup."""
+    out: dict[tuple, list] = {}
+    rows = sdmx_csv(f"https://stats.bis.org/api/v1/data/{flow}/{key}/all?detail=dataonly&format=csv&startPeriod={start}")
+    for row in rows:
+        k = tuple(row.get(d, "") for d in dims)
+        d, v = qdate(row.get("TIME_PERIOD", "")), num(row.get("OBS_VALUE"))
+        if d and v is not None and all(k):
+            out.setdefault(k, []).append((d, v))
+    if not out:
+        log(f"  BIS {flow} empty, trying DBnomics")
+        offset = 0
+        while offset < 5000 and time.time() < DEADLINE:
+            r = get(f"https://api.db.nomics.world/v22/series/BIS/{flow}?observations=1&format=json&limit=500&offset={offset}", tries=2, timeout=120)
+            docs = (((r.json() if r else {}).get("series") or {}).get("docs")) or []
+            for doc in docs:
+                code = doc.get("series_code", "")
+                parts = code.split(".")
+                want = key.split(".")
+                if len(parts) != len(want) or any(w and p not in w.split("+") for p, w in zip(parts, want)):
+                    continue
+                k = tuple(parts[1:1 + len(dims) - 1]) if False else tuple(dict(zip(["FREQ"] + dims[1:], parts)).get(d, "") for d in dims)
+                for p, v in zip(doc.get("period") or [], doc.get("value") or []):
+                    d, v = qdate(str(p)), num(v)
+                    if d and v is not None and str(p) >= start[:4]:
+                        out.setdefault(k, []).append((d, v))
+            if len(docs) < 500:
+                break
+            offset += 500
+    for k in out:
+        out[k].sort()
+    log(f"  BIS {flow}: {len(out)} series")
+    return out
+
+
+def oecd_valuation() -> dict[str, dict]:
+    """Price-to-income and price-to-rent ratios against each country's long-run average (100 = average),
+    from the OECD's analytical house price database."""
+    rows = sdmx_csv("https://sdmx.oecd.org/public/rest/data/OECD.ECO.MPD,DSD_AN_HOUSE_PRICES@DF_HOUSE_PRICES,1.0/all"
+                    "?startPeriod=2018-Q1&dimensionAtObservation=AllDimensions&format=csvfilewithlabels", timeout=150)
+    seen, out = {}, {}
+    for row in rows:
+        meas = row.get("MEASURE", "")
+        seen[meas] = row.get("Measure", "")
+        c = ISO3.get(row.get("REF_AREA", ""))
+        d, v = qdate(row.get("TIME_PERIOD", "")), num(row.get("OBS_VALUE"))
+        if not c or not d or v is None or (row.get("FREQ") and row.get("FREQ") != "Q"):
+            continue
+        # The standardised ratios compare today with each country's own long-run average (= 100)
+        key = "pti" if meas == "HPI_YDH_AVG" else "ptr" if meas == "HPI_RPI_AVG" else None
+        if key:
+            out.setdefault(c, {}).setdefault(key, []).append((d, v))
+    log(f"  OECD measures: {seen}")
+    res = {}
+    for c, m in out.items():
+        res[c] = {}
+        for k, s in m.items():
+            s.sort()
+            res[c][k] = rnd(s[-1][1], 1)
+            res[c][k + "At"] = f"{s[-1][0].year}-Q{(s[-1][0].month - 1) // 3 + 1}"
+    log(f"  OECD valuations for {len(res)} countries")
+    return res
+
+
+def qat(s, quarters_back):
+    """Value quarters_back quarters before the last point of a quarterly series."""
+    return at(s, quarters_back * 3)
+
+
+def cagr(a, b, years):
+    return None if a is None or not b or a <= 0 or b <= 0 else ((a / b) ** (1 / years) - 1) * 100
+
+
+def build_world():
+    """Every country in the BIS residential property price database, with real prices, prices in US dollars,
+    central bank rates and (where the OECD has them) valuation ratios, plus an investor score."""
+    spp = bis_bulk("WS_SPP", "Q..N+R.628", "1990-Q1", ["FREQ", "REF_AREA", "VALUE", "UNIT_MEASURE"])
+    if not spp:
+        return None, {}
+    pol = bis_bulk("WS_CBPOL", "M.", "2012-01", ["FREQ", "REF_AREA"]) if time.time() < DEADLINE else {}
+    xru = bis_bulk("WS_XRU", "M...A", "1999-01", ["FREQ", "REF_AREA", "CURRENCY", "COLLECTION"]) if time.time() < DEADLINE else {}
+    val = safe_call(oecd_valuation, {}) if time.time() < DEADLINE else {}
+    # Policy rates: euro area members use the ECB rate
+    # A policy rate series that stopped updating (Croatia's after it joined the euro) is dropped
+    rate = {k[1]: s for k, s in pol.items() if s and (NOW.date() - s[-1][0]).days < 200}
+    euro = {"AT", "BE", "BG", "CY", "DE", "EE", "ES", "FI", "FR", "GR", "HR", "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PT", "SI", "SK"}
+    # Exchange rates (national currency per US dollar): the series with the latest data for each country
+    fx = {}
+    for (f, c, cur, coll), s in xru.items():
+        if s and (c not in fx or s[-1][0] > fx[c][-1][0] or (s[-1][0] == fx[c][-1][0] and len(s) > len(fx[c]))):
+            fx[c] = s
+    countries, hist = [], {}
+    for (f, c, kind, unit), s in spp.items():
+        if kind != "N" or c not in WORLD:
+            continue
+        name, region, _ = WORLD[c]
+        sr = spp.get((f, c, "R", unit), [])
+        if len(s) < 9:
+            continue
+        v, vr = s[-1][1], (sr[-1][1] if sr else None)
+        last = s[-1][0]
+        # Prices in US dollars: the nominal index divided by the quarter's average exchange rate
+        usd = []
+        if c == "US":
+            usd = list(s)
+        elif c in fx or (c in euro and "XM" in fx):
+            fxq = {}
+            for d, x in fx.get(c) or fx.get("XM"):
+                fxq.setdefault(date(d.year, (d.month - 1) // 3 * 3 + 1, 1), []).append(x)
+            usd = [(d, x / (sum(fxq[d]) / len(fxq[d]))) for d, x in s if fxq.get(d)]
+        pr = (rate.get("XM") if c in euro else None) or rate.get(c) or []
+        stale = (NOW.date() - last).days > 550
+        row = {
+            "code": c, "name": name, "region": region, "asof": f"{last.year}-Q{(last.month - 1) // 3 + 1}", "stale": stale,
+            "note": NOT_INVESTABLE.get(c),
+            "agg": region == "Benchmark",
+            "n1y": rnd(pct(v, qat(s, 4))), "n5y": rnd(pct(v, qat(s, 20))), "n10y": rnd(pct(v, qat(s, 40))),
+            "r1y": rnd(pct(vr, qat(sr, 4))) if sr else None, "r5y": rnd(pct(vr, qat(sr, 20))) if sr else None,
+            "r10y": rnd(pct(vr, qat(sr, 40))) if sr else None,
+            "rCagr10": rnd(cagr(vr, qat(sr, 40), 10)) if sr else None,
+            "rOffPeak": rnd(pct(vr, max(x for _, x in sr))) if sr else None,
+            "nOffPeak": rnd(pct(v, max(x for _, x in s))),
+            "usd1y": rnd(pct(usd[-1][1], qat(usd, 4))) if len(usd) > 5 else None,
+            "usd5y": rnd(pct(usd[-1][1], qat(usd, 20))) if len(usd) > 21 else None,
+            "accel": rnd((pct(v, qat(s, 4)) or 0) - (pct(qat(s, 4), qat(s, 8)) or 0)) if qat(s, 8) else None,
+            "rate": rnd(pr[-1][1], 2) if pr else None, "rate1y": rnd(pr[-1][1] - (at(pr, 12) or pr[-1][1]), 2) if pr else None,
+            "fx1y": rnd(-pct(fx[c][-1][1], at(fx[c], 12))) if c in fx and at(fx[c], 12) else (0.0 if c == "US" else None),
+            "spark": [rnd(x, 1) for _, x in (sr or s)[-20:]],
+            **(val.get(c) or {}),
+        }
+        # Calendar-year real (or nominal) change for the heat table: last quarter of each year on the year before
+        yrs = {}
+        base = sr or s
+        by_year = {}
+        for d, x in base:
+            by_year[d.year] = x  # last quarter seen in each year
+        for y in range(last.year - 10, last.year + 1):
+            if y in by_year and y - 1 in by_year:
+                yrs[str(y)] = rnd(pct(by_year[y], by_year[y - 1]), 1)
+        row["years"] = yrs
+        row["yearsReal"] = bool(sr)
+        countries.append(row)
+        cut = date(2000, 1, 1)
+        hist[c] = {"n": [[d.strftime("%Y-%m"), rnd(x, 2)] for d, x in s if d >= cut],
+                   "r": [[d.strftime("%Y-%m"), rnd(x, 2)] for d, x in sr if d >= cut],
+                   "u": [[d.strftime("%Y-%m"), rnd(x, 4)] for d, x in usd if d >= cut]}
+    score_world(countries)
+    log(f"World: {len(countries)} countries")
+    return {"countries": sorted(countries, key=lambda x: -(x.get("score") or -1)), "updated": NOW.isoformat(timespec="seconds")}, hist
+
+
+LIVE = "https://www.topticker.ca"
+
+
+def last_published():
+    """The real estate data now on the live site, to fall back on when a source fails."""
+    r = get(f"{LIVE}/re/data.json?fresh={int(time.time())}", tries=2, timeout=60)
+    return r.json() if r else None
+
+
+def safe_call(fn, fallback):
+    try:
+        return fn()
+    except Exception as e:  # noqa: BLE001
+        log(f"  {fn.__name__} failed: {e!r}")
+        return fallback
+
+
+def score_world(rows):
+    """Investor score, 0 to 100: where each country ranks on momentum, long-run growth, value, rates and currency,
+    against the other countries with current data. Missing parts are left out and the rest reweighted."""
+    live = [r for r in rows if not r["stale"] and not r["agg"] and not r.get("note")]
+    parts = [
+        ("momentum", 0.30, lambda r: r.get("r1y"), 1, "Real prices rising"),
+        ("growth", 0.20, lambda r: r.get("rCagr10"), 1, "Strong 10-year real growth"),
+        ("value", 0.25, lambda r: r.get("pti") if r.get("pti") is not None else r.get("rOffPeak"), 0, "Good value"),
+        ("rates", 0.15, lambda r: r.get("rate1y"), -1, "Interest rates falling"),
+        ("currency", 0.10, lambda r: r.get("fx1y"), 1, "Currency firming vs US$"),
+    ]
+    for key, w, fn, sign, why in parts:
+        if key == "value":
+            # Low price-to-income is good value; with no OECD ratio, prices well below their real peak count as value.
+            pti = sorted(r["pti"] for r in live if r.get("pti") is not None)
+            off = sorted(r["rOffPeak"] for r in live if r.get("rOffPeak") is not None)
+            for r in live:
+                if r.get("pti") is not None and len(pti) > 3:
+                    r.setdefault("_p", {})[key] = 1 - pti.index(r["pti"]) / (len(pti) - 1)
+                elif r.get("rOffPeak") is not None and len(off) > 3:
+                    r.setdefault("_p", {})[key] = 1 - off.index(r["rOffPeak"]) / (len(off) - 1)
+            continue
+        vals = sorted(fn(r) * sign for r in live if fn(r) is not None)
+        for r in live:
+            x = fn(r)
+            if x is not None and len(vals) > 3:
+                r.setdefault("_p", {})[key] = vals.index(x * sign) / (len(vals) - 1)
+    labels = {k: why for k, _, _, _, why in parts}
+    weights = {k: w for k, w, _, _, _ in parts}
+    for r in live:
+        p = r.pop("_p", {})
+        if len(p) < 2:
+            continue
+        tw = sum(weights[k] for k in p)
+        r["score"] = round(sum(weights[k] * v for k, v in p.items()) / tw * 100)
+        r["parts"] = {k: round(v * 100) for k, v in p.items()}
+        r["why"] = [labels[k] for k, v in sorted(p.items(), key=lambda kv: -kv[1]) if v >= 0.7][:3]
+        r["watch"] = [{"momentum": "Real prices falling", "growth": "Weak long-run growth", "value": "Expensive",
+                       "rates": "Rates rising", "currency": "Currency weakening vs US$"}[k]
+                      for k, v in sorted(p.items(), key=lambda kv: kv[1]) if v <= 0.25][:2]
 
 
 # ---------------------------------------------------------------- scores and picks
@@ -657,6 +979,7 @@ def picks(us, ca, mx):
 LISTING_CITIES = [  # one RentCast request each, once a week
     ("New York", "NY"), ("Los Angeles", "CA"), ("Chicago", "IL"), ("Dallas", "TX"), ("Houston", "TX"),
     ("Miami", "FL"), ("Atlanta", "GA"), ("Phoenix", "AZ"), ("Seattle", "WA"), ("Denver", "CO"),
+    ("Honolulu", "HI"),
 ]
 SAMPLE_CITIES = [
     # (market id, city, region, country, currency, typical price, link-out search sites)
@@ -674,23 +997,58 @@ TYPES = ["Single Family", "Condo", "Townhouse"]
 STREETS = ["Maple", "Oak", "Cedar", "Lakeview", "Park", "Hillside", "River", "Sunset", "Willow", "Birch", "Elm", "Harbour"]
 
 
+RENTCAST_CAP = 40         # requests in any 31 days; the free plan allows 50 per billing month, so this never bills
+RENTCAST_WINDOW = timedelta(days=31)
+
+
 def rentcast():
+    """Real US listings from RentCast, at most once a week and never more than RENTCAST_CAP requests in any
+    31 days (a rolling window, so it holds whatever day RentCast's billing month starts). Every request is
+    logged in rentcast_usage.json before it is sent, whether it succeeds or not; the workflow refreshes that
+    file from main before this runs and commits it back after, so the log survives between runs."""
     key = os.environ.get("RENTCAST_API_KEY", "").strip()
     saved = SRC / "listings.json"
     old = json.loads(saved.read_text()) if saved.exists() else None
     if not key:
         return old
-    if old and old.get("fetched"):
-        age = NOW - datetime.fromisoformat(old["fetched"])
-        if age < timedelta(days=6, hours=12):
-            log(f"  RentCast: keeping listings from {old['fetched']} (free plan, fetched weekly)")
+    ledger_file = SRC / "rentcast_usage.json"
+    try:
+        ledger = json.loads(ledger_file.read_text())
+    except (OSError, ValueError):
+        ledger = {}
+    reqs = list(ledger.get("requests") or [])
+    if not reqs and ledger.get("used"):  # older format: a count for the month and the last fetch time
+        reqs = [ledger.get("last_try") or NOW.isoformat(timespec="seconds")] * int(ledger.get("used"))
+    reqs = [t for t in reqs if NOW - datetime.fromisoformat(t) < RENTCAST_WINDOW]
+    ledger = {"requests": reqs, "cap": RENTCAST_CAP, "window_days": RENTCAST_WINDOW.days}
+    last = max(reqs) if reqs else (old or {}).get("fetched")
+    # Cities already asked for (older saved files don't list them, so take them from the listings)
+    asked = {tuple(c) for c in (old or {}).get("cities") or []} or {(x.get("city"), x.get("region")) for x in (old or {}).get("items", [])}
+    missing = [(c, st) for c, st in LISTING_CITIES if (c, st) not in asked]
+    cities, top_up = LISTING_CITIES, False
+    if last and NOW - datetime.fromisoformat(last) < timedelta(days=6, hours=12):
+        if not missing or not old:
+            log(f"  RentCast: last fetched {last}; waiting a week between fetches ({len(reqs)}/{RENTCAST_CAP} in the last 31 days)")
+            ledger_file.write_text(json.dumps(ledger))
             return old
+        # A city added to the list since the last fetch: ask for just that one now, one request each
+        cities, top_up = missing, True
+        log(f"  RentCast: adding {', '.join(c for c, _ in missing)} to this week's listings")
+    if len(reqs) + len(cities) > RENTCAST_CAP:
+        log(f"  RentCast: {len(reqs)} requests in the last 31 days; skipping to stay under {RENTCAST_CAP}")
+        ledger_file.write_text(json.dumps(ledger))
+        return old
     items = []
-    for city, st in LISTING_CITIES:
+    for n, (city, st) in enumerate(cities):
+        ledger["requests"].append(NOW.isoformat(timespec="seconds"))
+        ledger_file.write_text(json.dumps(ledger))
         r = get(f"https://api.rentcast.io/v1/listings/sale?city={quote_plus(city)}&state={st}&status=Active&limit=40",
                 tries=1, headers={"X-Api-Key": key, "Accept": "application/json"})
         if not r:
             log("  RentCast failed", city)
+            if n == 0:
+                log("  RentCast: first request failed (bad key or service down); not trying the other cities")
+                break
             continue
         for x in r.json():
             if not x.get("price"):
@@ -704,9 +1062,19 @@ def rentcast():
                 "lat": x.get("latitude"), "lon": x.get("longitude"),
                 "office": (x.get("listingOffice") or {}).get("name"), "mls": x.get("mlsName"), "sample": False,
             })
+    log(f"  RentCast: {len(ledger['requests'])}/{RENTCAST_CAP} requests in the last 31 days")
+    done = sorted(asked | set(cities)) if top_up else list(cities)
+    if top_up:
+        # Keep the week's other listings; the next full fetch waits a week from this one
+        if old is not None:
+            old["cities"] = [list(c) for c in done]
+            old["items"] = [x for x in old.get("items", []) if (x.get("city"), x.get("region")) not in set(cities)] + items
+            saved.write_text(json.dumps(old, separators=(",", ":")))
+            log(f"  RentCast: {len(items)} listings added")
+        return old
     if not items:
         return old
-    data = {"fetched": NOW.isoformat(timespec="seconds"), "source": "RentCast", "items": items}
+    data = {"fetched": NOW.isoformat(timespec="seconds"), "source": "RentCast", "items": items, "cities": [list(c) for c in done]}
     saved.write_text(json.dumps(data, separators=(",", ":")))
     log(f"  RentCast: {len(items)} listings")
     return data
@@ -749,37 +1117,118 @@ ON_TOPIC = re.compile(r"\bhousing\b|\bhomes?\b|home ?(buyer|owner|sale|price|val
                       r"vivienda|inmobiliari|hipotec|\bcasas?\b|departamento|\brentas?\b|bienes ra", re.I)
 
 
-def news():
-    out = {}
+# Topics a headline is tagged with (for the news page's toggles)
+TOPICS = {
+    "prices": r"price|valu|cost|afford|bubble|boom|crash|slump|cool|soar|surge|record|precio|plusval",
+    "sales": r"\bsales?\b|\bsold\b|buyers?|sellers?|deman|listings?|inventory|transaction|purchase|compra|venta",
+    "rates": r"mortgage|\brates?\b|interest|lend|loan|central bank|\bfed\b|refinanc|hipotec|cr[eé]dito|tasa",
+    "rent": r"\brent|tenant|landlord|lease|vacanc|renta|alquiler|arrend",
+    "build": r"build|construct|starts|permits?|develop|supply|new homes|housing shortage|construcc|desarroll",
+    "policy": r"tax|polic|government|rule|regulat|ban\b|foreign buyer|minister|law|subsid|stimulus|gobierno|impuesto",
+}
+TOPIC_RE = {k: re.compile(v, re.I) for k, v in TOPICS.items()}
+
+
+def rss(q, hl="en-US", gl="US", ceid="US:en"):
+    r = get(f"https://news.google.com/rss/search?q={quote_plus(q + ' when:7d')}&hl={hl}&gl={gl}&ceid={ceid}", tries=1, timeout=20)
+    if not r:
+        return []
+    try:
+        return list(ET.fromstring(r.content).iter("item"))
+    except ET.ParseError:
+        return []
+
+
+# Other words a headline may use for a country (searches drift to stories that only mention it in passing)
+ALSO = {"GB": "UK|U\\.K\\.|Britain|British|England|English|London|Scotland|Wales", "US": "U\\.S\\.|America", "NL": "Dutch|Amsterdam",
+        "CH": "Swiss|Zurich|Geneva", "DE": "German|Berlin|Munich", "FR": "French|Paris", "ES": "Spanish|Madrid|Barcelona",
+        "IT": "Italian|Milan|Rome", "DK": "Danish|Copenhagen", "SE": "Swedish|Stockholm", "NO": "Norwegian|Oslo",
+        "FI": "Finnish|Helsinki", "IE": "Irish|Dublin", "PT": "Portuguese|Lisbon", "GR": "Greek|Athens", "PL": "Polish|Warsaw",
+        "CZ": "Czech|Prague", "HU": "Hungarian|Budapest", "AT": "Austrian|Vienna", "BE": "Belgian|Brussels", "TR": "Turkey|Turkish|Istanbul",
+        "JP": "Japanese|Tokyo", "KR": "Korean|Seoul", "CN": "Chinese|Beijing|Shanghai|Shenzhen", "HK": "Hong Kong", "AU": "Australian|Sydney|Melbourne",
+        "NZ": "Kiwi|Auckland", "IN": "Indian|Mumbai|Delhi|Bengaluru", "AE": "UAE|Dubai|Abu Dhabi|Emirati", "SA": "Saudi|Riyadh",
+        "IL": "Israeli|Tel Aviv", "ZA": "South African|Johannesburg|Cape Town", "SG": "Singapore", "MY": "Malaysian|Kuala Lumpur",
+        "TH": "Thai|Bangkok", "ID": "Indonesian|Jakarta|Bali", "PH": "Philippine|Filipino|Manila", "BR": "Brazilian|S[aã]o Paulo|Rio",
+        "CL": "Chilean|Santiago", "CO": "Colombian|Bogot", "PE": "Peruvian|Lima", "AR": "Argentin|Buenos Aires", "MX": "Mexican",
+        "CA": "Canadian", "RU": "Russian|Moscow", "MA": "Moroccan|Marrakech|Casablanca", "CY": "Cypriot|Cyprus|Limassol"}
+
+
+def mentions(title, words):
+    return not words or re.search(r"\b(" + words + r")", title, re.I) is not None
+
+
+# Listing pages, sale ads and art shows that slip past the housing words
+JUNK = re.compile(r"^[,;|]|(?-i:\b[A-Z]{2} \d{5}\b)|\|\s*(Realtor\.com|Zillow|Redfin)|\b(exhibition|gallery|paintings?)\b", re.I)
+
+
+def stories(items, seen, skip=None, need=None):
+    out = []
+    for it in items:
+        title = (it.findtext("title") or "").strip()
+        src = it.find("source")
+        pub = src.text.strip() if src is not None and src.text else ""
+        if pub and title.endswith(" - " + pub):
+            title = title[: -len(pub) - 3]
+        key = re.sub(r"\W+", "", title.lower())[:60]
+        if not title or key in seen or not ON_TOPIC.search(title) or JUNK.search(title) or (skip and skip in title) or not mentions(title, need):
+            continue
+        seen.add(key)
+        try:
+            when = parsedate_to_datetime(it.findtext("pubDate")).astimezone(timezone.utc).isoformat()
+        except Exception:  # noqa: BLE001
+            when = None
+        out.append({"title": title, "url": it.findtext("link"), "src": pub, "at": when,
+                    "t": [k for k, rx in TOPIC_RE.items() if rx.search(title)]})
+    return out
+
+
+REGION_FULL = {**{v: k for k, v in US_STATES.items()}, **{v: k for k, v in PROVINCES.items()}}
+
+
+def news(us=(), ca=(), mx=()):
+    """The past week's housing headlines for the three countries, every country on the World page and the
+    biggest North American cities, each tagged with topics."""
+    out, markets = {}, []
+    # Countries with their own searches (two each)
     for c, queries in NEWS.items():
         seen, items = set(), []
         for q, hl, gl, ceid in queries:
-            r = get(f"https://news.google.com/rss/search?q={quote_plus(q + ' when:7d')}&hl={hl}&gl={gl}&ceid={ceid}", tries=2)
-            if not r:
-                continue
-            try:
-                root = ET.fromstring(r.content)
-            except ET.ParseError:
-                continue
-            for it in root.iter("item"):
-                title = (it.findtext("title") or "").strip()
-                src = it.find("source")
-                pub = src.text.strip() if src is not None and src.text else ""
-                if pub and title.endswith(" - " + pub):
-                    title = title[: -len(pub) - 3]
-                key = re.sub(r"\W+", "", title.lower())[:60]
-                if not title or key in seen or not ON_TOPIC.search(title) or (c == "MX" and "New Mexico" in title):
-                    continue
-                seen.add(key)
-                try:
-                    when = parsedate_to_datetime(it.findtext("pubDate")).astimezone(timezone.utc).isoformat()
-                except Exception:  # noqa: BLE001
-                    when = None
-                items.append({"title": title, "url": it.findtext("link"), "src": pub, "at": when})
+            items += stories(rss(q, hl, gl, ceid), seen, "New Mexico" if c == "MX" else None)
         items.sort(key=lambda x: x["at"] or "", reverse=True)
         out[c] = items[:15]
+        markets.append({"key": c, "name": WORLD[c][0], "kind": "country", "region": "Americas", "flag": c})
         log(f"  news {c}: {len(out[c])}")
-    return out
+    # Every other country on the World page
+    for c, (name, region, _) in WORLD.items():
+        if c in out or region == "Benchmark" or time.time() > DEADLINE:
+            continue
+        q = f'"{name}" ("housing market" OR "house prices" OR "home prices" OR "property market" OR "real estate market" OR mortgage)'
+        need = "|".join([re.escape(name), re.escape(name[:5])] + ([ALSO[c]] if c in ALSO else []))
+        items = stories(rss(q), set(), need=need)
+        items.sort(key=lambda x: x["at"] or "", reverse=True)
+        if items:
+            out[c] = items[:12]
+            markets.append({"key": c, "name": name, "kind": "country", "region": region, "flag": c})
+    # The biggest cities
+    cities = [m for m in us if m["id"] != "us"][:15] + [m for m in ca if m["id"] in ("ca-toronto", "ca-vancouver", "ca-calgary", "ca-montreal", "ca-edmonton")] \
+        + [m for m in mx if m["id"] in ("mx-ciudad-de-mexico", "mx-jalisco", "mx-nuevo-leon", "mx-quintana-roo")]
+    city_name = {"mx-ciudad-de-mexico": "Mexico City", "mx-jalisco": "Guadalajara", "mx-nuevo-leon": "Monterrey", "mx-quintana-roo": "Cancún"}
+    for m in cities:
+        if time.time() > DEADLINE:
+            break
+        name = city_name.get(m["id"]) or m["name"].split("-")[0].strip()
+        if name == "Washington":
+            name = "Washington DC"
+        gl, ceid = ("CA", "CA:en") if m["c"] == "CA" else ("US", "US:en")
+        region = (REGION_FULL.get(m["region"], "") if m["c"] != "MX" else m["name"])
+        need = "|".join(x for x in [re.escape(name.split()[0] if name != "Washington DC" else "Washington"), re.escape(region)] if x)
+        items = stories(rss(f'"{name}" ("housing market" OR "home prices" OR "real estate" OR "rent" OR "condo")', f"en-{gl}", gl, ceid), set(), need=need)
+        items.sort(key=lambda x: x["at"] or "", reverse=True)
+        if items:
+            out[m["id"]] = items[:10]
+            markets.append({"key": m["id"], "name": name, "kind": "city", "region": "North American cities", "flag": m["c"], "market": m["id"]})
+    log(f"  news: {len(out)} markets, {sum(len(v) for v in out.values())} stories")
+    return {"items": out, "markets": markets}
 
 
 # ---------------------------------------------------------------- main
@@ -798,6 +1247,32 @@ def main():
     us, us_hist, us_nat = safe("US", build_us, ([], {}, None))
     ca, ca_hist, ca_nat = safe("Canada", build_canada, ([], {}, None))
     mx, mx_meta = safe("Mexico", build_mexico, ([], {}))
+    # A source that fails for a run (StatCan sometimes refuses GitHub's servers) would empty that country's pages,
+    # so keep the figures already on the live site until the next run gets fresh ones.
+    prev = None
+    for code, name in (("US", "US"), ("CA", "Canada"), ("MX", "Mexico")):
+        if {"US": us, "CA": ca, "MX": mx}[code]:
+            continue
+        if name not in errors:
+            errors.append(name)
+        prev = prev or safe_call(last_published, None)
+        if not prev:
+            continue
+        old = [m for m in prev.get("markets", []) if m.get("c") == code]
+        nat = ((prev.get("countries") or {}).get(code) or {}).get("nation")
+        hist = {}
+        for m in old if code != "MX" else []:
+            r = get(f"{LIVE}/re/hist/{m['id']}.json", tries=1, timeout=20)
+            if r:
+                hist[m["id"]] = r.json()
+        log(f"  {name}: kept {len(old)} markets and {len(hist)} histories from the live site")
+        if code == "US":
+            us, us_hist, us_nat = old, hist, nat
+        elif code == "CA":
+            ca, ca_hist, ca_nat = old, hist, nat
+            PROVINCE_ROWS[:] = (prev.get("regions") or {}).get("CA") or []
+        else:
+            mx = old
 
     log("Rates and national series")
     rates = {}
@@ -854,7 +1329,30 @@ def main():
     countries["MX"]["nation"] = mx[0] if mx else None
     countries["MX"]["shf"] = mx_meta
 
+    # Any rate, state table or world table that failed this run keeps what the last build had, so one
+    # slow or refusing source never blanks part of the real estate pages
+    last = read_json(OUT / "data.json", {}) or {}
+    for k, v in (last.get("rates") or {}).items():
+        if rates.get(k) is None and v is not None:
+            rates[k] = v
+            log(f"  rate {k}: kept the last value")
+    for c in ("US", "CA", "MX"):
+        for k, v in ((last.get("countries") or {}).get(c) or {}).items():
+            if countries[c].get(k) is None and v is not None:
+                countries[c][k] = v
+
     idea = safe("picks", lambda: picks(us, ca, mx), {})
+    log("US states and world markets")
+    states = safe("US states", build_states, []) or ((last.get("regions") or {}).get("US") or [])
+    world, world_hist = safe("World", build_world, (None, {}))
+    if not world and last.get("world"):
+        log("  world: kept the last build's table and history")
+        world = last["world"]
+        world_hist = read_json(OUT / "world_hist.json", {}) or {}
+    if not PROVINCE_ROWS and (last.get("regions") or {}).get("CA"):
+        PROVINCE_ROWS[:] = last["regions"]["CA"]
+    if not idea and last.get("picks"):
+        idea = last["picks"]
 
     # Listings: real US ones when RentCast is set up, clearly marked samples otherwise
     rc = safe("RentCast", rentcast, None)
@@ -872,25 +1370,75 @@ def main():
         "updated": NOW.isoformat(timespec="seconds"),
         "countries": countries, "rates": rates, "fx": fx, "picks": idea,
         "markets": us + ca + mx, "errors": errors,
+        "regions": {"US": states, "CA": PROVINCE_ROWS}, "world": world,
     }
-    (OUT / "data.json").write_text(json.dumps(data, separators=(",", ":"), ensure_ascii=False))
+    if not data["markets"] and last.get("markets"):
+        log("::error::no housing markets came back at all, keeping the last real estate data")
+        sys.exit(2)
+    write_json(OUT / "data.json", data, ensure_ascii=False)
     # History: national series in hist.json, and one small file per market in hist/ (loaded only when charted)
     hist = {
         "rates": {"us30": thin(us30), "us15": thin(us15), "ca5": thin(ca5), "caPolicy": thin(capol), "mxRate": thin(mxpol)},
         "bis": {c: thin(s) for c, s in bis.items()}, "bisReal": {c: thin(s) for c, s in bisr.items()},
     }
-    (OUT / "hist.json").write_text(json.dumps(hist, separators=(",", ":")))
+    # A national series that failed keeps its saved history rather than an empty chart
+    old_hist = read_json(OUT / "hist.json", {}) or {}
+    for group, series_map in hist.items():
+        for k, v in series_map.items():
+            if not v and ((old_hist.get(group) or {}).get(k)):
+                series_map[k] = old_hist[group][k]
+    write_json(OUT / "hist.json", hist)
     hdir = OUT / "hist"
     hdir.mkdir(exist_ok=True)
-    for old in hdir.glob("*.json"):
-        old.unlink()
-    for mid, h in {**us_hist, **ca_hist}.items():
-        (hdir / f"{mid}.json").write_text(json.dumps(h, separators=(",", ":")))
-    (OUT / "listings.json").write_text(json.dumps(listings, separators=(",", ":"), ensure_ascii=False))
-    (OUT / "news.json").write_text(json.dumps({"updated": NOW.isoformat(timespec="seconds"), "news": safe("news", news, {})},
-                                              separators=(",", ":"), ensure_ascii=False))
+    new_hist = {**us_hist, **ca_hist}
+    # Only clear out old market histories when this run has a full set to replace them with
+    if new_hist:
+        live_ids = {m["id"] for m in data["markets"]}
+        for old in hdir.glob("*.json"):
+            if old.stem not in new_hist and old.stem not in live_ids:
+                old.unlink()
+    for mid, h in new_hist.items():
+        write_json(hdir / f"{mid}.json", h)
+    write_json(OUT / "world_hist.json", world_hist)
+    write_json(OUT / "listings.json", listings, ensure_ascii=False)
+    nw = safe("news", lambda: news(us, ca, mx), {})
+    write_news(nw)
     log(f"Wrote {len(data['markets'])} markets, {len(listings['items'])} listings; failed parts: {errors or 'none'}")
 
 
+def write_news(nw: dict) -> None:
+    """Save the housing headlines. Places whose searches failed this run keep the last run's stories, and
+    if nothing at all came back the saved file is left as it was."""
+    items = dict(nw.get("items") or {})
+    if not any(items.values()):
+        log("news: nothing came back, keeping the saved headlines")
+        return
+    markets = list(nw.get("markets") or [])
+    old = read_json(OUT / "news.json", {}) or {}
+    have = {m.get("key") for m in markets}
+    kept = 0
+    for m in old.get("markets") or []:
+        k = m.get("key")
+        if k not in have and (old.get("news") or {}).get(k):
+            items[k] = old["news"][k]
+            markets.append(m)
+            kept += 1
+    if kept:
+        log(f"news: kept the last stories for {kept} places this run's searches missed")
+    write_json(OUT / "news.json", {"updated": NOW.isoformat(timespec="seconds"), "news": items,
+                                   "markets": markets, "topics": list(TOPICS)}, ensure_ascii=False)
+
+
+def news_only():
+    """Refresh just the housing headlines (the workflow does this every 15 minutes between full runs), using the
+    markets from the last full build. Keeps the old stories for any place whose searches fail."""
+    global DEADLINE
+    # A quick run has to finish well inside its 15 minutes, so a slow Google News gets 5 minutes here
+    DEADLINE = min(DEADLINE, time.time() + 5 * 60)
+    data = read_json(OUT / "data.json", {}) or {}
+    ms = data.get("markets") or []
+    write_news(news(*([m for m in ms if m.get("c") == c] for c in ("US", "CA", "MX"))))
+
+
 if __name__ == "__main__":
-    main()
+    news_only() if "--news-only" in sys.argv else main()

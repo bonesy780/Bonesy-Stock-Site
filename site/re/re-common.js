@@ -3,6 +3,7 @@
 (function () {
   const PAGES = [
     ["./", "Overview", ["index.html", ""]],
+    ["world.html", "World"],
     ["markets.html", "All Markets"],
     ["market.html", "Market Lookup"],
     ["listings.html", "Listings"],
@@ -11,7 +12,20 @@
     ["news.html", "News"],
   ];
   const COUNTRY = { US: "United States", CA: "Canada", MX: "Mexico" };
+  // Full state and province names, so a search for "Hawaii" or "Ontario" finds markets listed as HI or ON
+  const REGION_NAMES = { AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California", CO: "Colorado", CT: "Connecticut",
+    DE: "Delaware", DC: "District of Columbia Washington DC", FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana",
+    IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland", MA: "Massachusetts", MI: "Michigan",
+    MN: "Minnesota", MS: "Mississippi", MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+    NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania",
+    RI: "Rhode Island", SC: "South Carolina", SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont", VA: "Virginia",
+    WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming", PR: "Puerto Rico" };
+  const PROVINCE_NAMES = { NL: "Newfoundland and Labrador", PE: "Prince Edward Island", NS: "Nova Scotia", NB: "New Brunswick", QC: "Quebec",
+    ON: "Ontario", MB: "Manitoba", SK: "Saskatchewan", AB: "Alberta", BC: "British Columbia", YT: "Yukon", NT: "Northwest Territories", NU: "Nunavut" };
+  const regionName = (m) => String(m.region || "").split("-").map((r) => (m.c === "CA" ? PROVINCE_NAMES : m.c === "US" ? REGION_NAMES : {})[r] || "").join(" ");
   const FLAG = { US: "🇺🇸", CA: "🇨🇦", MX: "🇲🇽" };
+  // Any country's flag from its two-letter code; the euro area gets the EU flag
+  const flag = (c) => c === "XM" ? "🇪🇺" : /^[A-Z]{2}$/.test(c || "") ? String.fromCodePoint(...[...c].map((ch) => 0x1f1a5 + ch.charCodeAt(0))) : "🌐";
   const SYM = { USD: "$", CAD: "C$", MXN: "MX$" };
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -45,9 +59,23 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   };
   const cache = {};
-  const load = (file) => (cache[file] ||= fetch(file, { cache: "no-store" }).then((r) => {
+  // Hours before each file counts as behind (market data refreshes daily, headlines every 15 minutes)
+  const FRESH_HOURS = { "data.json": 44, "news.json": 4, "invest.json": 44 };
+  const load = (file) => (cache[file] ||= fetch(file, { cache: "no-cache" }).then((r) => {
     if (!r.ok) throw new Error(file + " " + r.status);
     return r.json();
+  }).then((d) => {
+    const at = d && new Date(d.updated);
+    if (FRESH_HOURS[file] && at && !isNaN(at) && (Date.now() - at) / 3600000 > FRESH_HOURS[file] && !document.getElementById("stale-note")) {
+      const note = document.createElement("div");
+      note.id = "stale-note";
+      note.className = "stale-note";
+      note.setAttribute("role", "status");
+      note.textContent = `Some figures on this page are from ${at.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. ` +
+        "The automatic update is running behind; the page will catch up on its own once it does.";
+      (document.querySelector("main") || document.body).prepend(note);
+    }
+    return d;
   }));
   const marketUrl = (id) => "market.html?id=" + encodeURIComponent(id);
   const place = (m) => m.c === "US" ? (m.region ? `${m.region} · United States` : "United States")
@@ -100,6 +128,23 @@
     }
   });
 
+  // A share button: the phone's share sheet where there is one, otherwise copy the link
+  const shareBtn = (label = "Share") => `<button class="star share-btn" type="button" data-share title="Share a link to this page"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${esc(label)}</span></button>`;
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-share]");
+    if (!b) return;
+    e.preventDefault();
+    const url = location.href, title = document.title;
+    if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+      try { await navigator.share({ title, url }); } catch {}
+      return;
+    }
+    const span = b.querySelector("span"), was = span.textContent;
+    try { await navigator.clipboard.writeText(url); span.textContent = "Link copied ✓"; }
+    catch { span.textContent = "Copy failed"; }
+    setTimeout(() => { span.textContent = was; }, 2000);
+  });
+
   // ---- market search
   const norm = (s) => String(s).toLowerCase().normalize("NFKD").replace(/[^\w ]/g, "");
   async function search(text, n = 8) {
@@ -108,8 +153,8 @@
     const d = await data();
     const scored = [];
     for (const m of d.markets) {
-      const nm = norm(m.name), full = norm(m.full + " " + (m.region || "") + " " + COUNTRY[m.c]);
-      const s = nm === t ? 0 : nm.startsWith(t) ? 1 : nm.split(" ").some((w) => w.startsWith(t)) ? 2 : full.includes(t) ? 3 : -1;
+      const nm = norm(m.name), full = norm(m.full + " " + (m.region || "") + " " + regionName(m) + " " + COUNTRY[m.c]);
+      const s = nm === t ? 0 : nm.startsWith(t) ? 1 : nm.split(" ").some((w) => w.startsWith(t)) ? 2 : norm(regionName(m)).split(" ").includes(t) || norm(regionName(m)) === t ? 3 : full.includes(t) ? 4 : -1;
       if (s >= 0) scored.push([s, m.rank || 999, m]);
     }
     return scored.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, n).map((x) => x[2]);
@@ -261,6 +306,69 @@
     return b ? pts.map((p) => [p[0], p[1] == null ? null : p[1] / b[1] * 100]) : pts;
   };
 
+  // ---- growth views and statistics for [["YYYY-MM", v]] price series (quarterly or monthly)
+  const mon = (l) => +l.slice(0, 4) * 12 + +l.slice(5, 7) - 1;
+  const GROWTH_VIEWS = [
+    ["index", "Index", "Prices rebased to 100 at the start of the period."],
+    ["cum", "% change", "Total change in price since the start of the period."],
+    ["yoy", "Yearly growth", "Change on the same quarter a year earlier, at each point in time."],
+    ["qoq", "Each quarter", "Change on the quarter before (or month before, for monthly figures)."],
+    ["dd", "Below peak", "How far prices sit below their highest level so far."],
+  ];
+  // Change on the point a year earlier, keyed by label
+  function yoySeries(pts) {
+    const at = Object.fromEntries(pts.filter((p) => p[1] != null).map((p) => [mon(p[0]), p[1]]));
+    return pts.map((p) => { const b = at[mon(p[0]) - 12]; return [p[0], p[1] != null && b ? (p[1] / b - 1) * 100 : null]; });
+  }
+  function growthView(full, mode, years) {
+    full = (full || []).filter((p) => p[1] != null);
+    if (mode === "index") return rebase(since(full, years));
+    if (mode === "cum") return rebase(since(full, years)).map((p) => [p[0], p[1] - 100]);
+    if (mode === "yoy") return since(yoySeries(full), years).filter((p) => p[1] != null);
+    if (mode === "qoq") return since(full.map((p, i) => [p[0], i ? (p[1] / full[i - 1][1] - 1) * 100 : null]), years).filter((p) => p[1] != null);
+    if (mode === "dd") { let hi = -Infinity; return since(full.map((p) => { hi = Math.max(hi, p[1]); return [p[0], (p[1] / hi - 1) * 100]; }), years); }
+    return full;
+  }
+  function growthStats(full, years) {
+    full = (full || []).filter((p) => p[1] != null);
+    const p = since(full, years);
+    if (p.length < 3) return null;
+    const a = p[0][1], b = p.at(-1)[1];
+    const span = (mon(p.at(-1)[0]) - mon(p[0][0])) / 12;
+    const step = mon(p.at(-1)[0]) - mon(p.at(-2)[0]) || 3;
+    const chg = p.slice(1).map((x, i) => x[1] / p[i][1] - 1);
+    const mean = chg.reduce((s, x) => s + x, 0) / chg.length;
+    const sd = Math.sqrt(chg.reduce((s, x) => s + (x - mean) ** 2, 0) / Math.max(1, chg.length - 1));
+    const yo = since(yoySeries(full), years).filter((x) => x[1] != null);
+    let best = null, worst = null;
+    for (const x of yo) { if (!best || x[1] > best[1]) best = x; if (!worst || x[1] < worst[1]) worst = x; }
+    let hi = -Infinity, dd = 0, ddAt = null;
+    for (const x of p) { hi = Math.max(hi, x[1]); const d = (x[1] / hi - 1) * 100; if (d < dd) { dd = d; ddAt = x[0]; } }
+    const peak = Math.max(...full.map((x) => x[1]));
+    const yoyAll = yoySeries(full).filter((x) => x[1] != null);
+    return {
+      from: p[0][0], to: p.at(-1)[0], years: span,
+      total: (b / a - 1) * 100,
+      cagr: span > 0.9 ? ((b / a) ** (1 / span) - 1) * 100 : null,
+      last1y: yoyAll.length ? yoyAll.at(-1)[1] : null,
+      lastQ: chg.length ? chg.at(-1) * 100 : null,
+      best, worst, maxDrop: dd, maxDropAt: ddAt,
+      offPeak: (b / peak - 1) * 100,
+      vol: sd * Math.sqrt(12 / step) * 100,
+      up: chg.filter((x) => x > 0).length / chg.length * 100,
+    };
+  }
+  // Labels like "2024-07" as "Q3 2024" (quarterly) or "Jul 2024"
+  const periodName = (l, quarterly = true) => !l ? "" : quarterly ? `Q${Math.floor((+l.slice(5, 7) - 1) / 3) + 1} ${l.slice(0, 4)}`
+    : new Date(l + "-15").toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  // Download rows as a CSV file
+  function csv(name, rows) {
+    const text = rows.map((r) => r.map((v) => v == null ? "" : typeof v === "number" ? +v.toFixed(4) : `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+    a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
   // Monthly mortgage payment
   function payment(principal, ratePct, years, country = "US") {
     if (principal <= 0) return 0;
@@ -277,7 +385,7 @@
     if (menu) {
       const isHere = ([href, , also]) => href === here || (also || []).includes(here);
       const link = (p) => `<a href="${p[0]}"${isHere(p) ? ' aria-current="page"' : ""}>${esc(p[1])}</a>`;
-      const row = PAGES.map(link).join("") + `<a class="menu-switch" href="../news.html" title="Go to the stock market site">Stocks ↗</a>`;
+      const row = PAGES.map(link).join("") + `<a class="menu-switch" href="../news.html" title="Go to the stock market site">Stocks ↗</a><a class="menu-switch" href="../daily/" title="The day's headlines from about 90 outlets">Daily News ↗</a>`;
       menu.innerHTML = `<div class="menu-wide">${row}</div><div class="menu-flat">${row}</div>`;
       const on = menu.querySelector(".menu-flat [aria-current]");
       if (on && getComputedStyle(menu.querySelector(".menu-flat")).display !== "none") on.scrollIntoView({ block: "nearest", inline: "center" });
@@ -317,5 +425,5 @@
     return [["Inmuebles24", `https://www.inmuebles24.com/casas-en-venta-q-${q}.html`], ["Lamudi", `https://www.lamudi.com.mx/`], ["Vivanuncios", `https://www.vivanuncios.com.mx/`]];
   };
 
-  window.RE = { esc, money, short, pct, fixed, int, spark, store, load, data, marketUrl, place, headline, sideCls, Saved, star, search, picker, table, chart, since, rebase, payment, COUNTRY, FLAG, SYM, searchLinks, PAGES };
+  window.RE = { esc, money, short, pct, fixed, int, spark, store, load, data, marketUrl, place, headline, sideCls, Saved, star, shareBtn, search, picker, table, chart, since, rebase, payment, GROWTH_VIEWS, growthView, growthStats, periodName, csv, COUNTRY, FLAG, SYM, searchLinks, PAGES, flag, REGION_NAMES, PROVINCE_NAMES };
 })();

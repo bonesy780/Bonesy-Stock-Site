@@ -11,7 +11,7 @@
     return;
   }
   const when = new Date(M.generated);
-  $("updated").textContent = "Updated " + when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(when);
   $("lede").textContent = `The last session across the eight markets, in plain words. Written ${when.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}.`;
 
   const name = (i) => i.name.replace(/ \(.*\)/, "");
@@ -45,6 +45,16 @@
     section("Markets", `<p class="brief-lead">${mood}: ${up} of ${moved.length} indexes closed higher. ${esc(name(best))} led with ${pct(best.chg1d, 2)}${worst !== best ? ` and ${esc(name(worst))} lagged with ${pct(worst.chg1d, 2)}` : ""}.</p><ul class="brief-list">${lines.join("")}</ul>`,
       `<a href="markets.html">See the markets</a> · <a href="heatmap.html">Heatmap</a>`);
   }
+
+  // ---- rates, commodities and crypto (macro.json)
+  try {
+    const mac = await UI.load("macro.json");
+    const items = (mac.items || []).filter((m) => m.p != null);
+    const line = window.Macro ? Macro.sentence(items) : "";
+    if (line) section("Rates, commodities and crypto", `<p class="brief-lead">${esc(line)}</p>
+      <ul class="brief-list">${items.map((m) => `<li><b>${esc(m.n)}</b> ${Macro.level(m)} <span class="muted">day</span> ${Macro.move(m)} <span class="muted">· week</span> ${pct(m.w1)}</li>`).join("")}</ul>`,
+      `<a href="markets.html">Markets</a> · <a href="funds.html">ETFs and crypto</a>`);
+  } catch {}
 
   // ---- sectors (all markets together, weighted by size)
   const bySec = {};
@@ -104,11 +114,18 @@
   const end = new Date(today); end.setUTCDate(end.getUTCDate() + 7);
   const earn = M.stocks.filter((s) => s.earnings && s.earnings >= iso(today) && s.earnings <= iso(end)).sort((a, b) => (b.mcapUsd || 0) - (a.mcapUsd || 0));
   const exd = M.stocks.filter((s) => s.exDiv && s.exDiv >= iso(today) && s.exDiv <= iso(end) && s.divYield >= 3).sort((a, b) => b.divYield - a.divYield);
-  if (earn.length || exd.length) {
+  // Key economic releases and central bank decisions in the next 7 days (econ.json)
+  let econ = [];
+  try {
+    const E = await UI.load("econ.json");
+    econ = (E.events || []).filter((e) => e.key && e.d >= iso(today) && e.d <= iso(end) && ["US", "CA", "JP"].includes(e.c));
+  } catch {}
+  if (earn.length || exd.length || econ.length) {
     section("Coming up this week", `
+      ${econ.length ? `<p class="brief-lead">On the economic calendar: ${list(econ.slice(0, 6).map((e) => `${e.f} ${esc(e.n)} (${new Date(e.d + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short" })})`))}.</p>` : ""}
       ${earn.length ? `<p class="brief-lead">${earn.length} companies report earnings in the next 7 days, including ${list(earn.slice(0, 6).map((s) => `${link(s)} (${new Date(s.earnings + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short" })})`))}.</p>` : ""}
       ${exd.length ? `<p>Going ex-dividend with yields of 3% or more: ${list(exd.slice(0, 5).map((s) => `${link(s)} ${s.divYield.toFixed(1)}%`))}.</p>` : ""}`,
-      `<a href="calendar.html">Calendar</a> · <a href="dividends.html">Dividends</a>`);
+      `<a href="calendar.html">Calendar</a> · <a href="calendar.html?k=econ">Economic calendar</a> · <a href="dividends.html">Dividends</a>`);
   }
 
   $("brief").innerHTML = sections.join("");

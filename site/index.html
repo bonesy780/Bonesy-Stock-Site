@@ -3,12 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TopTicker · Stocks and Real Estate</title>
-<meta name="description" content="TopTicker: choose the stock market (top stocks, buy ideas and news across eight markets) or real estate (home prices, rents and listings across North America).">
+<script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
+<meta name="theme-color" content="#0b1020" media="(max-width: 640px)">
+<title>TopTicker · Stocks, Real Estate and News</title>
+<meta name="description" content="TopTicker: the stock market (top stocks, buy ideas and news across eight markets), real estate (home prices, rents and listings across North America) and the day's news from about 90 outlets, in one place.">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="canonical" href="https://www.topticker.ca/">
+<!-- site-verification -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","@id":"https://www.topticker.ca/#website","name":"TopTicker","alternateName":"topticker.ca","url":"https://www.topticker.ca/","inLanguage":"en"},
+ {"@type":"Organization","@id":"https://www.topticker.ca/#org","name":"TopTicker","url":"https://www.topticker.ca/","logo":"https://www.topticker.ca/icon-512.png"}
+]}
+</script>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TopTicker">
+<meta property="og:title" content="TopTicker · Stocks, Real Estate and News">
+<meta property="og:description" content="TopTicker: the stock market (top stocks, buy ideas and news across eight markets), real estate (home prices, rents and listings across North America) and the day's news from about 90 outlets, in one place.">
+<meta property="og:url" content="https://www.topticker.ca/">
+<meta property="og:image" content="https://www.topticker.ca/img/share-home.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TopTicker">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=__V__">
 <link rel="stylesheet" href="choose.css?v=__V__">
 <script>
@@ -18,61 +40,189 @@
     const pick = localStorage.getItem("home-pick");
     let fromHere = false;
     try { fromHere = !!document.referrer && new URL(document.referrer).host === location.host; } catch {}
-    if (pick && !fromHere && !/[?&]choose/.test(location.search)) location.replace(pick === "re" ? "re/" : "news.html");
+    if (pick && !fromHere && !/[?&]choose/.test(location.search)) location.replace(pick === "re" ? "re/" : pick === "daily" ? "daily/" : "news.html");
   } catch {}
 </script>
 </head>
-<body class="choose">
-<main class="wrap choose-main">
-  <div class="choose-brand">
-    <svg class="logo-mark" viewBox="0 0 32 32" width="44" height="44" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg>
+<body class="home">
+<a class="skip" href="#main">Skip to content</a>
+<div class="hm-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<div class="hm-tape" role="region" aria-label="Today's markets">
+  <div class="hm-tape-track" id="tape"><span class="hm-tape-item muted">Loading today's markets…</span></div>
+</div>
+
+<header class="wrap hm-head">
+  <a class="hm-brand" href="./?choose" aria-label="TopTicker home">
+    <svg class="hm-logo" viewBox="0 0 32 32" width="40" height="40" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg>
     <span><b>Top</b>Ticker</span>
-  </div>
-  <h1>Which market are you looking at today?</h1>
+  </a>
+  <span class="hm-live-pill"><i></i><span id="hm-clock">Live</span></span>
+</header>
 
-  <div class="choose-grid">
-    <a class="panel choose-card" href="news.html" data-pick="stocks">
-      <div class="choose-art" aria-hidden="true">
-        <svg viewBox="0 0 320 140" preserveAspectRatio="none">
-          <defs><linearGradient id="gs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--up)" stop-opacity=".28"/><stop offset="1" stop-color="var(--up)" stop-opacity="0"/></linearGradient></defs>
-          <path d="M0 112 L28 104 L52 108 L80 88 L104 94 L132 72 L156 78 L184 56 L208 62 L236 40 L262 48 L290 24 L320 30 L320 140 L0 140Z" fill="url(#gs)"/>
-          <path d="M0 112 L28 104 L52 108 L80 88 L104 94 L132 72 L156 78 L184 56 L208 62 L236 40 L262 48 L290 24 L320 30" fill="none" stroke="var(--up)" stroke-width="3" stroke-linejoin="round"/>
-          <g fill="var(--up)" fill-opacity=".55"><rect x="20" y="118" width="10" height="22"/><rect x="44" y="124" width="10" height="16"/><rect x="68" y="112" width="10" height="28"/><rect x="92" y="120" width="10" height="20"/><rect x="116" y="108" width="10" height="32"/><rect x="140" y="116" width="10" height="24"/><rect x="164" y="104" width="10" height="36"/><rect x="188" y="112" width="10" height="28"/><rect x="212" y="98" width="10" height="42"/><rect x="236" y="106" width="10" height="34"/><rect x="260" y="94" width="10" height="46"/><rect x="284" y="100" width="10" height="40"/></g>
+<main id="main" class="wrap">
+  <section class="hm-hero">
+    <h1>Stocks, homes and headlines.<br><span class="hm-grad">One place to start your day.</span></h1>
+    <p>Track the top stocks across eight markets, see where home prices are heading in North America, and catch up on the news from about 90 outlets. It's free and updated all day.</p>
+  </section>
+
+  <section class="hm-grid" aria-label="Choose where to go">
+    <!-- 1. Stocks -->
+    <a class="hm-card hm-stocks" href="news.html" data-pick="stocks">
+      <div class="hm-art" aria-hidden="true">
+        <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="st-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#062a1f"/><stop offset=".55" stop-color="#0a1f33"/><stop offset="1" stop-color="#071226"/></linearGradient>
+            <linearGradient id="st-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22c55e" stop-opacity=".45"/><stop offset="1" stop-color="#22c55e" stop-opacity="0"/></linearGradient>
+            <filter id="st-glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <rect width="400" height="220" fill="url(#st-bg)"/>
+          <g stroke="#ffffff" stroke-opacity=".06"><path d="M0 44h400M0 88h400M0 132h400M0 176h400"/><path d="M50 0v220M100 0v220M150 0v220M200 0v220M250 0v220M300 0v220M350 0v220"/></g>
+          <g class="st-candles">
+            <g class="c up" style="--d:0s"><path d="M30 150v34"/><rect x="24" y="158" width="12" height="20" rx="2"/></g>
+            <g class="c dn" style="--d:.1s"><path d="M58 146v36"/><rect x="52" y="152" width="12" height="18" rx="2"/></g>
+            <g class="c up" style="--d:.2s"><path d="M86 128v40"/><rect x="80" y="136" width="12" height="26" rx="2"/></g>
+            <g class="c up" style="--d:.3s"><path d="M114 116v38"/><rect x="108" y="122" width="12" height="24" rx="2"/></g>
+            <g class="c dn" style="--d:.4s"><path d="M142 112v40"/><rect x="136" y="118" width="12" height="22" rx="2"/></g>
+            <g class="c up" style="--d:.5s"><path d="M170 96v42"/><rect x="164" y="104" width="12" height="28" rx="2"/></g>
+            <g class="c up" style="--d:.6s"><path d="M198 84v40"/><rect x="192" y="90" width="12" height="26" rx="2"/></g>
+            <g class="c dn" style="--d:.7s"><path d="M226 86v34"/><rect x="220" y="92" width="12" height="18" rx="2"/></g>
+            <g class="c up" style="--d:.8s"><path d="M254 66v42"/><rect x="248" y="72" width="12" height="30" rx="2"/></g>
+            <g class="c up" style="--d:.9s"><path d="M282 54v40"/><rect x="276" y="60" width="12" height="26" rx="2"/></g>
+            <g class="c dn" style="--d:1s"><path d="M310 58v32"/><rect x="304" y="62" width="12" height="18" rx="2"/></g>
+            <g class="c up" style="--d:1.1s"><path d="M338 36v42"/><rect x="332" y="42" width="12" height="30" rx="2"/></g>
+            <g class="c up" style="--d:1.2s"><path d="M366 22v40"/><rect x="360" y="28" width="12" height="28" rx="2"/></g>
+          </g>
+          <path d="M0 196 C40 186 60 170 90 160 S150 140 180 122 S240 104 260 90 S320 66 340 56 S380 34 400 26 L400 220 L0 220Z" fill="url(#st-area)"/>
+          <path class="st-line" pathLength="1" d="M0 196 C40 186 60 170 90 160 S150 140 180 122 S240 104 260 90 S320 66 340 56 S380 34 400 26" fill="none" stroke="#4ade80" stroke-width="3.5" stroke-linecap="round" filter="url(#st-glow)"/>
+          <circle class="st-dot" cx="392" cy="29" r="5" fill="#bbf7d0"/>
+          <circle class="st-ping" cx="392" cy="29" r="5" fill="none" stroke="#4ade80" stroke-width="2"/>
         </svg>
+        <div class="hm-chips" id="st-chips"><span class="hm-chip up">S&amp;P 500</span><span class="hm-chip up">Nasdaq</span></div>
       </div>
-      <div class="choose-body">
-        <h2>Stock market</h2>
-        <p>Top 10 stocks across the S&amp;P 500, Nasdaq-100, Dow, TSX, Nikkei, KOSPI and Taiwan 50, with buy ideas, stocks to watch, market news, a screener and tools.</p>
-        <div class="choose-live" id="live-stocks"></div>
-        <span class="btn primary">Go to stocks →</span>
+      <div class="hm-body">
+        <div class="hm-badge">
+          <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0b2a1c"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301"/></svg>
+          <span>TopTicker Stocks</span>
+        </div>
+        <h2>The stock market</h2>
+        <p>The top 10 stocks in the S&amp;P 500, Nasdaq-100, Dow, TSX, Nikkei, KOSPI and Taiwan 50, with buy ideas, stocks to watch, a screener and a heatmap.</p>
+        <div class="hm-live" id="live-stocks"></div>
+        <span class="hm-go">Explore stocks <b aria-hidden="true">→</b></span>
       </div>
     </a>
 
-    <a class="panel choose-card" href="re/" data-pick="re">
-      <div class="choose-art" aria-hidden="true">
-        <svg viewBox="0 0 320 140" preserveAspectRatio="xMidYMax slice">
-          <rect x="0" y="126" width="320" height="14" fill="var(--up)" fill-opacity=".25"/>
-          <g fill="var(--accent)" fill-opacity=".18"><rect x="18" y="52" width="34" height="74"/><rect x="58" y="30" width="26" height="96"/><rect x="250" y="40" width="30" height="86"/><rect x="286" y="62" width="24" height="64"/></g>
-          <path d="M104 86 150 48l46 38" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="114" y="84" width="72" height="42" fill="var(--accent)" fill-opacity=".85"/>
-          <rect x="142" y="100" width="16" height="26" fill="var(--surface)"/>
-          <rect x="122" y="94" width="13" height="11" fill="var(--surface)"/><rect x="165" y="94" width="13" height="11" fill="var(--surface)"/>
-          <path d="M200 98 222 80l22 18" fill="none" stroke="var(--up)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="206" y="97" width="32" height="29" fill="var(--up)" fill-opacity=".8"/>
+    <!-- 2. Real estate -->
+    <a class="hm-card hm-re" href="re/" data-pick="re">
+      <div class="hm-art" aria-hidden="true">
+        <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMax slice">
+          <defs>
+            <linearGradient id="re-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e1b4b"/><stop offset=".55" stop-color="#6d28d9"/><stop offset=".85" stop-color="#f97316"/><stop offset="1" stop-color="#fbbf24"/></linearGradient>
+            <radialGradient id="re-sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fde68a"/><stop offset=".6" stop-color="#fbbf24" stop-opacity=".9"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></radialGradient>
+          </defs>
+          <rect width="400" height="220" fill="url(#re-sky)"/>
+          <circle class="re-sun" cx="300" cy="150" r="58" fill="url(#re-sun)"/>
+          <g fill="#fff" class="re-stars"><circle cx="40" cy="22" r="1.3"/><circle cx="90" cy="40" r="1"/><circle cx="150" cy="16" r="1.4"/><circle cx="210" cy="34" r="1"/><circle cx="260" cy="14" r="1.2"/><circle cx="350" cy="30" r="1.4"/><circle cx="380" cy="60" r="1"/></g>
+          <g fill="#140f33">
+            <rect x="0" y="110" width="44" height="110"/><rect x="48" y="80" width="38" height="140"/><rect x="62" y="64" width="10" height="18"/>
+            <rect x="90" y="122" width="30" height="98"/><rect x="246" y="92" width="34" height="128"/><rect x="284" y="118" width="40" height="102"/>
+            <rect x="328" y="70" width="34" height="150"/><rect x="342" y="52" width="6" height="20"/><rect x="366" y="104" width="34" height="116"/>
+          </g>
+          <g class="re-win" fill="#fde68a">
+            <rect x="8" y="122" width="6" height="7" style="--d:.2s"/><rect x="26" y="140" width="6" height="7" style="--d:1.4s"/><rect x="8" y="158" width="6" height="7" style="--d:2.6s"/>
+            <rect x="56" y="94" width="6" height="7" style="--d:.8s"/><rect x="72" y="112" width="6" height="7" style="--d:3s"/><rect x="56" y="130" width="6" height="7" style="--d:1.9s"/><rect x="72" y="150" width="6" height="7" style="--d:.5s"/>
+            <rect x="98" y="134" width="6" height="7" style="--d:2.2s"/><rect x="254" y="104" width="6" height="7" style="--d:1.1s"/><rect x="266" y="126" width="6" height="7" style="--d:2.8s"/>
+            <rect x="292" y="130" width="6" height="7" style="--d:.4s"/><rect x="308" y="148" width="6" height="7" style="--d:1.6s"/><rect x="336" y="84" width="6" height="7" style="--d:2.4s"/>
+            <rect x="350" y="104" width="6" height="7" style="--d:.9s"/><rect x="336" y="126" width="6" height="7" style="--d:3.3s"/><rect x="374" y="118" width="6" height="7" style="--d:1.3s"/><rect x="386" y="140" width="6" height="7" style="--d:2s"/>
+          </g>
+          <rect x="0" y="196" width="400" height="24" fill="#0d0a24"/>
+          <g class="re-house">
+            <path d="M126 196v-58l58-46 58 46v58z" fill="#2a1f5c"/>
+            <path d="M114 142l70-58 70 58" fill="none" stroke="#fbbf24" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="214" y="96" width="12" height="26" fill="#2a1f5c"/>
+            <rect class="re-lit" x="140" y="150" width="26" height="22" rx="2" fill="#fde68a"/><path d="M153 150v22M140 161h26" stroke="#2a1f5c" stroke-width="2"/>
+            <rect class="re-lit" x="202" y="150" width="26" height="22" rx="2" fill="#fde68a" style="--d:1.2s"/><path d="M215 150v22M202 161h26" stroke="#2a1f5c" stroke-width="2"/>
+            <rect x="172" y="160" width="22" height="36" rx="2" fill="#f97316"/><circle cx="189" cy="179" r="1.8" fill="#2a1f5c"/>
+          </g>
+          <g class="re-sign">
+            <path d="M74 196v-40" stroke="#e5e7eb" stroke-width="3"/>
+            <rect x="74" y="158" width="40" height="22" rx="3" fill="#ef4444"/>
+            <text x="94" y="173" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="800" fill="#fff">SOLD</text>
+          </g>
+          <g fill="#10b981"><circle cx="270" cy="178" r="14"/><circle cx="282" cy="170" r="11"/><rect x="273" y="182" width="4" height="14" fill="#3f2d14"/></g>
         </svg>
+        <div class="hm-chips" id="re-chips"><span class="hm-chip">🏠 Home prices</span><span class="hm-chip">📉 Mortgage rates</span></div>
       </div>
-      <div class="choose-body">
+      <div class="hm-body">
+        <div class="hm-badge">
+          <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2a1f5c"/><path d="M6 16.5 16 8l10 8.5" fill="none" stroke="#fbbf24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 15v10h13V15" fill="#fbbf24" fill-opacity=".85"/><rect x="14" y="19" width="4" height="6" rx=".8" fill="#2a1f5c"/></svg>
+          <span>TopTicker Homes</span>
+        </div>
         <h2>Real estate</h2>
-        <p>Home prices, rents, supply and mortgage rates across the United States, Canada and Mexico, with top 10 markets, buy ideas, markets to watch and homes for sale.</p>
-        <div class="choose-live" id="live-re"></div>
-        <span class="btn primary">Go to real estate →</span>
+        <p>Home prices, rents, supply and mortgage rates across the U.S., Canada and Mexico, with the top 10 markets, buy ideas, 60 countries ranked and homes for sale.</p>
+        <div class="hm-live" id="live-re"></div>
+        <span class="hm-go">Explore real estate <b aria-hidden="true">→</b></span>
       </div>
     </a>
-  </div>
 
-  <label class="choose-remember"><input type="checkbox" id="remember"> Remember my choice and skip this page next time</label>
-  <p class="choose-foot">You can switch any time from the menu. Not financial advice.</p>
+    <!-- 3. News -->
+    <a class="hm-card hm-news" href="daily/" data-pick="daily">
+      <div class="hm-art" aria-hidden="true">
+        <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="nw-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b0a1e"/><stop offset=".5" stop-color="#1a1036"/><stop offset="1" stop-color="#0b1330"/></linearGradient>
+            <radialGradient id="nw-globe" cx=".38" cy=".35" r=".75"><stop offset="0" stop-color="#60a5fa"/><stop offset=".6" stop-color="#1d4ed8"/><stop offset="1" stop-color="#1e1b4b"/></radialGradient>
+            <clipPath id="nw-clip"><circle cx="292" cy="112" r="70"/></clipPath>
+          </defs>
+          <rect width="400" height="220" fill="url(#nw-bg)"/>
+          <circle cx="292" cy="112" r="92" fill="#f43f5e" fill-opacity=".08"/>
+          <g class="nw-orbit"><ellipse cx="292" cy="112" rx="104" ry="30" fill="none" stroke="#fda4af" stroke-opacity=".35" stroke-dasharray="3 6" transform="rotate(-18 292 112)"/></g>
+          <circle cx="292" cy="112" r="70" fill="url(#nw-globe)"/>
+          <g clip-path="url(#nw-clip)" fill="none" stroke="#bfdbfe" stroke-opacity=".45" stroke-width="1.5">
+            <path d="M222 112h140M226 82h132M226 142h132M240 56h104M240 168h104"/>
+            <g class="nw-spin"><ellipse cx="292" cy="112" rx="70" ry="70"><animate attributeName="rx" values="70;0;70" dur="6s" begin="0s" repeatCount="indefinite"/></ellipse><ellipse cx="292" cy="112" rx="70" ry="70"><animate attributeName="rx" values="70;0;70" dur="6s" begin="-2s" repeatCount="indefinite"/></ellipse><ellipse cx="292" cy="112" rx="70" ry="70"><animate attributeName="rx" values="70;0;70" dur="6s" begin="-4s" repeatCount="indefinite"/></ellipse></g>
+          </g>
+          <g clip-path="url(#nw-clip)" fill="#34d399" fill-opacity=".75" class="nw-land"><path d="M246 80c10-8 26-6 30 4s-6 14-2 22-10 14-18 8-20-24-10-34z"/><path d="M300 70c14-4 30 2 34 12s-8 10-6 18 12 8 8 20-22 10-26-2-20-40-10-48z"/><path d="M286 140c8 0 16 6 14 14s-12 12-18 6-4-20 4-20z"/></g>
+          <circle class="nw-sat" r="5" fill="#fda4af"><animateMotion dur="7s" repeatCount="indefinite" rotate="auto" path="M188 144 A104 30 -18 1 1 396 80 A104 30 -18 1 1 188 144"/></circle>
+          <g class="nw-cards" transform="translate(0 14)">
+            <g class="nc" style="--d:0s"><rect x="22" y="30" width="150" height="44" rx="8" fill="#fff" fill-opacity=".95"/><rect x="32" y="40" width="30" height="24" rx="4" fill="#f43f5e"/><rect x="70" y="42" width="90" height="6" rx="3" fill="#1f2937"/><rect x="70" y="54" width="66" height="5" rx="2.5" fill="#9ca3af"/></g>
+            <g class="nc" style="--d:.6s"><rect x="42" y="88" width="150" height="44" rx="8" fill="#fff" fill-opacity=".92"/><rect x="52" y="98" width="30" height="24" rx="4" fill="#3b82f6"/><rect x="90" y="100" width="88" height="6" rx="3" fill="#1f2937"/><rect x="90" y="112" width="58" height="5" rx="2.5" fill="#9ca3af"/></g>
+            <g class="nc" style="--d:1.2s"><rect x="22" y="146" width="150" height="44" rx="8" fill="#fff" fill-opacity=".9"/><rect x="32" y="156" width="30" height="24" rx="4" fill="#f59e0b"/><rect x="70" y="158" width="92" height="6" rx="3" fill="#1f2937"/><rect x="70" y="170" width="70" height="5" rx="2.5" fill="#9ca3af"/></g>
+          </g>
+        </svg>
+        <div class="hm-chips"><span class="hm-chip hm-onair"><i></i>LIVE</span><span class="hm-chip" id="nw-count">90 outlets</span></div>
+      </div>
+      <div class="hm-body">
+        <div class="hm-badge">
+          <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#3b0a1e"/><rect x="7" y="8" width="18" height="17" rx="2" fill="none" stroke="#fb7185" stroke-width="2.2"/><path d="M10.5 13h11M10.5 17h11M10.5 21h7" stroke="#fb7185" stroke-width="2" stroke-linecap="round"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301"/></svg>
+          <span>TopTicker News</span>
+        </div>
+        <h2>Daily news</h2>
+        <p>Your morning read: headlines from about 90 outlets, from world news and politics to sports and betting, with every U.S. state and Canadian province.</p>
+        <div class="hm-live hm-headline" id="live-daily"></div>
+        <span class="hm-go">Read the news <b aria-hidden="true">→</b></span>
+      </div>
+    </a>
+  </section>
+
+  <section class="hm-quick" aria-label="Jump straight in">
+    <h2>Or jump straight in</h2>
+    <div class="hm-quick-grid">
+      <a href="markets.html" data-pick="stocks"><span>🏆</span><b>Top 10 stocks</b><i>in eight markets</i></a>
+      <a href="screener.html" data-pick="stocks"><span>🔎</span><b>Stock screener</b><i>35 filters</i></a>
+      <a href="heatmap.html" data-pick="stocks"><span>🟩</span><b>Heatmap</b><i>whole market at a glance</i></a>
+      <a href="re/world.html" data-pick="re"><span>🌍</span><b>World housing</b><i>60 countries ranked</i></a>
+      <a href="re/listings.html" data-pick="re"><span>🏡</span><b>Homes for sale</b><i>big North American cities</i></a>
+      <a href="re/tools.html" data-pick="re"><span>🧮</span><b>Mortgage calculator</b><i>U.S., Canada, Mexico</i></a>
+      <a href="daily/" data-pick="daily"><span>⚡</span><b>2-minute briefing</b><i>the day in one read</i></a>
+      <a href="portfolio.html" data-pick="stocks"><span>🎮</span><b>Paper trading</b><i>practice with pretend cash</i></a>
+    </div>
+  </section>
+
+  <label class="hm-remember"><input type="checkbox" id="remember"> Remember my choice and skip this page next time</label>
+  <p class="hm-foot">You can switch any time from the menu. Not financial advice.</p>
 </main>
 <script src="choose.js?v=__V__"></script>
+<script src="theme.js?v=__V__" defer></script>
 </body>
 </html>
