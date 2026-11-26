@@ -10,8 +10,7 @@
     $("cards").innerHTML = `<div class="panel empty">Stock data could not be loaded. Try again after the next data refresh.</div>`;
     return;
   }
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
+  UI.updated(M.generated);
 
   // tone: up = bullish, down = bearish, flat = watch either way
   const SIGNALS = [

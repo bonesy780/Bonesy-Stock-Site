@@ -12,8 +12,7 @@
   }
   const stocksList = await UI.load("stocks.json").catch(() => []);
   const names = Object.fromEntries(stocksList.map((s) => [s.t, s]));
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
+  UI.updated(M.generated);
 
   const live = {};
   const sort = store.get("watchSort", { key: "pos", dir: 1 });
@@ -40,7 +39,7 @@
     return `<span class="range52" title="52-week low ${money(r.lo52, r.cur)}, high ${money(r.hi52, r.cur)}"><span class="track"><i style="left:calc(${(f * 100).toFixed(0)}% - 1px)"></i></span><span class="num">${Math.round(f * 100)}%</span></span>`;
   };
   const rating = (r) => r.recMean == null ? "–" :
-    `<span class="pill ${r.recMean <= 2.5 ? "buy" : r.recMean > 3.5 ? "sell" : ""}">${r.recMean <= 1.5 ? "Strong Buy" : r.recMean <= 2.5 ? "Buy" : r.recMean <= 3.5 ? "Hold" : "Sell"}</span>`;
+    `<span class="pill ${r.recMean <= 2.5 ? "buy" : r.recMean > 3.5 ? "sell" : ""}">${r.recMean <= 1.5 ? "Strong Buy" : r.recMean <= 2.5 ? "Buy" : r.recMean <= 3.5 ? "Hold" : r.recMean <= 4.5 ? "Underperform" : "Sell"}</span>`;
 
   const cols = [
     { key: "pos", label: "#", title: "The order you added them", val: (r) => r.pos, html: (r) => `<span class="num muted">${r.pos + 1}</span>` },
@@ -96,7 +95,7 @@
     }
     UI.table($("table"), cols, rows, sort, {
       cls: "wl-table",
-      empty: `This list is empty. Search above to add a stock, or tap the ☆ beside any stock on the <a href="./">Markets</a> or <a href="stock.html">Stock Lookup</a> pages.`,
+      empty: `This list is empty. Search above to add a stock, or tap the ☆ beside any stock on the <a href="markets.html">Markets</a> or <a href="stock.html">Stock Lookup</a> pages.`,
       onSort: (s) => store.set("watchSort", s),
     });
     $("note").textContent = rows.length ? "Tap a column heading to sort. Tap it again to flip the order." : "";

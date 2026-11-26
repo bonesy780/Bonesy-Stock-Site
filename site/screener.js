@@ -10,8 +10,7 @@
     $("table").innerHTML = `<div class="empty">Stock data could not be loaded. Try again after the next data refresh.</div>`;
     return;
   }
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
+  UI.updated(M.generated);
 
   // Each filter works on one number. unit: "B" means billions of US dollars, "%" a percent, "x" a ratio
   const F = [
@@ -87,7 +86,7 @@
     if (k === "spark") { const a = trendPts(s); return a ? `<span title="${esc(trendName())}: ${(trendChg(s) ?? 0).toFixed(1)}%">${spark(a, 80, 24)}</span>` : '<span class="num">–</span>'; }
     if (k === "mcapUsd" || k === "dollarVolUsd") return `<span class="num">${big(v)}</span>`;
     if (k === "exDiv" || k === "earnings") return v ? new Date(v + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" }) : "–";
-    if (k === "recMean") return v == null ? "–" : `<span class="pill ${v <= 2.5 ? "buy" : v > 3.5 ? "sell" : ""}">${v <= 1.5 ? "Strong Buy" : v <= 2.5 ? "Buy" : v <= 3.5 ? "Hold" : "Sell"} <span class="num">${v.toFixed(1)}</span></span>`;
+    if (k === "recMean") return v == null ? "–" : `<span class="pill ${v <= 2.5 ? "buy" : v > 3.5 ? "sell" : ""}">${v <= 1.5 ? "Strong Buy" : v <= 2.5 ? "Buy" : v <= 3.5 ? "Hold" : v <= 4.5 ? "Underperform" : "Sell"} <span class="num">${v.toFixed(1)}</span></span>`;
     if (["d1", "w1", "m1", "m3", "m6", "y1", "ytd", "upside", "vsSma50", "vsSma200", "fromHi", "fromLo", "revGrowth", "epsGrowth"].includes(k)) return pct(v);
     if (k === "divYield") return `<span class="num">${v != null ? v.toFixed(2) + "%" : "–"}</span>`;
     if (f && f.unit === "%") return `<span class="num">${v != null ? v.toFixed(1) + "%" : "–"}</span>`;

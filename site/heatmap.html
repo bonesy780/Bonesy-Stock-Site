@@ -3,29 +3,44 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Market Heatmap · Market Leaders</title>
+<script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
+<meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
+<title>Market Heatmap · TopTicker</title>
 <meta name="description" content="A heatmap of every stock in each market, grouped by sector and sized by company value, colored by how much it moved.">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="canonical" href="https://www.topticker.ca/heatmap.html">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TopTicker">
+<meta property="og:title" content="Market Heatmap · TopTicker">
+<meta property="og:description" content="A heatmap of every stock in each market, grouped by sector and sized by company value, colored by how much it moved.">
+<meta property="og:url" content="https://www.topticker.ca/heatmap.html">
+<meta property="og:image" content="https://www.topticker.ca/img/share-stocks.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TopTicker">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=__V__">
 </head>
 <body>
-<div class="side-art left" aria-hidden="true"></div>
-<div class="side-art right" aria-hidden="true"></div>
+<a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="wrap top-inner">
-    <a class="brand" href="./"><span class="logo" aria-hidden="true">▲</span> <span class="brand-text">Market Leaders</span></a>
+    <a class="brand" href="./" aria-label="TopTicker home"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><rect x="6.5" y="19" width="5" height="7" rx="1.2" fill="#22c55e" fill-opacity=".55"/><rect x="13.5" y="15" width="5" height="11" rx="1.2" fill="#22c55e" fill-opacity=".8"/><rect x="20.5" y="11" width="5" height="15" rx="1.2" fill="#22c55e"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker</span></a>
     <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a stock…" aria-label="Go to a stock" spellcheck="false"></div>
     <div class="updated" id="updated">Loading…</div>
   </div>
   <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
 </header>
 
-<main class="wrap">
+<main id="main" class="wrap">
   <section class="hero">
     <h1>Market heatmap</h1>
-    <p>Every stock in a market at a glance. Boxes are grouped by sector and sized by company value. Green rose and red fell, and the stronger the color, the bigger the move. Tap a box for the stock's chart.</p>
+    <p>Every stock in a market at a glance. Boxes are grouped by sector and sized by company value. Green rose and red fell, and the stronger the color, the bigger the move. Prices update live while the market is open. Hover over a box (or tap it on a phone) for its price, a one-month chart and its latest news story. Click a sector's name to zoom into it.</p>
   </section>
 
   <nav class="tabs" id="markets" aria-label="Market"></nav>
@@ -35,24 +50,36 @@
     <span class="spacer"></span>
     <div class="heat-legend" id="legend" aria-hidden="true"></div>
   </div>
+  <div class="toolbar heat-tools">
+    <div class="seg" id="sizes" role="group" aria-label="Box size"></div>
+    <div class="heat-find"><input class="field" id="find" type="search" placeholder="Find a stock…" aria-label="Highlight a stock on the heatmap" spellcheck="false" autocomplete="off"></div>
+    <button class="chip" id="watch" type="button" aria-pressed="false" title="Fade every stock that isn't on your watchlists">★ My watchlist</button>
+  </div>
+  <div class="heat-range" id="range" hidden>
+    <label>From <input class="field" id="from" type="date"></label>
+    <label>To <input class="field" id="to" type="date"></label>
+    <span class="heat-quick" aria-label="Quick ranges"><button class="chip" type="button" data-back="182">6 months</button><button class="chip" type="button" data-back="365">1 year</button><button class="chip" type="button" data-back="1096">3 years</button><button class="chip" type="button" data-back="1826">5 years</button></span>
+    <p class="hint" id="range-note" role="status"></p>
+  </div>
 
-  <div class="panel heat-wrap"><div class="heat" id="heat" role="img" aria-label="Heatmap of stocks by sector"></div></div>
+  <div class="heat-crumb" id="crumb" hidden></div>
+  <div class="panel heat-wrap"><div class="heat" id="heat" aria-label="Heatmap of stocks by sector"></div></div>
   <div class="tip heat-tip" id="tip" hidden></div>
 
-  <div class="subhead"><h3>Sectors</h3><p>Each sector's move, weighted by company size, and its best and worst stock.</p></div>
+  <div class="subhead"><h3>Sectors</h3><p>Each sector's move, weighted by company size, and its best and worst stock. Click a sector to zoom the heatmap into it.</p></div>
   <div class="panel table-wrap" id="sectors"></div>
 
   <div class="subhead"><h3>Sector performance over time</h3><p>Each sector's move over different periods, weighted by company size, sorted by the last 3 months. Sectors strong lately but weak over the year may be coming back into favour, and the reverse.</p></div>
   <div class="panel table-wrap" id="rotation"></div>
 
-  <p class="disclaimer"><strong>Not financial advice.</strong> Built from each market's last close, refreshed every weekday after the US close. Data from Yahoo Finance can be delayed or wrong.</p>
+  <p class="disclaimer"><strong>Not financial advice.</strong> Colors update live every 30 seconds while a market is open (the custom range uses daily closes). Headlines come from Yahoo Finance news. Company sizes and sectors refresh every weekday after the US close. Data from Yahoo Finance can be delayed or wrong.</p>
 </main>
 
 <footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
 
 <script src="common.js?v=__V__"></script>
-<script src="rain.js?v=__V__"></script>
 <script src="live.js?v=__V__"></script>
 <script src="heatmap.js?v=__V__"></script>
+<script src="theme.js?v=__V__" defer></script>
 </body>
 </html>

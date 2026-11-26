@@ -3,8 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const M = await UI.market().catch(() => null);
   if (M) {
-    $("updated").textContent = "Prices from " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-    if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
+    UI.updated(M.generated, "Prices updated");
   }
   const stocks = await UI.load("stocks.json").catch(() => []);
   const byT = Object.fromEntries(stocks.map((s) => [s.t, s]));
@@ -98,6 +97,38 @@
       : p === "unsupported" ? "This browser can't show pop-up notifications, so alerts show on the page only." : "Alerts show on the page. Turn on pop-ups to see them while you're in another tab.";
   }
   $("notify").addEventListener("click", async () => { try { await Notification.requestPermission(); } catch {} perm(); });
+
+  // ---- push alerts (checked on the live service every 5 minutes, delivered with the site closed)
+  const Push = UI.Push;
+  function pushView() {
+    const box = $("push-box");
+    const ios = /iPhone|iPad/.test(navigator.userAgent) && !navigator.standalone;
+    if (!(window.Live && Live.on)) { box.hidden = true; return; }
+    box.hidden = false;
+    if (!Push.supported()) {
+      $("push-btn").hidden = true;
+      $("push-text").textContent = ios
+        ? "To get alerts with the site closed on an iPhone or iPad, first add TopTicker to your home screen (Share, then Add to Home Screen), open it from there and come back to this page."
+        : "This browser can't receive push notifications, so alerts only run while a page of the site is open.";
+      return;
+    }
+    $("push-btn").hidden = false;
+    $("push-btn").textContent = Push.on() ? "Turn off push alerts" : "Turn on push alerts";
+    $("push-btn").classList.toggle("primary", !Push.on());
+    $("push-text").innerHTML = Push.on()
+      ? "<b>Push alerts are on.</b> TopTicker checks your active alerts every 5 minutes on its own server and notifies this device when one goes off, even with the site closed."
+      : "Turn on push alerts and TopTicker checks your alerts every 5 minutes on its own server, then sends a notification to this device even when no page of the site is open. Only your alerts and this browser's push address are stored, nothing else about you.";
+  }
+  $("push-btn").addEventListener("click", async () => {
+    $("push-btn").disabled = true;
+    try {
+      if (Push.on()) { await Push.disable(); UI.toast("Push alerts are off for this device."); }
+      else { await Push.enable(); UI.toast("Push alerts are on. You'll be notified even with the site closed."); }
+    } catch (e) { UI.toast(esc(e.message || "Push alerts couldn't be turned on.")); }
+    $("push-btn").disabled = false;
+    pushView(); perm();
+  });
+  pushView();
 
   window.addEventListener("alerts", render);
   const want = new URLSearchParams(location.search).get("t");

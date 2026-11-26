@@ -2,12 +2,13 @@
   const $ = (id) => document.getElementById(id);
   let data;
   try {
-    const res = await fetch("news.json", { cache: "no-store" });
+    const res = await fetch("news.json", { cache: "no-cache" });
     data = await res.json();
   } catch (e) {
     $("updated").textContent = "News could not be loaded.";
     return;
   }
+  if (window.UI && UI.freshness) UI.freshness(data.generated, 3);
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const safeUrl = (u) => /^https?:\/\//i.test(u || "") ? u : "#";
@@ -21,11 +22,11 @@
   const pct = (v) => v == null ? "" :
     `<span class="num ${v >= 0 ? "up" : "down"}">${v >= 0 ? "+" : ""}${v.toFixed(1)}%</span>`;
 
-  $("updated").textContent = "Updated " + new Date(data.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  UI.updated(data.generated);
 
   // "Top stories" from the big financial outlets comes first, then one tab per market
   const sources = (data.sources || []).filter((x) => x.stories.length);
-  const PAYWALL = new Set(["wsj", "ft", "bloomberg", "economist"]);
+  const access = (s) => window.Paywall ? Paywall.access({ url: s.url, site: s.site, source: s.source }) : null;
   // "All markets" merges every market's stories, newest first, each labelled with its market
   const seenAll = new Set();
   const allMarkets = {
@@ -49,13 +50,13 @@
       <a class="panel story${big ? " lead" : ""}" href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener noreferrer">
         ${s.image ? `<img src="${esc(safeUrl(s.image))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
         <div class="story-body">
-          <div class="story-meta"><span>${esc(s.source)}</span>${s.paywall ? `<span class="tag" title="The full story may need a subscription">Subscription</span>` : ""}<span>${ago(s.published)}</span>${s.market && current === "all" ? `<span class="tag">${esc(s.market)}</span>` : ""}${s.related ? `<span class="tag">${esc(s.related)}</span>` : ""}</div>
+          <div class="story-meta"><span>${esc(s.source)}</span>${window.Paywall ? Paywall.tag(access(s)) : ""}<span>${ago(s.published)}</span>${s.market && current === "all" ? `<span class="tag">${esc(s.market)}</span>` : ""}${s.related ? `<span class="tag">${esc(s.related)}</span>` : ""}</div>
           <h3>${esc(s.title)}</h3>
           ${s.summary ? `<p>${esc(s.summary)}</p>` : ""}
         </div>
       </a>`;
     if (current === "top") {
-      const tagged = sources.flatMap((x) => x.stories.map((st) => ({ ...st, source: x.name, paywall: PAYWALL.has(x.id), from: x.id })));
+      const tagged = sources.flatMap((x) => x.stories.map((st) => ({ ...st, source: x.name, site: x.site, from: x.id })));
       const list = (outlet === "all" ? tagged : tagged.filter((st) => st.from === outlet)).sort((a, b) => new Date(b.published) - new Date(a.published)).slice(0, 36);
       const [lead, ...rest] = list;
       $("news").innerHTML = `
@@ -87,12 +88,24 @@
     try { localStorage.setItem("newsTab", current); } catch {}
     render();
   });
-
-  // Rain the same S&P 500 tickers as the main page
-  if (window.startRain) {
-    fetch("data.json").then((r) => r.json()).then((d) => d.rainTickers || [])
-      .catch(() => data.markets.flatMap((m) => m.stories.map((s) => s.related).filter(Boolean)))
-      .then((t) => window.startRain(t));
-  }
   render();
+
+  // While the page stays open, look for a newer copy of the headlines every 2 minutes and offer to show it
+  (function watchForNews(stamp) {
+    let shown = false;
+    const check = async () => {
+      if (shown || document.hidden) return;
+      try {
+        const d = await (await fetch("news.json", { cache: "no-cache" })).json();
+        if (!d.generated || d.generated === stamp) return;
+        shown = true;
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "fresh-pill"; b.textContent = "↻ New headlines, tap to refresh";
+        b.addEventListener("click", () => location.reload());
+        document.body.appendChild(b);
+      } catch {}
+    };
+    setInterval(check, 2 * 60e3);
+    document.addEventListener("visibilitychange", check);
+  })(data.generated);
 })();

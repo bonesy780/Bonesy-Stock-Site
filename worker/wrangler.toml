@@ -2,3 +2,16 @@ name = "market-leaders-live"
 main = "index.js"
 compatibility_date = "2025-01-01"
 workers_dev = true
+
+# Push alerts and accounts are kept in one Durable Object (SQLite storage, available on the free plan)
+[[durable_objects.bindings]]
+name = "STORE"
+class_name = "Store"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Store"]
+
+# Check saved push alerts against prices every 5 minutes
+[triggers]
+crons = ["*/5 * * * *"]

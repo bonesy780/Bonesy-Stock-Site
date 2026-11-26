@@ -10,8 +10,7 @@
     $("days").innerHTML = `<div class="panel empty">Stock data could not be loaded. Try again after the next data refresh.</div>`;
     return;
   }
-  $("updated").textContent = "Updated " + new Date(M.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  if (window.startRain) window.startRain(M.stocks.filter((s) => s.cur === "USD").map((s) => s.s));
+  UI.updated(M.generated);
 
   const RANGES = [
     { id: "today", label: "Today", from: 0, to: 0 },
@@ -55,7 +54,7 @@
     if (w) return `<span class="er-when ${w.k}" title="Around ${esc(w.local)} your time">${w.label}</span>`;
     return s.earnEst ? `<span class="er-when est" title="Not yet confirmed by the company">Estimated</span>` : `<span class="muted">Time not given</span>`;
   };
-  const rating = (v) => v == null ? "–" : `<span class="pill ${v <= 2.5 ? "buy" : v > 3.5 ? "sell" : ""}">${v <= 1.5 ? "Strong Buy" : v <= 2.5 ? "Buy" : v <= 3.5 ? "Hold" : "Sell"}</span>`;
+  const rating = (v) => v == null ? "–" : `<span class="pill ${v <= 2.5 ? "buy" : v > 3.5 ? "sell" : ""}">${v <= 1.5 ? "Strong Buy" : v <= 2.5 ? "Buy" : v <= 3.5 ? "Hold" : v <= 4.5 ? "Underperform" : "Sell"}</span>`;
 
   const cols = [
     { key: "name", label: "Company", left: true, sm: true, val: (r) => r.n,

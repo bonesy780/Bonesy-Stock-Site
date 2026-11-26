@@ -8,6 +8,7 @@ from __future__ import annotations
 import io
 import json
 import math
+import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -18,15 +19,38 @@ import pandas as pd
 import requests
 import yfinance as yf
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_io import read_json, write_json  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 CONSTITUENTS = ROOT / "data" / "constituents"
+# Stocks outside the eight indexes that the stock lookup should still carry, such as new IPOs
+LISTINGS = ROOT / "data" / "listings.csv"
 OUT = ROOT / "site" / "data.json"
+# Between full runs, the workflow refreshes prices every 15 minutes with FAST=1. A fast run reuses the member
+# lists, market caps, analyst data and dividends saved by the last run here, so it asks Yahoo for prices only
+# (a handful of batched calls) instead of over a thousand per-stock lookups.
+FAST = os.environ.get("FAST") == "1"
+SAVED = ROOT / ".data-cache" / "build_data.json"
 
 # Ranking settings
-PERF_WINDOW = "3m"          # performance used for ranking
+PERF_WINDOW = "3m, 6m and 12m"  # performance used for ranking (the 12-month return leaves out the last month)
 CANDIDATES_PER_INDEX = 40   # best performers per index that get full analyst data
 SELL_CANDIDATES_PER_INDEX = 15  # weakest performers per index checked for sell ideas
-WEIGHTS = {"perf": 0.5, "analyst": 0.3, "mcap": 0.2}
+# perf: momentum across 3, 6 and 12 months. analyst: average rating, pulled toward neutral when few analysts
+# cover the stock. mcap: company size. steady: lower day-to-day swings (a smoother climb ranks higher).
+WEIGHTS = {"perf": 0.4, "analyst": 0.3, "mcap": 0.15, "steady": 0.15}
+# A rating from one or two analysts is weak evidence, so each average is blended with this many "neutral"
+# votes before it is scored. Neutral is the typical rating in that market: analysts in Korea and Taiwan
+# almost never say Sell, so a Buy there means less than a Buy on the TSX. NEUTRAL_REC (the line between
+# Buy and Hold) is used when too few stocks in a market have ratings to tell.
+PRIOR_VOTES = 3
+NEUTRAL_REC = 2.5
+IDEAS_PER_INDEX = 3         # so one market's habitually bullish analysts can't fill the buy ideas
+STALE_DAYS = 7              # a stock whose last trade is this much older than its market's is halted or delisted
+# An average target further than this from the price is almost always bad data (often a target quoted
+# in a different currency from the share price), so it is left out.
+MAX_UPSIDE, MIN_UPSIDE = 150.0, -70.0
 MIN_PRICE_USD = 1.0         # no penny stocks (with MIN_MCAP_USD)
 MIN_MCAP_USD = 300e6
 
@@ -121,7 +145,7 @@ def _from_yahoo_screen(ix):
 
 def load_constituents(ix) -> pd.DataFrame:
     cache = CONSTITUENTS / f"{ix['id']}.csv"
-    fetch = (_from_wiki if "wiki" in ix else _from_nikkei if "nikkei" in ix
+    fetch = None if FAST else (_from_wiki if "wiki" in ix else _from_nikkei if "nikkei" in ix
              else _from_yahoo_screen if "yahoo_exchange" in ix else None)
     if fetch:
         try:
@@ -145,19 +169,58 @@ def to_yahoo(symbol: str, ix) -> str:
     return str(symbol).replace(".", "-") + ix["suffix"]
 
 
+def extra_listings() -> list[dict]:
+    """Stocks from data/listings.csv, in the same shape as the search list's entries.
+
+    Each row is a Yahoo symbol (ANT, XYZ.TO), name, exchange, currency, region and,
+    for an IPO, the listing date and IPO price. They belong to no index ("ix" is empty),
+    so the index pages leave them out, but the lookup, search and charts carry them.
+    """
+    if not LISTINGS.exists():
+        return []
+    out = []
+    for r in pd.read_csv(LISTINGS, dtype=str, keep_default_na=False).to_dict("records"):
+        t = r.get("symbol", "").strip().upper()
+        if not t:
+            continue
+        e = {"t": t, "s": t.split(".")[0], "n": r.get("name") or t, "cur": r.get("currency") or "USD",
+             "region": r.get("region") or "United States", "ix": [], "x": r.get("exchange") or None}
+        try:
+            price = float(r.get("ipo_price") or "nan")
+        except ValueError:
+            price = float("nan")
+        if r.get("listed"):
+            e["ipo"] = {"d": r["listed"], **({"p": price} if price == price else {})}
+        out.append({k: v for k, v in e.items() if v is not None})
+    return out
+
+
 # ---------------------------------------------------------------- prices
 
 # Each ticker's daily intraday highs and lows, for the 52-week range
 HIGH_LOW: dict[str, tuple[pd.Series, pd.Series]] = {}
 
 
-def download_prices(tickers: list[str]) -> dict[str, pd.Series]:
+def download_prices(tickers: list[str], min_days: int = 31) -> dict[str, pd.Series]:
     closes: dict[str, pd.Series] = {}
     for i in range(0, len(tickers), 200):
         batch = tickers[i:i + 200]
-        # Traded prices (split adjusted only), so the 52-week high and low match what really traded
-        df = yf.download(batch, period="13mo", interval="1d", auto_adjust=False, group_by="ticker",
-                         threads=True, progress=False)
+        # Traded prices (split adjusted only), so the 52-week high and low match what really traded.
+        # One failed batch (Yahoo refusing or timing out) only loses that batch; the publish check below
+        # keeps the last good prices if too much is missing.
+        df = None
+        for attempt in range(2):
+            try:
+                df = yf.download(batch, period="13mo", interval="1d", auto_adjust=False, group_by="ticker",
+                                 threads=True, progress=False)
+                if df is not None and len(df):
+                    break
+            except Exception as e:
+                log(f"price batch {i} failed ({e}), retry {attempt + 1}")
+            time.sleep(10)
+        if df is None or not len(df):
+            log(f"price batch {i}: no prices came back")
+            continue
         for t in batch:
             try:
                 sub = df[t] if isinstance(df.columns, pd.MultiIndex) else df
@@ -166,7 +229,7 @@ def download_prices(tickers: list[str]) -> dict[str, pd.Series]:
                 continue
             if "High" in sub and "Low" in sub:
                 HIGH_LOW[t] = (sub["High"].reindex(s.index), sub["Low"].reindex(s.index))
-            if len(s) > 30:
+            if len(s) >= min_days:
                 closes[t] = s
     return closes
 
@@ -196,26 +259,55 @@ def price_stats(s: pd.Series, t: str | None = None) -> dict:
         "chg1w": pct(last, back(5)),
         "chg1m": pct(last, back(21)),
         "chg3m": pct(last, back(63)),
+        "chg6m": pct(last, back(126)),
+        # 12-month return that skips the latest month: the classic momentum measure, less prone to
+        # short-term reversals than the most recent weeks
+        "chg12m1": pct(back(21), back(252)) if back(252) else None,
         "ytd": pct(last, ytd_base),
         "high52": hi,
         "low52": lo,
         "fromHigh": pct(last, hi),
         "aboveSma50": bool(last > s.iloc[-50:].mean()) if len(s) >= 50 else None,
+        "aboveSma200": bool(last > s.iloc[-200:].mean()) if len(s) >= 200 else None,
+        # Daily moves' spread over the last 3 months, on a yearly scale
+        "volat": float(s.pct_change().iloc[-63:].std() * math.sqrt(252) * 100) if len(s) > 63 else None,
         "spark": [round(float(v), 4) for v in s.iloc[-63:].tolist()],
     }
 
 
 def fx_rates() -> dict[str, float]:
+    """Units of each currency per 1 USD. A rate Yahoo won't give (or gives wildly off the last one) is
+    taken from the last good run, so one bad answer can't stop the build or misprice a whole market."""
+    saved = (read_json(SAVED, {}) or {}).get("fx") or {}
     rates = {"USD": 1.0}
     for cur, sym in FX.items():
-        if sym:
-            s = yf.download(sym, period="5d", progress=False, auto_adjust=True)["Close"].dropna()
-            rates[cur] = float(s.iloc[-1].squeeze())  # units of currency per 1 USD
+        if not sym:
+            continue
+        v = None
+        for attempt in range(3):
+            try:
+                s = yf.download(sym, period="5d", progress=False, auto_adjust=True)["Close"].dropna()
+                v = float(s.iloc[-1].squeeze())
+                break
+            except Exception as e:
+                log(f"fx {sym} failed ({e}), retry {attempt + 1}")
+                time.sleep(3 * (attempt + 1))
+        old = saved.get(cur)
+        if v is not None and v == v and v > 0 and (not old or 0.7 < v / old < 1.3):
+            rates[cur] = v
+        elif old:
+            log(f"::warning::exchange rate {cur} unavailable or out of range ({v}), using the last one ({old})")
+            rates[cur] = old
+        else:
+            raise RuntimeError(f"no exchange rate for {cur}")
     return rates
 
 
 def market_caps(tickers: list[str]) -> dict[str, float]:
     """Market cap in local currency for every ticker, fetched in parallel."""
+    known = {t: _saved["caps"][t] for t in tickers if FAST and t in _saved["caps"]}
+    todo = [t for t in tickers if t not in known]
+
     def one(t):
         for attempt in range(3):
             try:
@@ -225,12 +317,25 @@ def market_caps(tickers: list[str]) -> dict[str, float]:
                 time.sleep(1 + attempt)
         return t, None
     with ThreadPoolExecutor(max_workers=12) as ex:
-        return {t: v for t, v in ex.map(one, tickers) if v}
+        got = {t: v for t, v in ex.map(one, todo) if v}
+    # Sizes Yahoo wouldn't give this time come from the last run, so the largest-company lists and the
+    # size part of each score don't empty out on a bad day
+    old = {t: _saved["caps"][t] for t in todo if t not in got and t in _saved["caps"]}
+    if old:
+        log(f"market caps: {len(old)} stocks kept from the last run")
+    return {**old, **known, **got}
 
 
 # ---------------------------------------------------------------- dividends
 
 _div: dict[str, dict] = {}
+_saved: dict[str, dict] = {"caps": {}, "info": {}, "div": {}}
+# A fast run reuses all of it. A full run uses the saved analyst data only for stocks Yahoo won't answer
+# for this time, so a bad spell on Yahoo's side doesn't wipe out the buy and sell ideas.
+try:
+    _saved.update(json.loads(SAVED.read_text()))
+except (OSError, ValueError):
+    pass
 FREQS = ((45, "Monthly", 12), (130, "Quarterly", 4), (240, "Semi-annual", 2), (400, "Annual", 1))
 
 
@@ -250,32 +355,60 @@ def dividend(t: str, price: float) -> tuple[str, dict]:
     recent = d[d.index >= d.index[-1] - pd.Timedelta(days=760)]
     gap = recent.index.to_series().diff().dt.days.dropna().median() if len(recent) > 1 else 365
     label, per_year = next(((l, n) for g, l, n in FREQS if gap <= g), ("Irregular", 1))
-    paid = float(d.iloc[-per_year:].sum())
+    # Leave out one-off special dividends (far bigger than the usual payment), which would overstate the yield
+    regular = recent[recent <= recent.median() * 2.5] if len(recent) > 2 else recent
+    paid = float(regular.iloc[-per_year:].sum())
     return t, {"divFreq": label, "divYield": paid / price * 100 if price else None}
 
 
 def dividends(rows: list[dict]) -> None:
+    if FAST:
+        _div.update({r["ticker"]: _saved["div"][r["ticker"]] for r in rows if r["ticker"] in _saved["div"]})
     todo = {r["ticker"]: r["price"] for r in rows if r["ticker"] not in _div}
     with ThreadPoolExecutor(max_workers=4) as ex:
-        _div.update(ex.map(lambda kv: dividend(*kv), todo.items()))
+        got = dict(ex.map(lambda kv: dividend(*kv), todo.items()))
+    # A stock Yahoo gave no dividend answer for keeps the last run's, rather than losing its yield
+    for t, v in got.items():
+        _div[t] = v if v or t not in _saved["div"] else _saved["div"][t]
 
 
 # ---------------------------------------------------------------- analyst data
 
 _info_cache: dict[str, dict] = {}
+_info_fails = 0
 
 
 def info(ticker: str) -> dict:
     if ticker in _info_cache:
         return _info_cache[ticker]
+    if FAST and ticker in _saved["info"]:
+        return _info_cache.setdefault(ticker, _saved["info"][ticker])
+    global _info_fails
     data = {}
-    for attempt in range(3):
+    # Once Yahoo has refused many in a row, try each stock only once, then pause a minute and test again
+    tries = 1 if _info_fails >= 25 else 4
+    for attempt in range(tries):
         try:
             data = yf.Ticker(ticker).info or {}
-            break
         except Exception as e:
             log(f"info {ticker} failed ({e}), retry {attempt + 1}")
-            time.sleep(2 * (attempt + 1))
+            data = {}
+        # Yahoo sometimes answers with an error (often "Invalid Crumb") instead of raising, leaving an almost
+        # empty dict, so check that real company data came back
+        if data.get("quoteType") or data.get("shortName") or data.get("marketCap"):
+            break
+        data = {}
+        time.sleep(3 * (attempt + 1))
+    if data:
+        _info_fails = 0
+    else:
+        _info_fails += 1
+        if _info_fails % 25 == 0:
+            log(f"Yahoo refused {_info_fails} lookups in a row, pausing a minute")
+            time.sleep(60)
+        if ticker in _saved["info"]:
+            log(f"info {ticker}: no answer, using the last saved analyst data")
+            data = dict(_saved["info"][ticker])
     _info_cache[ticker] = data
     return data
 
@@ -304,6 +437,37 @@ def rank_pct(values: list) -> list:
     return out
 
 
+def target_upside(target, price, analysts):
+    """Percent from the price to the average analyst target, or None when there is no usable target."""
+    if not target or not price or target <= 0 or not analysts:
+        return None
+    up = pct(target, price)
+    return up if MIN_UPSIDE <= up <= MAX_UPSIDE else None
+
+
+def momentum(rows: list[dict]) -> None:
+    """Each row's momentum percentile within its index: the average rank of its 3, 6 and 12-month returns."""
+    ranks = [rank_pct([r.get(k) for r in rows]) for k in ("chg3m", "chg6m", "chg12m1")]
+    for i, r in enumerate(rows):
+        have = [rk[i] for rk, k in zip(ranks, ("chg3m", "chg6m", "chg12m1")) if r.get(k) is not None]
+        r["mom"] = sum(have) / len(have) if have else 0.5
+
+
+def analyst_score(rec, n, neutral: float = NEUTRAL_REC) -> float:
+    """0..1 from the average rating, pulled toward the market's typical rating when few analysts cover it.
+
+    The market's typical rating scores 0.5, and each full step better (Hold to Buy, say) adds 0.5.
+    """
+    n = n or 0
+    adj = (rec * n + neutral * PRIOR_VOTES) / (n + PRIOR_VOTES) if rec and n else neutral
+    return min(1.0, max(0.0, 0.5 + (neutral - adj) / 2))
+
+
+def median(values: list):
+    v = sorted(x for x in values if x is not None)
+    return None if not v else v[len(v) // 2] if len(v) % 2 else (v[len(v) // 2 - 1] + v[len(v) // 2]) / 2
+
+
 def rating_label(mean):
     if mean is None:
         return "No rating"
@@ -320,7 +484,8 @@ def build():
     all_tickers = sorted({to_yahoo(s, ix) for ix in INDEXES for s in members[ix["id"]]["symbol"]})
     log(f"downloading prices for {len(all_tickers)} tickers")
     closes = download_prices(all_tickers)
-    bench = download_prices([ix["benchmark"] for ix in INDEXES])
+    # Yahoo sometimes has only today's bar for an index (KOSPI 200 lately); still show its level
+    bench = download_prices([ix["benchmark"] for ix in INDEXES], min_days=1)
     log(f"got prices for {len(closes)} tickers")
 
     caps = market_caps(sorted(closes))
@@ -330,10 +495,15 @@ def build():
     for ix in INDEXES:
         rate = rates[ix["currency"]]
         names = dict(zip(members[ix["id"]]["symbol"], members[ix["id"]]["name"]))
+        ends = [closes[to_yahoo(s, ix)].index[-1] for s in names if to_yahoo(s, ix) in closes]
+        newest = max(ends) if ends else None
         rows = []
         for sym, name in names.items():
             t = to_yahoo(sym, ix)
             if t not in closes:
+                continue
+            if (newest - closes[t].index[-1]).days > STALE_DAYS:
+                log(f"{ix['id']}: {t} last traded {closes[t].index[-1].date()}, left out")
                 continue
             st = price_stats(closes[t], t)
             if st["price"] / rate < ix.get("min_price_usd", MIN_PRICE_USD) or st["chg3m"] is None:
@@ -344,7 +514,12 @@ def build():
         for r in rows:
             everyone.setdefault(r["ticker"], r).setdefault("markets", []).append(ix["name"])
         largest = sorted((r for r in rows if r["mcapUsd"]), key=lambda r: r["mcapUsd"], reverse=True)[:10]
-        rows.sort(key=lambda r: r["chg3m"], reverse=True)
+        # Size and steadiness are ranked against the whole index, so the scores mean the same in every market
+        momentum(rows)
+        for r, m, v in zip(rows, rank_pct([math.log(r["mcapUsd"]) if r["mcapUsd"] else None for r in rows]),
+                            rank_pct([-r["volat"] if r["volat"] is not None else None for r in rows])):
+            r["sizeRank"], r["steadyRank"] = m, v
+        rows.sort(key=lambda r: r["mom"], reverse=True)
         cands = rows[:CANDIDATES_PER_INDEX]
 
         losers = [r for r in rows[-SELL_CANDIDATES_PER_INDEX:] if r not in cands and r["chg3m"] < 0]
@@ -358,7 +533,9 @@ def build():
             r["recMean"] = inf.get("recommendationMean")
             r["analysts"] = inf.get("numberOfAnalystOpinions")
             r["target"] = inf.get("targetMeanPrice")
-            r["upside"] = pct(r["target"], r["price"]) if r["target"] else None
+            r["upside"] = target_upside(r["target"], r["price"], r["analysts"])
+            if r["upside"] is None:
+                r["target"] = None
             ed = earnings_date(inf)
             r["earnings"] = ed.date().isoformat() if ed else None
             r["rating"] = rating_label(r["recMean"])
@@ -369,11 +546,15 @@ def build():
                 r["score"] = None
                 weak.setdefault(r["ticker"], {**r, "indexes": []})["indexes"].append(ix["name"])
 
-        perf = rank_pct([r["chg3m"] for r in cands])
-        analyst = rank_pct([(5 - r["recMean"]) if r["recMean"] else None for r in cands])
-        size = rank_pct([math.log(r["mcapUsd"]) if r["mcapUsd"] else None for r in cands])
-        for r, p, a, m in zip(cands, perf, analyst, size):
-            r["score"] = round(100 * (WEIGHTS["perf"] * p + WEIGHTS["analyst"] * a + WEIGHTS["mcap"] * m), 1)
+        rated = [r["recMean"] for r in cands + losers if r["recMean"] and (r["analysts"] or 0) >= 3]
+        neutral = median(rated) if len(rated) >= 10 else NEUTRAL_REC
+        typical_up = median([r["upside"] for r in cands + losers if (r["analysts"] or 0) >= 3])
+        for r in cands:
+            # Gap to target compared with what's normal in this market, for ranking buy ideas
+            r["upsideVsMarket"] = r["upside"] - (typical_up or 0) if r["upside"] is not None else None
+            a = analyst_score(r["recMean"], r["analysts"], neutral)
+            r["score"] = round(100 * (WEIGHTS["perf"] * r["mom"] + WEIGHTS["analyst"] * a
+                                      + WEIGHTS["mcap"] * r["sizeRank"] + WEIGHTS["steady"] * r["steadyRank"]), 1)
             r["index"] = ix["id"]
             pool.setdefault(r["ticker"], {**r, "indexes": []})["indexes"].append(ix["name"])
             r["indexes"] = pool[r["ticker"]]["indexes"]
@@ -406,11 +587,16 @@ def build():
         "sellIdeas": sell_ideas(list(weak.values()) + stocks),
         "watchlist": watchlist(stocks, now),
         "snapshots": snapshots(list(everyone.values())),
-        # S&P 500 tickers for the Matrix rain background
-        "rainTickers": sorted({str(t) for t in members["sp500"]["symbol"] if str(t).strip()}),
     }
+    out = publish_check(out)
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(out, separators=(",", ":"), allow_nan=False, default=str))
+    write_json(OUT, out, allow_nan=False, default=str)
+    # Small file for the ticker tape in every page's header: each index and its top 3 stocks
+    tape = {"generated": out["generated"], "items": []}
+    for ixo in indexes_out:
+        tape["items"].append({"t": ixo["benchmark"], "ix": ixo["id"], "p": ixo["level"], "c": ixo["chg1d"]})
+        tape["items"] += [{"t": r["ticker"], "s": r["symbol"], "p": r.get("price"), "c": r.get("chg1d")} for r in ixo["top"][:3]]
+    write_json(OUT.parent / "tape.json", tape, allow_nan=False, default=str)
     for ixo in indexes_out:
         log(f"{ixo['name']}: {ixo['priced']}/{ixo['members']} priced, top: "
             + ", ".join(f"{r['symbol']} {r['chg3m']:+.0f}%" for r in ixo["top"][:3]))
@@ -421,6 +607,56 @@ def build():
     log(f"watchlist: {len(out['watchlist'])} ({', '.join(r['symbol'] for r in out['watchlist'][:5])})")
     log(f"dividends: {sum(1 for v in _div.values() if v.get('divYield'))}/{len(_div)} payers")
     log(f"wrote {OUT}")
+    # What the next fast run reuses. A fast run keeps what it was given and adds anything it had to look up.
+    keep = ("shortName", "longName", "sector", "marketCap", "recommendationMean", "numberOfAnalystOpinions",
+            "targetMeanPrice", "earningsTimestampStart", "earningsTimestamp")
+    SAVED.parent.mkdir(exist_ok=True)
+    write_json(SAVED, {
+        "caps": {**_saved["caps"], **caps},
+        "info": {**_saved["info"], **{t: {k: v.get(k) for k in keep} for t, v in _info_cache.items() if v}},
+        "div": {**_saved["div"], **{t: v for t, v in _div.items() if v}},
+        "fx": rates,
+    }, default=str)
+
+
+class BadData(Exception):
+    """This run's data looks broken; the last good data.json stays on the site."""
+
+
+def publish_check(out: dict) -> dict:
+    """Compare this run with the data.json already on the site before replacing it.
+
+    Yahoo can answer with errors or near-empty replies instead of failing outright, and the build would
+    happily publish that. So: an index that lost most of its prices or its top-10 keeps its last good
+    block (marked stale), and if most of the site's prices are missing the whole file is left as it was.
+    """
+    prev = read_json(OUT, None)
+    if not prev or not prev.get("indexes"):
+        if not any(ix["top"] for ix in out["indexes"]):
+            raise BadData("no index has any stocks priced")
+        return out
+    before = {ix["id"]: ix for ix in prev["indexes"]}
+    total_now = sum(ix["priced"] for ix in out["indexes"])
+    total_before = sum(ix.get("priced") or 0 for ix in prev["indexes"])
+    if total_before and total_now < total_before * 0.5:
+        raise BadData(f"only {total_now} stocks priced against {total_before} last time")
+    for i, ix in enumerate(out["indexes"]):
+        old = before.get(ix["id"])
+        if not old:
+            continue
+        thin = old.get("priced") and ix["priced"] < old["priced"] * 0.6
+        if (thin or (old.get("top") and not ix["top"])) and old.get("top"):
+            log(f"::warning::{ix['name']}: only {ix['priced']} of {old.get('priced')} stocks priced this run, "
+                f"keeping the last good list from {old.get('stale') or prev.get('generated')}")
+            out["indexes"][i] = {**old, "stale": old.get("stale") or prev.get("generated")}
+        elif ix.get("level") is None and old.get("level") is not None:
+            # Index level missing this time: show the last one rather than a blank
+            ix.update({k: old.get(k) for k in ("level", "chg1d", "chg1w", "chg1m", "ytd", "spark")})
+    for key in ("buyIdeas", "sellIdeas", "watchlist"):
+        if not out[key] and prev.get(key) and total_now < total_before * 0.9:
+            log(f"::warning::{key} came back empty, keeping the last ones")
+            out[key] = prev[key]
+    return out
 
 
 def clean(r: dict) -> dict:
@@ -443,16 +679,28 @@ def buy_ideas(stocks: list[dict]) -> list[dict]:
     for r in stocks:
         if (r["recMean"] and r["recMean"] <= 2.2 and (r["analysts"] or 0) >= 5
                 and r["upside"] is not None and r["upside"] >= 10
-                and r["chg3m"] > 0 and r["aboveSma50"]):
+                and r["chg3m"] > 0 and r["aboveSma50"] and r["aboveSma200"] is not False):
             why = [f"up {r['chg3m']:.0f}% in 3 months",
                    f"{r['analysts']} analysts rate it {r['rating']}",
                    f"average target {r['upside']:.0f}% above today's price"]
             if r["fromHigh"] is not None and r["fromHigh"] > -3:
                 why.append("trading near its 52-week high")
-            ideas.append({**clean(r), "why": why,
-                          "ideaScore": round(r["score"] + min(r["upside"], 50) * 0.4, 1)})
+            soon = earnings_soon(r)
+            if soon:
+                why.append(f"reports earnings {soon}, which can move the price sharply")
+            rel = r.get("upsideVsMarket")
+            rel = r["upside"] if rel is None else rel
+            ideas.append({**clean(r), "why": why, "index": r.get("index"),
+                          "ideaScore": round(r["score"] + max(-20, min(rel, 40)) * 0.4, 1)})
     ideas.sort(key=lambda r: r["ideaScore"], reverse=True)
-    return ideas[:12]
+    picked, per = [], {}
+    for r in ideas:
+        if per.get(r["index"], 0) < IDEAS_PER_INDEX:
+            per[r["index"]] = per.get(r["index"], 0) + 1
+            picked.append(r)
+    for r in picked:
+        r.pop("index", None)
+    return picked[:12]
 
 
 def sell_ideas(stocks: list[dict]) -> list[dict]:
@@ -462,11 +710,13 @@ def sell_ideas(stocks: list[dict]) -> list[dict]:
         if r["ticker"] in seen or r["chg3m"] is None or r["chg3m"] >= 0 or r["aboveSma50"]:
             continue
         rated_low = r["recMean"] is not None and r["recMean"] >= 2.8 and (r["analysts"] or 0) >= 3
-        over_target = r["upside"] is not None and r["upside"] < 0
+        over_target = r["upside"] is not None and r["upside"] < 0 and (r["analysts"] or 0) >= 3
         if not (rated_low or over_target):
             continue
         seen.add(r["ticker"])
-        why = [f"down {abs(r['chg3m']):.0f}% in 3 months", "trading below its 50-day average"]
+        why = [f"down {abs(r['chg3m']):.0f}% in 3 months",
+               "trading below its 50-day and 200-day averages" if r.get("aboveSma200") is False
+               else "trading below its 50-day average"]
         if rated_low:
             why.append(f"{r['analysts']} analysts rate it {r['rating']}")
         if over_target:
@@ -475,6 +725,15 @@ def sell_ideas(stocks: list[dict]) -> list[dict]:
         ideas.append({**clean(r), "why": why, "ideaScore": round(weakness, 1)})
     ideas.sort(key=lambda r: r["ideaScore"], reverse=True)
     return ideas[:12]
+
+
+def earnings_soon(r: dict, days: int = 14) -> str | None:
+    """The report date as text when the company reports within `days` days."""
+    if not r.get("earnings"):
+        return None
+    d = datetime.fromisoformat(r["earnings"]).date()
+    today = datetime.now(timezone.utc).date()
+    return d.strftime("%a %b %d").replace(" 0", " ") if today <= d <= today + timedelta(days=days) else None
 
 
 def snapshots(rows: list[dict]) -> dict:
@@ -505,4 +764,8 @@ def watchlist(stocks: list[dict], now: datetime) -> list[dict]:
 
 
 if __name__ == "__main__":
-    build()
+    try:
+        build()
+    except BadData as e:
+        log(f"::error::Stock data looked broken, so the site keeps the last good prices: {e}")
+        sys.exit(2)

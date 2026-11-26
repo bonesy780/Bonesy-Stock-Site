@@ -1,3 +1,19 @@
+// Point search engines at this exact page (canonical link and description), since the page is filled in by script.
+function seoMeta(url, desc) {
+  const set = (sel, make, attr, val) => {
+    let el = document.head.querySelector(sel);
+    if (!el) { el = make(); document.head.appendChild(el); }
+    el.setAttribute(attr, val);
+  };
+  set('link[rel="canonical"]', () => Object.assign(document.createElement("link"), { rel: "canonical" }), "href", url);
+  set('meta[property="og:url"]', () => { const m = document.createElement("meta"); m.setAttribute("property", "og:url"); return m; }, "content", url);
+  set('meta[name="description"]', () => Object.assign(document.createElement("meta"), { name: "description" }), "content", desc);
+  set('meta[property="og:description"]', () => { const m = document.createElement("meta"); m.setAttribute("property", "og:description"); return m; }, "content", desc);
+}
+
+// A stock's own search-friendly page (stocks/AAPL.html, made by build_stock_pages.py) names its stock here
+const PAGE_T = (document.body && document.body.dataset.t) || "";
+
 (async function () {
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -15,17 +31,16 @@
 
   let stocks, details = {};
   try {
-    stocks = await (await fetch("stocks.json", { cache: "no-store" })).json();
+    stocks = await (await fetch("stocks.json", { cache: "no-cache" })).json();
   } catch (e) {
     $("updated").textContent = "Stock list could not be loaded.";
     return;
   }
   // Extra facts (market cap, analysts, dividends) for stocks the main page covers
-  fetch("data.json", { cache: "no-store" }).then((r) => r.json()).then((d) => {
-    if (!$("updated").querySelector(".live-dot")) $("updated").textContent = "Updated " + new Date(d.generated).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  fetch("data.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => {
+    if (!$("updated").querySelector(".live-dot")) UI.updated(d.generated);
     const all = d.indexes.flatMap((i) => i.top.concat(i.largest || [])).concat(d.buyIdeas, d.sellIdeas || [], d.watchlist);
     for (const s of all) details[s.ticker] = { ...details[s.ticker], ...s };
-    if (window.startRain) window.startRain(d.rainTickers || []);
     if (current) renderQuote();
   }).catch(() => { $("updated").textContent = ""; });
 
@@ -45,17 +60,38 @@
     }
     return scored.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, 8).map((x) => x[2]);
   }
+  let showingRecent = false;
+  // Symbols the price service found that aren't in stocks.json, by ticker
+  const found = {};
+  const recentList = () => (window.UI ? UI.Recent.list() : []).filter((t) => !current || t !== current.t)
+    .map((t) => stocks.find((x) => x.t === t)).filter(Boolean).slice(0, 6);
   function showResults() {
     list.hidden = !matches.length;
     q.setAttribute("aria-expanded", String(matches.length > 0));
-    list.innerHTML = matches.map((s, n) => `
+    list.innerHTML = (showingRecent && matches.length ? `<li role="presentation" class="res-head">Recently viewed</li>` : "") + matches.map((s, n) => `
       <li role="option" id="opt${n}" aria-selected="${n === active}" data-t="${esc(s.t)}">
         <span class="nm">${esc(s.n)}</span>
-        <span class="tk">${esc(s.s)} · ${esc(s.index ? s.region : s.ix.join(", "))}</span>
+        <span class="tk">${esc(s.s)}${UI.where(s) ? " · " + esc(UI.where(s)) : ""}</span>
       </li>`).join("");
     if (active >= 0) q.setAttribute("aria-activedescendant", "opt" + active); else q.removeAttribute("aria-activedescendant");
   }
-  q.addEventListener("input", () => { matches = search(q.value); active = matches.length ? 0 : -1; showResults(); });
+  // Symbols outside the site's lists (a new listing, say) come from the price service, after a pause in typing
+  let liveSeq = 0;
+  q.addEventListener("input", async () => {
+    showingRecent = false; matches = search(q.value); active = matches.length ? 0 : -1; showResults();
+    const mine = ++liveSeq, text = q.value, have = matches;
+    if (have.length >= 8 || !(window.Live && Live.on)) return;
+    await new Promise((r) => setTimeout(r, 250));
+    if (mine !== liveSeq) return;
+    const more = await UI.searchLive(text, have);
+    if (mine !== liveSeq) return;
+    // Nothing anywhere yet (a ticker so new that search doesn't know it): offer to look the symbol up directly
+    if (!have.length && !more.length) more.push(...UI.typedTicker(text));
+    if (!more.length) return;
+    for (const m of more) found[m.t] = m;
+    matches = have.concat(more).slice(0, 10); if (active < 0) active = 0; showResults();
+  });
+  q.addEventListener("focus", () => { if (q.value.trim()) return; showingRecent = true; matches = recentList(); active = -1; showResults(); });
   q.addEventListener("keydown", (e) => {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       if (!matches.length) return;
@@ -70,10 +106,10 @@
     }
   });
   list.addEventListener("pointerdown", (e) => {
-    const li = e.target.closest("li");
+    const li = e.target.closest("li[data-t]");
     if (li) { e.preventDefault(); pick(li.dataset.t); }
   });
-  q.addEventListener("blur", () => { matches = []; showResults(); });
+  q.addEventListener("blur", () => { liveSeq++; matches = []; showResults(); });
 
   // ---- quote and chart
   const RANGES = [["1D", 1], ["5D", 5], ["1M", 30], ["3M", 91], ["6M", 182], ["YTD", "ytd"], ["1Y", 365], ["5Y", 1826], ["All", 0]];
@@ -198,7 +234,7 @@
     cmpHist[t] = "loading";
     let h;
     try {
-      h = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })).json();
+      h = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-cache" })).json();
     } catch (e) {
       h = { d: [], i: [] };
     }
@@ -254,24 +290,71 @@
   const loadDraw = (t) => { try { const v = JSON.parse(localStorage.getItem(drawKey(t))); return Array.isArray(v) ? v : []; } catch { return []; } };
   const saveDraw = () => { try { localStorage.setItem(drawKey(current.t), JSON.stringify(drawings)); } catch {} };
 
-  async function pick(t, push = true) {
+  // Chips under the search box for the stocks looked up lately
+  function renderRecent() {
+    const el = $("recent");
+    if (!el) return;
+    const l = recentList();
+    el.hidden = !l.length;
+    el.innerHTML = l.length ? `<span class="muted">Recent:</span>` + l.map((x) => `<a class="chip" href="?t=${encodeURIComponent(x.t)}" data-t="${esc(x.t)}">${esc(x.s)}</a>`).join("") : "";
+  }
+  $("recent")?.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-t]");
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    pick(a.dataset.t);
+    window.scrollTo({ top: 0 });
+  });
+
+  // A symbol outside the site's lists: chart it from the price service's full history
+  async function pickLive(t, push) {
+    if (!(window.Live && Live.on)) return false;
+    let h;
+    try { h = await Live.history(t); } catch (e) { return false; }
+    // A symbol Yahoo knows but that hasn't traded yet (an IPO before its first trade) still gets its page
+    if (!h || !Array.isArray(h.d) || (!h.d.length && !h.n)) return false;
+    const f = found[t] || {};
+    const first = h.first != null ? new Date(h.first * 1000).toISOString().slice(0, 10) : null;
+    const s = { t, s: t, n: h.n || f.n || t, x: h.x || f.x, cur: h.cur || "USD", region: "", ix: [], live: true,
+      // A stock that started trading within the last few months shows as a new listing
+      ...(first && Date.now() - Date.parse(first) < 183 * 86400000 ? { ipo: { d: first } } : {}) };
+    stocks.push(s);
+    await pick(t, push, { d: h.d, i: h.i || [], post: h.post || null, hi52: h.hi52, lo52: h.lo52 });
+    return true;
+  }
+
+  async function pick(t, push = true, preloaded = null) {
     const s = stocks.find((x) => x.t === t);
-    if (!s) return;
+    if (!s) {
+      matches = []; showResults(); q.blur();
+      $("quote").innerHTML = `<div class="panel quote"><div class="empty">Looking up ${esc(t)}…</div></div>`;
+      if (await pickLive(t, push)) return;
+      $("quote").innerHTML = `<div class="panel quote"><div class="empty">${esc(t)} isn't a stock TopTicker can find${window.Live && Live.on ? "" : " (it only covers the stocks in its markets and new listings it adds by hand)"}. Check the symbol, or search by company name above.</div></div>`;
+      return;
+    }
     matches = []; showResults();
     q.value = ""; q.blur();
     current = s; hist = null;
     drawings = loadDraw(t);
-    if (push) history.replaceState(null, "", "?t=" + encodeURIComponent(t));
-    document.title = `${s.s} · Stock Lookup · Market Leaders`;
+    // On a stock's own page (stocks/AAPL.html) the address stays; elsewhere it becomes stock.html?t=...
+    if (push && t !== PAGE_T) history.replaceState(null, "", (PAGE_T ? "stock.html" : "") + "?t=" + encodeURIComponent(t));
+    document.title = `${s.s}${s.n && s.n !== s.s ? " (" + s.n + ")" : ""} Stock Price and Chart · TopTicker`;
+    seoMeta(s.index || s.live ? `https://www.topticker.ca/stock.html?t=${encodeURIComponent(t)}` : `https://www.topticker.ca/stocks/${encodeURIComponent(t)}.html`, `${s.n || s.s} (${s.s}) stock price, chart from one day to all time, returns, financials, analyst ratings and price targets on TopTicker.`);
+    // the default stock shown on a bare visit doesn't count as looked up
+    if (window.UI && (push || (new URLSearchParams(location.search).get("t") || PAGE_T) === t)) UI.Recent.add(t);
+    renderRecent();
     renderQuote();
     if (window.renderFund) window.renderFund(t, s);
-    try {
-      hist = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-store" })).json();
-    } catch (e) {
-      hist = { d: [], i: [] };
+    if (preloaded) hist = preloaded;
+    else {
+      try {
+        hist = await (await fetch(`hist/${encodeURIComponent(t.replace("^", "_"))}.json`, { cache: "no-cache" })).json();
+      } catch (e) {
+        hist = { d: [], i: [] };
+      }
     }
     if (current === s) renderQuote();
-    if (current === s) await goLive(s);
+    if (current === s && !preloaded) await goLive(s);
   }
 
   // Swap in today's live prices from the price service, keeping the saved history for longer ranges
@@ -347,20 +430,39 @@
   const weekOf = (ts) => Math.floor((ts / DAY + 3) / 7);
   const monthOf = (ts) => { const t = new Date(ts * 1000); return t.getUTCFullYear() * 12 + t.getUTCMonth(); };
 
+  // Ranges the saved history reaches: a new listing only has the short ones, plus All.
+  // The days each range needs, less a week of slack, must lie between the first and last close.
+  function reaches(r) {
+    const d = hist && hist.d;
+    if (!d || !d.length || r === "1D" || r === "5D" || r === "All") return true;
+    const n = RANGES.find((x) => x[0] === r)[1];
+    if (n === "ytd") return true;
+    return d[d.length - 1][0] - d[0][0] >= (n - 7) * DAY;
+  }
+  // The range on screen: the reader's choice, or All when the history is shorter than it
+  const shownRange = () => (reaches(range) ? range : "All");
+
+  // The price a new listing's change is measured from on its first days: the IPO price when known
+  const ipoBase = () => (current && current.ipo && current.ipo.p) || null;
+
   function series() {
-    const d = hist.d, intra = hist.i;
+    const d = hist.d, intra = hist.i, range = shownRange();
     if (!d.length) return { pts: [], all: [], start: 0, base: null };
     const done = (all, start, base, more) => ({ all, start, pts: all.slice(start), base: base ?? all[start][1], ...more });
-    if (range === "1D" || range === "5D") {
+    // Fewer than two daily closes (a stock's first day or two): draw its 5-minute prices
+    // for every range, measured from the IPO price, since one or two dots make no chart
+    const early = d.length < 3 && intra.length > 1;
+    if (range === "1D" || range === "5D" || early) {
       if (intra.length) {
         const days = [...new Set(intra.map((p) => dayOf(p[0])))];
-        const keep = days.slice(range === "1D" ? -1 : -5);
+        const keep = early && range !== "1D" ? days : days.slice(range === "1D" ? -1 : -5);
         const start = intra.findIndex((p) => dayOf(p[0]) >= keep[0]);
         const before = d.filter((p) => dayOf(p[0]) < keep[0]);
-        return done(intra, start, before.length ? before[before.length - 1][1] : intra[start][1], { intraday: true, unit: "5-minute" });
+        const base = before.length ? before[before.length - 1][1] : ipoBase() ?? intra[start][1];
+        return done(intra, start, base, { intraday: true, unit: "5-minute", early });
       }
       const all = d.slice(dailyFrom(d));
-      return done(all, Math.max(0, all.length - (range === "1D" ? 2 : 6)), null, { unit: "daily" });
+      return done(all, Math.max(0, all.length - (range === "1D" ? 2 : 6)), all.length < 2 ? ipoBase() : null, { unit: "daily" });
     }
     const end = d[d.length - 1][0];
     const r = RANGES.find((x) => x[0] === range)[1];
@@ -368,6 +470,8 @@
     if (r === "ytd") from = Date.UTC(new Date(end * 1000).getUTCFullYear(), 0, 1) / 1000;
     else if (r) from = end - r * DAY;
     const df = dailyFrom(d);
+    // A listing too new for a line (one close and no 5-minute prices): measure from the IPO price
+    if (d.length < 2) return done(d, 0, ipoBase(), { unit: "daily" });
     let all, unit;
     if (df === 0 || from >= d[df][0] - 5 * DAY) { all = d.slice(df); unit = "daily"; }
     else if (end - Math.max(from, d[0][0]) <= 6.5 * 365 * DAY) { all = bucket(d, weekOf); unit = "weekly"; }
@@ -377,13 +481,25 @@
     return done(all, idx > 0 ? idx - 1 : 0, null, { unit });
   }
 
+  // A new listing's first trading day, IPO price and move since
+  function ipoNote(s) {
+    if (!s.ipo || !s.ipo.d) return "";
+    const day = new Date(s.ipo.d + "T12:00:00Z").toLocaleDateString(undefined, { dateStyle: "medium" });
+    const d = hist && hist.d, last = d && d.length ? d[d.length - 1][1] : null;
+    const days = d && d.length ? new Set(d.map((p) => dayOf(p[0]))).size : 0;
+    return `<div class="ipo-note"><span class="ipo-tag">New listing</span> Started trading ${esc(day)}${s.ipo.p
+      ? ` · IPO price ${money(s.ipo.p, s.cur)}${last != null ? ` · ${pct((last / s.ipo.p - 1) * 100)} since` : ""}` : ""}${days && days < 60
+      ? ` · ${days} trading day${days === 1 ? "" : "s"} of history so far` : ""}</div>`;
+  }
+
   function renderQuote() {
     const s = current, x = details[s.t] || {};
     const head = `
       <div class="quote-head">
         <div>
-          <h2>${esc(x.name || s.n)}${s.index ? "" : " " + UI.star(s.t, "Watch")}</h2>
-          <div class="region">${esc(s.s)} · ${esc(s.index ? s.region + " market index" : s.ix.join(", "))} · ${esc(s.cur)}</div>
+          <h2>${esc(x.name || s.n)}${s.index || s.live ? "" : " " + UI.star(s.t, "Watch")} ${UI.shareBtn()}</h2>
+          <div class="region">${esc(s.s)} · ${esc(s.index ? s.region + " market index" : UI.where({ ...s, ipo: null }) || "Outside TopTicker's markets")} · ${esc(s.cur)}</div>
+          ${ipoNote(s)}
         </div>
         <div class="quote-price" id="qp"></div>
       </div>`;
@@ -392,7 +508,10 @@
       return;
     }
     if (!hist.d.length) {
-      $("quote").innerHTML = `<div class="panel quote">${head}<div class="empty">No price history for this stock yet.</div></div>`;
+      const fresh = s.ipo || s.live;
+      $("quote").innerHTML = `<div class="panel quote">${head}<div class="empty">${fresh
+        ? "No trades yet. A new listing's price and chart show up here within a few minutes of its first trade (IPOs often open late in the morning)."
+        : "No price history for this stock yet."}</div></div>`;
       return;
     }
     // Price change over standard periods, with the yearly rate for 3 years and longer
@@ -427,7 +546,7 @@
       <div class="panel quote">
         ${head}
         <div class="ranges" role="tablist" aria-label="Chart range">${RANGES.map(([r]) =>
-          `<button class="tab" role="tab" aria-selected="${r === range}" data-r="${r}">${r}</button>`).join("")}</div>
+          `<button class="tab" role="tab" aria-selected="${r === shownRange()}" data-r="${r}"${reaches(r) ? "" : ` disabled title="This stock hasn't traded that long yet"`}>${r}</button>`).join("")}</div>
         <div class="ind-bar cmp-bar" role="group" aria-label="Compare with a market index">
           <span class="ind-group">Compare</span>
           ${COMPARE.filter((c) => c.t !== s.t).map((c) => `<button class="chip" aria-pressed="${compare.has(c.t)}" data-c="${esc(c.t)}" title="Overlay the ${esc(c.label)} as % change from the start of the chart"><i class="sw" style="--c:var(${c.color})"></i>${esc(c.label)}</button>`).join("")}
@@ -462,10 +581,10 @@
       explainOpen = e.target.open;
       try { localStorage.setItem("lookupExplain", explainOpen ? "1" : "0"); } catch {}
     });
-    $("qp").innerHTML = `<div class="value num big">${s.index ? plain(last, s.cur) : money(last, s.cur)}</div><div>${pct(chg)} <span class="tk">${range === "All" ? "all time" : range}</span></div>${afterHours(s)}`;
+    $("qp").innerHTML = `<div class="value num big">${s.index ? plain(last, s.cur) : money(last, s.cur)}</div><div>${pct(chg)} <span class="tk">${base != null && base === ipoBase() ? "since IPO price" : S.early ? "since listing" : shownRange() === "All" ? (s.ipo ? "since listing" : "all time") : shownRange()}</span></div>${afterHours(s)}`;
     $("quote").querySelector(".ranges").addEventListener("click", (e) => {
       const b = e.target.closest("button");
-      if (!b) return;
+      if (!b || b.disabled) return;
       range = b.dataset.r;
       try { localStorage.setItem("lookupRange", range); } catch {}
       renderQuote();
@@ -575,7 +694,9 @@
     for (const l of lines) ys.push(...l.v);
     if (bb) ys.push(...bb.up, ...bb.lo);
     const fin = ys.map(P).concat(...cmps.map((c) => c.v)).filter((v) => v != null && isFinite(v));
-    const ref = pctMode ? 0 : intraday ? base : null;
+    // The line the change is measured from: the last close for intraday charts, or the IPO price on a new listing's first days
+    const fromIpo = !pctMode && base != null && base === ipoBase();
+    const ref = pctMode ? 0 : intraday || fromIpo ? base : null;
     let lo = Math.min(...fin, ref ?? Infinity), hi = Math.max(...fin, ref ?? -Infinity);
     if (hi === lo) { hi += 1; lo -= 1; }
     const span = hi - lo; lo -= span * 0.06; hi += span * 0.06;
@@ -620,15 +741,19 @@
     for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) grid.push(v);
 
     // x labels: about one per 120px
+    const range = shownRange();
+    const oneDay = intraday && dayOf(pts[0][0]) === dayOf(pts[pts.length - 1][0]);
     const fmtX = (ts) => {
       const dt = new Date(ts * 1000);
+      if (oneDay) return dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      if (intraday) return dt.toLocaleDateString(undefined, { weekday: "short" });
       if (range === "1D") return dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
       if (range === "5D") return dt.toLocaleDateString(undefined, { weekday: "short" });
       if (["1M", "3M", "6M", "YTD", "1Y"].includes(range)) return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
       return dt.toLocaleDateString(undefined, { month: "short", year: "numeric" });
     };
     const nLabels = Math.min(pts.length, Math.max(2, Math.floor((W - pad.r) / 120)));
-    const xl = [...new Set(Array.from({ length: nLabels }, (_, k) => Math.round((k / (nLabels - 1)) * (pts.length - 1))))];
+    const xl = [...new Set(Array.from({ length: nLabels }, (_, k) => Math.round((k / Math.max(1, nLabels - 1)) * (pts.length - 1))))];
 
     // Bollinger band shading: the upper edge forwards, then the lower edge back
     let band = "";
@@ -678,6 +803,7 @@
         ${grid.map((v) => `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v)}" y2="${Y(v)}"/>
           <text class="axis" x="${W - pad.r + 8}" y="${Y(v) + 4}">${pctMode ? fmtPct(v) : plain(v, cur)}</text>`).join("")}
         ${ref != null ? `<line class="base" x1="${pad.l}" x2="${W - pad.r}" y1="${Y(ref)}" y2="${Y(ref)}"/>` : ""}
+        ${fromIpo ? `<text class="axis" x="${pad.l + 4}" y="${Y(ref) - 5}">IPO price ${money(ref, cur)}</text>` : ""}
         ${band}
         <polygon fill="url(#fill)" points="${X(0)},${mainB} ${line} ${X(pts.length - 1)},${mainB}"/>
         <polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" points="${line}"/>
@@ -901,6 +1027,14 @@
   let resizeTimer;
   window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => current && hist && renderQuote(), 150); });
 
-  const start = new URLSearchParams(location.search).get("t");
-  pick(stocks.some((s) => s.t === start) ? start : (stocks.find((s) => s.t === "^GSPTSE") || stocks[0]).t, false);
+  const start = (new URLSearchParams(location.search).get("t") || PAGE_T || "").trim();
+  const fallback = (stocks.find((s) => s.t === "^GSPTSE") || stocks[0]).t;
+  if (stocks.some((s) => s.t === start)) pick(start, false);
+  else if (start) {
+    // A symbol outside the saved list, such as a stock that listed today: the price service can still chart it
+    const want = start.toUpperCase(), hit = stocks.find((s) => s.t.toUpperCase() === want || s.s.toUpperCase() === want);
+    if (hit) pick(hit.t, false);
+    else if (/^[\^A-Za-z0-9.\-=]{1,20}$/.test(start)) pick(want, false);
+    else pick(fallback, false);
+  } else pick(fallback, false);
 })();

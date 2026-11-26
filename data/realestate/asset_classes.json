@@ -1,0 +1,103 @@
+{
+  "_about": "Hand-kept market fundamentals for each property type, shown on the real estate overview. No free feed publishes cap rates, vacancy or rent growth by property type, so these are rounded ranges compiled from the public summaries of the reports named in 'sources'. Update 'asOf', 'checked' and the figures after each new round of quarterly reports (cap rate surveys come out twice a year). Live figures (REIT returns, construction spending, building permits, lending rates) come from build_re_invest.py instead.",
+  "asOf": "H1 2026",
+  "checked": "2026-06",
+  "sources": [
+    ["CBRE research (cap rate surveys, US and Canada market figures)", "https://www.cbre.com/insights"],
+    ["Cushman & Wakefield MarketBeat reports", "https://www.cushmanwakefield.com/en/insights"],
+    ["CMHC Rental Market Report", "https://www.cmhc-schl.gc.ca/professionals/housing-markets-data-and-research/market-reports/rental-market-reports-major-centres"],
+    ["CoStar / STR hotel figures", "https://str.com/data-insights-blog"],
+    ["NIC MAP senior housing", "https://www.nic.org/nic-map/"],
+    ["Nareit REIT data", "https://www.reit.com/data-research"]
+  ],
+  "classes": [
+    {
+      "key": "resi", "name": "Single-family homes", "icon": "🏠",
+      "what": "Houses bought to live in or rent out. The biggest asset class by far; prices and rents for every market are live on this page.",
+      "US": {"cap": "5–6.5% gross rent yield", "vac": "about 1% homeowner vacancy", "rent": "+2 to +4%"},
+      "CA": {"cap": "3–4.5% gross rent yield", "vac": "low", "rent": "flat to −3% (rents easing)"},
+      "EU": {"cap": "3–5% gross rent yield", "vac": "low", "rent": "+3 to +5%"},
+      "trend": "steady", "drivers": "Mortgage rates, local supply and wage growth. Lock-in from low-rate mortgages keeps US resale supply tight."
+    },
+    {
+      "key": "multi", "name": "Multifamily (apartments)", "icon": "🏢",
+      "what": "Rental apartment buildings. A favourite of institutional investors because rent rolls reset every year.",
+      "US": {"cap": "5–5.5%", "vac": "about 5–6%", "rent": "about flat (−1% to +1%)"},
+      "CA": {"cap": "4.25–5%", "vac": "about 3% (CMHC)", "rent": "+1 to +3%, slowing"},
+      "EU": {"cap": "3.5–4.5% prime", "vac": "low", "rent": "+3 to +5%"},
+      "trend": "in", "drivers": "A record wave of new US supply is being absorbed, so rent growth is weak in the Sun Belt but firmer in the Midwest and Northeast."
+    },
+    {
+      "key": "office", "name": "Office", "icon": "🏙️",
+      "what": "Office towers and suburban office parks. Hit hardest by hybrid work; values are well below their 2019–2022 peaks.",
+      "US": {"cap": "8–9%", "vac": "about 19–20% (record high)", "rent": "flat to slightly down"},
+      "CA": {"cap": "6.5–8% downtown", "vac": "about 17–19% national", "rent": "flat"},
+      "EU": {"cap": "4.5–5.5% prime CBD", "vac": "about 8–9%", "rent": "+2 to +4% for prime"},
+      "trend": "out", "drivers": "A split market: the newest, best-located towers are filling up while older buildings face conversion or sale at deep discounts."
+    },
+    {
+      "key": "ind", "name": "Industrial and logistics", "icon": "🏭",
+      "what": "Warehouses, distribution and fulfilment centres, light manufacturing and cold storage.",
+      "US": {"cap": "5–5.75%", "vac": "about 7–7.5%", "rent": "+1 to +3%, slowing"},
+      "CA": {"cap": "5–6%", "vac": "about 5–6% availability", "rent": "flat to slightly down"},
+      "EU": {"cap": "4.75–5.25% prime", "vac": "about 6–7%", "rent": "+2 to +3%"},
+      "trend": "steady", "drivers": "E-commerce and near-shoring (Mexico's border markets especially) keep demand up, but a 2022–24 building boom pushed vacancy back toward normal."
+    },
+    {
+      "key": "retail", "name": "Retail", "icon": "🛍️",
+      "what": "Shopping centres, strip malls, high streets and single-tenant stores.",
+      "US": {"cap": "6.5–7.5%", "vac": "about 4.5–5% availability (near record low)", "rent": "+2 to +3%"},
+      "CA": {"cap": "6–7%", "vac": "about 2–3% (shopping centres)", "rent": "+1 to +3%"},
+      "EU": {"cap": "4.5–6%", "vac": "falling", "rent": "+1 to +3%"},
+      "trend": "in", "drivers": "Almost no new shopping centres were built for a decade, so grocery-anchored centres are full and investors have come back."
+    },
+    {
+      "key": "dc", "name": "Data centers", "icon": "🖥️",
+      "what": "Buildings that house servers, power and cooling for cloud and AI computing. The fastest-growing property type.",
+      "US": {"cap": "5–6%", "vac": "about 1.5–2% in the main markets", "rent": "+5 to +10%"},
+      "CA": {"cap": "5.5–6.5%", "vac": "very low", "rent": "rising"},
+      "EU": {"cap": "5–6%", "vac": "very low", "rent": "rising"},
+      "trend": "in", "drivers": "AI demand means most new space is leased before it is built; power supply, not demand, is the main limit."
+    },
+    {
+      "key": "hotel", "name": "Hotels", "icon": "🏨",
+      "what": "Hotels and resorts. Income resets nightly, so it moves with the economy and travel demand.",
+      "US": {"cap": "7.5–8.5%", "vac": "about 62–63% occupancy", "rent": "RevPAR about flat"},
+      "CA": {"cap": "7–8.5%", "vac": "about 65% occupancy", "rent": "RevPAR +1 to +3%"},
+      "EU": {"cap": "5.5–7%", "vac": "about 70–75% occupancy", "rent": "RevPAR +2 to +4%"},
+      "trend": "steady", "drivers": "Leisure travel has levelled off after the post-pandemic boom; group and international travel are filling the gap."
+    },
+    {
+      "key": "senior", "name": "Healthcare and senior housing", "icon": "🏥",
+      "what": "Senior living, medical offices, hospitals and life-science labs.",
+      "US": {"cap": "6–7%", "vac": "about 88–89% senior housing occupancy, rising", "rent": "+4 to +5%"},
+      "CA": {"cap": "5.5–6.5%", "vac": "about 90% occupancy", "rent": "+3 to +5%"},
+      "EU": {"cap": "4.75–5.5%", "vac": "high occupancy", "rent": "indexed to inflation"},
+      "trend": "in", "drivers": "The baby boomers are turning 80 while very little new senior housing is being built."
+    },
+    {
+      "key": "storage", "name": "Self-storage", "icon": "📦",
+      "what": "Storage units rented by the month. Demand follows moving, downsizing and home sales.",
+      "US": {"cap": "5.5–6%", "vac": "about 90% occupancy", "rent": "slightly down to flat"},
+      "CA": {"cap": "5.5–6.5%", "vac": "about 88–90% occupancy", "rent": "flat"},
+      "EU": {"cap": "5.5–6.5%", "vac": "about 80–85% occupancy", "rent": "+1 to +3%"},
+      "trend": "steady", "drivers": "Slow home sales mean fewer people moving; new supply has slowed, which should help rents recover."
+    },
+    {
+      "key": "infra", "name": "Towers and infrastructure", "icon": "📡",
+      "what": "Cell towers, fibre and other long-lease infrastructure owned through REITs.",
+      "US": {"cap": "n/a (long leases)", "vac": "n/a", "rent": "+2 to +3% lease escalators"},
+      "CA": {"cap": "n/a", "vac": "n/a", "rent": "contracted escalators"},
+      "EU": {"cap": "n/a", "vac": "n/a", "rent": "inflation-linked"},
+      "trend": "steady", "drivers": "Behaves more like a bond: very sensitive to long-term interest rates."
+    },
+    {
+      "key": "lease", "name": "Net lease", "icon": "📝",
+      "what": "Single-tenant buildings (pharmacies, restaurants, distribution) leased for 10–25 years with the tenant paying costs.",
+      "US": {"cap": "6.5–7.25%", "vac": "very low", "rent": "+1 to +2% escalators"},
+      "CA": {"cap": "6–7%", "vac": "very low", "rent": "contracted escalators"},
+      "EU": {"cap": "5–6.5%", "vac": "very low", "rent": "inflation-linked"},
+      "trend": "steady", "drivers": "Valued like a bond: the spread over the 10-year government yield decides prices."
+    }
+  ]
+}

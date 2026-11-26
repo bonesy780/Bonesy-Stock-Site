@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
+<meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
+<title>TopTicker Homes · Listings</title>
+<meta name="description" content="Homes for sale across the United States, Canada and Mexico, with links to the full listing sites.">
+<link rel="icon" href="../logo.svg" type="image/svg+xml">
+<link rel="canonical" href="https://www.topticker.ca/re/listings.html">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TopTicker">
+<meta property="og:title" content="TopTicker Homes · Listings">
+<meta property="og:description" content="Homes for sale across the United States, Canada and Mexico, with links to the full listing sites.">
+<meta property="og:url" content="https://www.topticker.ca/re/listings.html">
+<meta property="og:image" content="https://www.topticker.ca/img/share-homes.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TopTicker">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css?v=__V__">
+<link rel="stylesheet" href="re.css?v=__V__">
+</head>
+<body class="re">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="../" aria-label="TopTicker home" title="Home: choose stocks or real estate"><span class="logo" aria-hidden="true"><svg class="logo-mark" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><defs><linearGradient id="lgo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2b5e"/><stop offset="1" stop-color="#0b1330"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="url(#lgo)"/><path d="M6 16.5 16 8l10 8.5" fill="none" stroke="#22c55e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 15v10h13V15" fill="#22c55e" fill-opacity=".85"/><rect x="14" y="19" width="4" height="6" rx=".8" fill="#0b1330"/><path d="M19.6 9.2 20.4 4l2.8 2.6L25.9 4l.8 5.2z" fill="#f5b301" stroke="#f5b301" stroke-width=".8" stroke-linejoin="round"/></svg></span> <span class="brand-text"><b>Top</b>Ticker <span class="brand-tag">Homes</span></span></a>
+    <div class="jump lookup"><input id="jump" type="search" placeholder="Go to a market…" aria-label="Go to a market" spellcheck="false"></div>
+    <div class="updated" id="updated">Loading data…</div>
+  </div>
+  <nav class="menu wrap" id="menu" aria-label="Pages"></nav>
+</header>
+
+<main id="main" class="wrap">
+  <section class="hero">
+    <h1>Homes for sale</h1>
+    <p id="lead">Active listings by city, with links to the big listing sites for each market.</p>
+  </section>
+  <div class="re-notice panel" id="notice"></div>
+  <div class="toolbar re-filters">
+    <div class="seg" role="tablist" aria-label="Country" id="l-country"></div>
+    <label class="re-f">City <select class="field" id="l-city"><option value="">All cities</option></select></label>
+    <label class="re-f">Type <select class="field" id="l-type"><option value="">Any</option><option>Single Family</option><option>Condo</option><option>Townhouse</option><option>Multi-Family</option></select></label>
+    <label class="re-f">Beds <select class="field" id="l-beds"><option value="0">Any</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+</option></select></label>
+    <label class="re-f">Max price <input class="field" id="l-max" type="number" min="0" step="10000" placeholder="Any"></label>
+    <label class="re-f">Sort <select class="field" id="l-sort"><option value="new">Newest</option><option value="lo">Price, low to high</option><option value="hi">Price, high to low</option><option value="ppsf">Price per sq ft</option></select></label>
+    <label class="re-f re-check"><input type="checkbox" id="l-saved"> Saved only</label>
+  </div>
+  <p class="muted" id="l-count"></p>
+  <div class="re-listings" id="list"></div>
+  <div class="re-more" id="more"></div>
+  <section>
+    <div class="section-head"><h2>Search the full listing sites</h2><p>Every active listing, photos and agent details are on the licensed listing sites for each country.</p></div>
+    <div class="re-links" id="links"></div>
+  </section>
+  <p class="disclaimer">Real listings come from the RentCast API when it is switched on, and change daily: check the listing site before you act. Homes marked Sample are made up from each market's typical prices to show how the page works; they are not for sale.</p>
+</main>
+
+<footer class="wrap foot">Data: <a href="https://www.zillow.com/research/data/">Zillow Research</a>, <a href="https://www.bis.org/statistics/pp.htm">BIS</a> house prices, <a href="https://www.freddiemac.com/pmms">Freddie Mac</a>, <a href="https://fred.stlouisfed.org/">FRED</a>, <a href="https://www.statcan.gc.ca/">Statistics Canada</a> and CMHC, <a href="https://www.bankofcanada.ca/">Bank of Canada</a>, <a href="https://www.gob.mx/shf">Sociedad Hipotecaria Federal</a>. Not financial advice. Listings: <a href="https://www.rentcast.io/">RentCast</a> when switched on.</footer>
+
+<script src="re-common.js?v=__V__"></script>
+<script src="listings.js?v=__V__"></script>
+<script src="../theme.js?v=__V__" defer></script>
+</body>
+</html>

@@ -19,6 +19,9 @@ from urllib.parse import quote_plus
 import requests
 import yfinance as yf
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from safe_io import read_json, write_json  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "site" / "data.json"
 OUT = ROOT / "site" / "news.json"
@@ -201,10 +204,26 @@ def top_stories(now: datetime) -> list[dict]:
     return out
 
 
+def still_fresh(stories: list[dict], now: datetime, max_age: timedelta) -> list[dict]:
+    out = []
+    for s in stories or []:
+        try:
+            if now - datetime.fromisoformat(s["published"]) <= max_age:
+                out.append(s)
+        except (KeyError, TypeError, ValueError):
+            pass
+    return out
+
+
 def build():
     now = datetime.now(timezone.utc)
     data = json.loads(DATA.read_text())
-    markets = []
+    # A market or outlet whose feeds all fail this run keeps its stories from the last run (while they are
+    # still recent), instead of showing an empty box until the next run
+    prev = read_json(OUT, {}) or {}
+    prev_markets = {m.get("id"): m.get("stories") or [] for m in prev.get("markets") or []}
+    prev_sources = {s.get("id"): s.get("stories") or [] for s in prev.get("sources") or []}
+    markets, fresh_any = [], False
     for ix in data["indexes"]:
         symbol, query = MARKETS.get(ix["id"], (None, ix["name"] + " stocks"))
         stories = yahoo_news(symbol) if symbol else []
@@ -224,13 +243,24 @@ def build():
             picked.append({**s, "published": s["published"].isoformat(timespec="minutes")})
             if len(picked) >= STORIES_PER_MARKET:
                 break
+        fresh_any = fresh_any or bool(picked)
+        if not picked:
+            picked = still_fresh(prev_markets.get(ix["id"]), now, MAX_AGE)
+            if picked:
+                log(f"{ix['name']}: no stories this run, kept {len(picked)} from the last run")
         markets.append({"id": ix["id"], "name": ix["name"], "region": ix["region"],
                         "chg1d": ix.get("chg1d"), "stories": picked})
         log(f"{ix['name']}: {len(picked)} stories ({len(stories)} found)")
 
     sources = top_stories(now)
-    OUT.write_text(json.dumps({"generated": now.isoformat(timespec="minutes"), "markets": markets, "sources": sources},
-                              separators=(",", ":")))
+    for src in sources:
+        fresh_any = fresh_any or bool(src["stories"])
+        if not src["stories"]:
+            src["stories"] = still_fresh(prev_sources.get(src["id"]), now, SOURCE_MAX_AGE)
+    if OUT.exists() and not fresh_any:
+        log("no stories came back, keeping the saved news")
+        return
+    write_json(OUT, {"generated": now.isoformat(timespec="minutes"), "markets": markets, "sources": sources})
     log(f"wrote {OUT}")
 
 

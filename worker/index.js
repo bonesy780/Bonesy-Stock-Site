@@ -6,17 +6,31 @@
 //   GET /chart?symbol=AAPL&range=1d          -> { t, i: [[unixSeconds, close, volume], ...], prevClose, price, post }
 //     post is the after-hours trade since the last close, { price, chg, time }, or null
 //     (most exchanges outside the US have no after-hours session)
+//   GET /history?symbol=ANT                  -> { t, n, x, cur, type, first, hi52, lo52, d: [[day, close, volume], ...], i, post }
+//     every daily close back to the listing plus the last 5 days of 5-minute prices (as /chart),
+//     so the lookup page can chart a stock that isn't in the site's own lists, such as a new IPO
+//   GET /search?q=anthropic                  -> [{ t, n, x, type }] stocks and funds matching a name or symbol
+//   GET /news?symbol=AAPL                    -> [{ title, url, source, time }] the stock's latest headlines (newest first)
 //   GET  /ask                                -> { ai: true|false } whether Claude answers are switched on
 //   POST /ask { question, history }          -> { answer } from Claude, using the site's notes on
 //     where its data comes from (ask-kb.json, copied in by the deploy workflow). Needs the
 //     ANTHROPIC_API_KEY secret; without it the Ask page answers from the notes by itself.
+//   POST /explain, /push/*, /account/*         -> see extras.js (Explain this stock, push alerts, accounts)
 
 import KB from "./ask-kb.json";
+import { explain, toStore, cron, Store } from "./extras.js";
 
-const YAHOO = "https://query1.finance.yahoo.com/v8/finance/chart/";
+export { Store };
+
+// Yahoo serves the same data from two hosts; when one rate-limits or fails, the other usually still answers
+const YAHOO_HOSTS = ["https://query1.finance.yahoo.com/v8/finance/chart/", "https://query2.finance.yahoo.com/v8/finance/chart/"];
 const MAX_SYMBOLS = 40;          // free Workers allow 50 outbound fetches per request
 const QUOTE_TTL = 20;            // seconds
 const CHART_TTL = 60;
+const HISTORY_TTL = 300;
+const SEARCH_TTL = 3600;
+const NEWS_TTL = 900;
+const SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search";
 const SYMBOL = /^[\^A-Za-z0-9.\-=]{1,20}$/;
 
 const CORS = {
@@ -31,17 +45,17 @@ const MAX_QUESTION = 600;          // characters
 const MAX_HISTORY = 6;             // earlier messages sent along for follow-up questions
 const PER_MINUTE = 6, PER_DAY = 60; // questions per visitor (per worker instance; a rough guard on cost)
 // Only the site itself (and local testing) may use it, so other websites can't run up the bill
-const ASK_ORIGINS = [/^https:\/\/bonesy780\.github\.io$/i, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
+const ASK_ORIGINS = [/^https:\/\/bonesy780\.github\.io$/i, /^https:\/\/(www\.)?topticker\.ca$/i, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
 const seen = new Map();
 
-const SYSTEM = `You answer questions from visitors to "Market Leaders", a free stock market website, about how the site gets and works out its data. Below are the site's own notes, written from its code. Answer from these notes.
+const SYSTEM = `You answer questions from visitors to "TopTicker", a free stock market website, about how the site gets and works out its data. Below are the site's own notes, written from its code. Answer from these notes.
 
 Rules:
 - Keep answers short: two to five plain sentences, no headings. Use a short list only when it really helps.
 - If the notes don't cover the question, say you don't know that detail rather than guessing, and point to the closest topic you do know.
 - You can explain financial terms (P/E, RSI, market cap and so on) in general, but don't give investment advice or say whether to buy or sell anything.
 - You can't see live prices or a particular stock's numbers; say so if asked, and point to the page that shows them.
-- Name pages by their menu name (Stock Lookup, Screener, Movers, Signals, Analysts, Dividends, Earnings, Calendar, Heatmap, Compare, Backtest, Options, Alerts, Calculators, News, Watchlists, Paper Trading, Daily Brief).
+- Name pages by their menu name (Stock Lookup, Screener, Movers, Signals, Analysts, Dividends, Earnings, Calendar, Heatmap, Compare, Backtest, Options, Alerts, Calculators, News, Watchlists, Paper Trading, Daily Brief, ETFs & Crypto, Insiders, Weekly Recap, Account).
 
 The site's notes:
 ${KB.map((k) => `## ${k.title}\n${k.answer}`).join("\n\n")}`;
@@ -105,16 +119,32 @@ function json(body, status = 200, ttl = 0) {
   });
 }
 
+// Only good answers are cached. Caching everything for `ttl` also kept Yahoo's refusals (429s and errors)
+// for that long, so one refused request left a stock without a live price (or a search without results,
+// for an hour) for every visitor.
+const cacheOk = (ttl) => ({ cacheTtlByStatus: { "200-299": ttl, "404": 60, "400-599": 0 }, cacheEverything: true });
+
 async function yahoo(symbol, range, interval, ttl, prePost = false) {
-  const url = `${YAHOO}${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=${prePost}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketLeaders/1.0)" },
-    cf: { cacheTtl: ttl, cacheEverything: true },
-  });
-  if (!res.ok) throw new Error(`yahoo ${res.status}`);
-  const r = (await res.json())?.chart?.result?.[0];
-  if (!r) throw new Error("no data");
-  return r;
+  const path = `${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=${prePost}`;
+  let err = null;
+  for (const host of YAHOO_HOSTS) {
+    try {
+      const res = await fetch(host + path, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketLeaders/1.0)" },
+        cf: cacheOk(ttl),
+      });
+      if (res.status === 404) throw Object.assign(new Error("yahoo 404"), { final: true });
+      if (!res.ok) throw new Error(`yahoo ${res.status}`);
+      const r = (await res.json())?.chart?.result?.[0];
+      // A reply without a usable price is as good as no reply
+      if (!r || !(r.meta?.regularMarketPrice > 0)) throw new Error("no data");
+      return r;
+    } catch (e) {
+      err = e;
+      if (e.final) break;
+    }
+  }
+  throw err;
 }
 
 async function quote(symbol) {
@@ -176,10 +206,90 @@ async function chart(symbol, range) {
   return { t: symbol, i, prevClose: m.chartPreviousClose ?? m.previousClose, price: m.regularMarketPrice, post };
 }
 
+// Everything the lookup page needs for a symbol it has no saved file for
+async function history(symbol) {
+  const [daily, recent] = await Promise.all([
+    // Yahoo refuses range=max for a stock in its first days of trading, so fall back to 5 days
+    yahoo(symbol, "max", "1d", HISTORY_TTL).catch(() => yahoo(symbol, "5d", "1d", HISTORY_TTL)),
+    chart(symbol, "5d").catch(() => null),
+  ]);
+  const m = daily.meta;
+  return {
+    t: symbol,
+    n: m.longName || m.shortName || symbol,
+    x: m.fullExchangeName || m.exchangeName || null,
+    cur: m.currency || "USD",
+    type: m.instrumentType || null,
+    first: m.firstTradeDate ?? null,
+    hi52: m.fiftyTwoWeekHigh ?? null,
+    lo52: m.fiftyTwoWeekLow ?? null,
+    d: bars(daily),
+    i: recent ? recent.i : [],
+    post: recent ? recent.post : null,
+    price: m.regularMarketPrice ?? null,
+  };
+}
+
+// Yahoo's symbol search, kept to stocks and funds
+async function lookup(q) {
+  const url = `${SEARCH_URL}?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0&listsCount=0&enableFuzzyQuery=false`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketLeaders/1.0)" },
+    cf: cacheOk(SEARCH_TTL),
+  });
+  if (!res.ok) throw new Error(`yahoo ${res.status}`);
+  const quotes = (await res.json())?.quotes || [];
+  return quotes
+    .filter((r) => r && SYMBOL.test(r.symbol || "") && ["EQUITY", "ETF"].includes(r.quoteType))
+    .slice(0, 8)
+    .map((r) => ({ t: r.symbol, n: r.longname || r.shortname || r.symbol, x: r.exchDisp || null, type: r.quoteType }));
+}
+
+// A stock's latest headlines from Yahoo's search, for the heatmap's hover cards. Stories Yahoo tags with
+// the symbol come first; the search can also return general market stories, which are left out when tagged ones exist.
+async function news(symbol) {
+  const url = `${SEARCH_URL}?q=${encodeURIComponent(symbol)}&quotesCount=0&newsCount=8&listsCount=0&enableFuzzyQuery=false`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; MarketLeaders/1.0)" },
+    cf: cacheOk(NEWS_TTL),
+  });
+  if (!res.ok) throw new Error(`yahoo ${res.status}`);
+  const items = ((await res.json())?.news || []).filter((n) => n && n.title && /^https?:\/\//.test(n.link || ""));
+  const sym = symbol.toUpperCase();
+  const tagged = items.filter((n) => (n.relatedTickers || []).some((r) => String(r).toUpperCase() === sym));
+  return (tagged.length ? tagged : items)
+    .sort((a, b) => (b.providerPublishTime || 0) - (a.providerPublishTime || 0))
+    .slice(0, 3)
+    .map((n) => ({ title: String(n.title).slice(0, 300), url: n.link, source: n.publisher || null, time: n.providerPublishTime || null }));
+}
+
+const fromSite = (request) => ASK_ORIGINS.some((re) => re.test(request.headers.get("Origin") || ""));
+const withCors = async (res) => {
+  const out = new Response(res.body, res);
+  for (const [k, v] of Object.entries(CORS)) out.headers.set(k, v);
+  out.headers.set("Cache-Control", "no-store");
+  return out;
+};
+
 export default {
-  async fetch(request, env) {
+  // Every 5 minutes (wrangler.toml): check saved push alerts against prices
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(cron(env));
+  },
+
+  async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
     const url = new URL(request.url);
+    if (url.pathname === "/explain" && request.method === "POST") {
+      try { return await explain(request, env, ctx, { json, limited, allowed: fromSite }); }
+      catch (e) { return json({ error: "Claude is unavailable right now" }, 502); }
+    }
+    if (url.pathname.startsWith("/push/") || url.pathname.startsWith("/account/")) {
+      // Only the site may change saved alerts and accounts; the service worker's inbox read is a plain GET
+      if (request.method === "POST" && !fromSite(request)) return json({ error: "not allowed" }, 403);
+      try { return await withCors(await toStore(request, env)); }
+      catch (e) { return json({ error: "Saved alerts and accounts are unavailable right now" }, 502); }
+    }
     if (url.pathname === "/ask") {
       if (request.method === "POST") {
         try { return await ask(request, env); } catch (e) { return json({ error: "Claude is unavailable right now" }, 502); }
@@ -207,6 +317,27 @@ export default {
       catch (e) { return json({ error: String(e.message || e) }, 502); }
     }
 
-    return json({ ok: true, routes: ["/quote?symbols=AAPL,MSFT", "/chart?symbol=AAPL&range=1d", "/ask"] });
+    if (url.pathname === "/history") {
+      const symbol = url.searchParams.get("symbol") || "";
+      if (!SYMBOL.test(symbol)) return json({ error: "bad symbol" }, 400);
+      try { return json(await history(symbol), 200, CHART_TTL); }
+      catch (e) { return json({ error: String(e.message || e) }, 404); }
+    }
+
+    if (url.pathname === "/search") {
+      const q = (url.searchParams.get("q") || "").trim().slice(0, 40);
+      if (!q) return json([]);
+      try { return json(await lookup(q), 200, SEARCH_TTL); }
+      catch (e) { return json({ error: String(e.message || e) }, 502); }
+    }
+
+    if (url.pathname === "/news") {
+      const symbol = url.searchParams.get("symbol") || "";
+      if (!SYMBOL.test(symbol)) return json({ error: "bad symbol" }, 400);
+      try { return json(await news(symbol), 200, NEWS_TTL); }
+      catch (e) { return json({ error: String(e.message || e) }, 502); }
+    }
+
+    return json({ ok: true, routes: ["/quote?symbols=AAPL,MSFT", "/chart?symbol=AAPL&range=1d", "/history?symbol=AAPL", "/search?q=apple", "/news?symbol=AAPL", "/ask"] });
   },
 };
