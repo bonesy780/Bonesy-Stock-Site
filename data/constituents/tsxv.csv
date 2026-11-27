@@ -19,7 +19,6 @@ SLG,San Lorenzo Gold Corp
 SGML,Sigma Lithium Corporation
 BYN,Banyan Gold Corp
 THX,Thor Explorations Ltd.
-GSKR,Goldsky Resources Corp
 REG,Regulus Resources Inc
 TAU,Thesis Gold And Silver Inc
 FISH,Sailfish Royalty Corp
@@ -35,7 +34,7 @@ RDS,Radisson Mining Resources Inc.
 SIG,Sitka Gold Corp
 SICO,Silverco Mining Ltd
 MOON,Blue Moon Metals Inc
-PAIN,Vector Science And Therapeutics
+GSKR,Goldsky Resources Corp
 AUXX,Gold X2 Mining Inc
 SLI,Standard Lithium Ltd
 CDPR,Cerro De Pasco Resources Inc
@@ -51,16 +50,16 @@ SVRS,Silver Storm Mining Ltd
 ALV,Alvopetro Energy Ltd
 EOG,Eco Atlantic Oil And Gas Ltd
 HITI,High Tide Inc
+ECU,Element 29 Resources Inc
 CERT,Cerrado Gold Inc
 QNC,Quantum Emotion Corp
 IFOS,Itafos Inc
 SM,Sierra Madre Gold And Silver Lt
-ECU,Element 29 Resources Inc
 CUU,Copper Fox Metals Inc
 MLP,Millennial Potash Corp
 PGLD,P2 Gold Inc
-UCU,Ucore Rare Metals Inc
 WGO,White Gold Corp
+UCU,Ucore Rare Metals Inc
 PML,Panoro Minerals Ltd
 BRVO,Bravo Mining Corp
 NEXG,Nexgold Mining Corp
@@ -84,6 +83,7 @@ MACK,Mackay Gold And Silver Corp
 PALI,Palisades Goldcorp Ltd
 ANDC,Andina Copper Corporation
 MKA,Mkango Magnetic Materials Limit
+BMM,Black Mammoth Metals Corp
 CAPT,Capitan Silver Corp
 LRA,Lara Exploration Ltd
 HME,Hemisphere Energy Corporation
@@ -94,15 +94,14 @@ GOT,Goliath Resources Limited
 RVG,Revival Gold Inc
 LCX,Lycos Energy Inc
 TDG,Tdg Gold Corp
-PPX,Ppx Mining Corp
 MFG,Mayfair Gold Corp
 GMG,Graphene Manufacturing Group Lt
+PPX,Ppx Mining Corp
+CGNT,Copper Giant Resources Corp
 TECT,Tectonic Metals Inc
-BMM,Black Mammoth Metals Corp
 KLD,Kenorland Minerals Ltd
 WRLG,West Red Lake Gold Mines Ltd
 MOG,Mogotes Metals Inc
-CGNT,Copper Giant Resources Corp
 KTO,K2 Gold Corporation
 LTC,Lotus Creek Exploration Inc
 GSI,Gatekeeper Systems Inc
@@ -123,7 +122,6 @@ AAG,Aftermath Silver Ltd
 PESO,Pesorama Inc
 AXO,Axo Metals Corp
 FLCN,Falcon Energy Materials Plc
-BLU,Bluenergies Ltd
 GGO,Galleon Gold Corp
 PNPN,Power Metallic Mines Inc
 AURO,Auro Metals Inc
@@ -140,6 +138,7 @@ SVE,Silver One Resources Inc
 EU,Encore Energy Corp
 SSV,Southern Silver Exploration Cor
 FPC,Falco Resources Ltd
+BLU,Bluenergies Ltd
 VALX,Valiente Resources Inc
 ZNG,Group Eleven Resources Corp
 FEO,Oceanic Iron Ore Corp
@@ -184,12 +183,10 @@ PTF,Pender Growth Fund Inc
 VIMY,Vimy Pharmaceuticals Corp
 AUUA,Aluula Composites Inc
 ONYX,Onyx Gold Corp
-EXN,Excellon Resources Inc
 ARIC,Awale Resources Limited
 AGAG,Argenta Silver Corp
 BKM,Pacific Booker Minerals Inc.
 HI,Highland Copper Company Inc
-MJS,Majestic Gold Corp.
 LGC,Lavras Gold Corp
 TPL,Tethys Petroleum Limited
 OCO,Oroco Resource Corp.
@@ -197,14 +194,15 @@ SOI,Sirios Resources Inc.
 WPG,West Point Gold Corp
 AFE,Africa Energy Corp
 BUFF,Buffalo Potash Corporation
-NAU,Nevgold Corp
 NSE,New Stratus Energy Inc
+TNR,Tnr Gold Corp
 MMA,Midnight Sun Mining Corp
+NAU,Nevgold Corp
 SRL,Salazar Resources Limited
 NVRO,Nvro Metals Limited
 BQE,Bqe Water Inc
+EXN,Excellon Resources Inc
 MSR,Minsud Resources Corp.
-TNR,Tnr Gold Corp
 ZEN,Zentek Ltd
 SHL,Homeland Nickel Inc
 CAM,Cascadia Minerals Ltd
@@ -243,9 +241,11 @@ YGT,Gold Terra Resource Corp
 RCK,Rock Tech Lithium Inc
 DMGI,Dmg Blockchain Solutions Inc
 PWM,Power Metals Corp
+MJS,Majestic Gold Corp.
 DB,Decibel Cannabis Company Inc
 TUO,Teuton Resources Corp
 KC,Kutcho Copper Corp
 EQ,Eq Inc
 VCU,Vizsla Copper Corp
 HAN,Hannan Metals Ltd
+LVG,Lake Victoria Gold Ltd
