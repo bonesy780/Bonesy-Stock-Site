@@ -66,113 +66,127 @@
     UI.updated(asOf);
     const out = [];
 
-    // ---- markets: one card per index with its move, a 3-month line, breadth and trend
-    const idx = ((D && D.indexes) || []).filter((i) => i.chg1d != null).sort((a, b) => b.chg1d - a.chg1d);
-    if (idx.length) {
-      const up = idx.filter((i) => i.chg1d > 0).length;
-      const all = stocks.filter((s) => s.d1 != null);
-      const adv = all.filter((s) => s.d1 > 0).length, dec = all.filter((s) => s.d1 < 0).length;
-      const cards = idx.map((i) => {
-        const st = stocks.filter((s) => s.ix.includes(i.id));
-        const a = st.filter((s) => s.d1 > 0).length, d = st.filter((s) => s.d1 < 0).length;
-        const a200 = st.filter((s) => s.sma200 != null && s.p != null);
-        const pa = a200.length ? a200.filter((s) => s.p > s.sma200).length / a200.length * 100 : null;
-        return `<a class="ig-ix ${tone(i.chg1d)}" href="markets.html" title="${esc(name(i))}: ${a} stocks up, ${d} down${pa != null ? `, ${Math.round(pa)}% above their 200-day average` : ""}">
-          <span class="ig-ix-name">${esc(name(i))}</span>
-          <b class="num ig-big ${tone(i.chg1d)}">${sign(i.chg1d, 2)}</b>
-          <span class="num muted">${i.level != null ? i.level.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "–"}</span>
-          ${UI.spark((i.spark || []).slice(-63), 120, 30)}
-          <span class="ig-mini">${split(a, d, "up", "down")}</span>
-          <span class="ig-row"><span class="muted">Above 200-day</span><span class="num">${pa != null ? Math.round(pa) + "%" : "–"}</span></span>${meter(pa, "Above their 200-day average")}
-          <span class="ig-row"><span><span class="muted">Week</span> ${pct(i.chg1w)}</span><span><span class="muted">YTD</span> ${pct(i.ytd)}</span></span>
-        </a>`;
-      }).join("");
-      out.push(card(`Markets <span class="ig-tag">${up} of ${idx.length} up</span>`,
-        `<div class="ig-ix-grid">${cards}</div>
-         <h3>All stocks on the site</h3>${split(adv, dec, "rising", "falling")}`,
-        `<a href="markets.html">Top 10 in each market</a> · <a href="heatmap.html">Heatmap</a>`, "wide"));
-    }
+    try {
+      // ---- markets: one card per index with its move, a 3-month line, breadth and trend
+      const idx = ((D && D.indexes) || []).filter((i) => i.chg1d != null).sort((a, b) => b.chg1d - a.chg1d);
+      if (idx.length) {
+        const up = idx.filter((i) => i.chg1d > 0).length;
+        const all = stocks.filter((s) => s.d1 != null);
+        const adv = all.filter((s) => s.d1 > 0).length, dec = all.filter((s) => s.d1 < 0).length;
+        const cards = idx.map((i) => {
+          const st = stocks.filter((s) => (s.ix || []).includes(i.id));
+          const a = st.filter((s) => s.d1 > 0).length, d = st.filter((s) => s.d1 < 0).length;
+          const a200 = st.filter((s) => s.sma200 != null && s.p != null);
+          const pa = a200.length ? a200.filter((s) => s.p > s.sma200).length / a200.length * 100 : null;
+          return `<a class="ig-ix ${tone(i.chg1d)}" href="markets.html" title="${esc(name(i))}: ${a} stocks up, ${d} down${pa != null ? `, ${Math.round(pa)}% above their 200-day average` : ""}">
+            <span class="ig-ix-name">${esc(name(i))}</span>
+            <b class="num ig-big ${tone(i.chg1d)}">${sign(i.chg1d, 2)}</b>
+            <span class="num muted">${i.level != null ? i.level.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "–"}</span>
+            ${UI.spark((i.spark || []).slice(-63), 120, 30)}
+            <span class="ig-mini">${split(a, d, "up", "down")}</span>
+            <span class="ig-row"><span class="muted">Above 200-day</span><span class="num">${pa != null ? Math.round(pa) + "%" : "–"}</span></span>${meter(pa, "Above their 200-day average")}
+            <span class="ig-row"><span><span class="muted">Week</span> ${pct(i.chg1w)}</span><span><span class="muted">YTD</span> ${pct(i.ytd)}</span></span>
+          </a>`;
+        }).join("");
+        out.push(card(`Markets <span class="ig-tag">${up} of ${idx.length} up</span>`,
+          `<div class="ig-ix-grid">${cards}</div>
+           <h3>All stocks on the site</h3>${split(adv, dec, "rising", "falling")}`,
+          `<a href="markets.html">Top 10 in each market</a> · <a href="heatmap.html">Heatmap</a>`, "wide"));
+      }
+    } catch (e) { console.error("Today brief section failed", e); }
 
-    // ---- rates, commodities and crypto as tiles
-    const items = ((mac && mac.items) || []).filter((m) => m.p != null);
-    if (items.length && window.Macro) {
-      out.push(card("Rates, commodities and crypto",
-        `<div class="ig-tiles">${items.map((m) => `<a class="ig-tile ${tone(m.d1)}" href="${stockUrl(m.t)}" title="${esc(m.why || m.n)}">
-          <span class="muted">${esc(m.s || m.n)}</span><b class="num">${Macro.level(m)}</b><span>${Macro.move(m)}</span>${UI.spark(m.spark, 84, 20)}</a>`).join("")}</div>`,
-        `<a href="funds.html">ETFs and crypto</a>`));
-    }
+    try {
+      // ---- rates, commodities and crypto as tiles
+      const items = ((mac && mac.items) || []).filter((m) => m.p != null);
+      if (items.length && window.Macro) {
+        out.push(card("Rates, commodities and crypto",
+          `<div class="ig-tiles">${items.map((m) => `<a class="ig-tile ${tone(m.d1)}" href="${stockUrl(m.t)}" title="${esc(m.why || m.n)}">
+            <span class="muted">${esc(m.s || m.n)}</span><b class="num">${Macro.level(m)}</b><span>${Macro.move(m)}</span>${UI.spark(m.spark, 84, 20)}</a>`).join("")}</div>`,
+          `<a href="funds.html">ETFs and crypto</a>`));
+      }
+    } catch (e) { console.error("Today brief section failed", e); }
 
-    // ---- sectors: today's size-weighted move, as diverging bars
-    const bySec = {};
-    for (const s of stocks) if (s.sector) (bySec[s.sector] ||= []).push(s);
-    const secs = Object.entries(bySec).map(([n, st]) => ({ n, d1: cw(st, "d1"), m1: cw(st, "m1") })).filter((x) => x.d1 != null).sort((a, b) => b.d1 - a.d1);
-    if (secs.length > 3) {
-      out.push(card("Sectors today",
-        diverging(secs.map((x) => ({ label: x.n, v: x.d1, href: "heatmap.html", title: `${x.n}: ${sign(x.d1, 2)} today, ${sign(x.m1)} over a month` })), { nd: 2 }),
-        `Weighted by company size, all markets together. <a href="heatmap.html">Heatmap</a>`));
-    }
+    try {
+      // ---- sectors: today's size-weighted move, as diverging bars
+      const bySec = {};
+      for (const s of stocks) if (s.sector) (bySec[s.sector] ||= []).push(s);
+      const secs = Object.entries(bySec).map(([n, st]) => ({ n, d1: cw(st, "d1"), m1: cw(st, "m1") })).filter((x) => x.d1 != null).sort((a, b) => b.d1 - a.d1);
+      if (secs.length > 3) {
+        out.push(card("Sectors today",
+          diverging(secs.map((x) => ({ label: x.n, v: x.d1, href: "heatmap.html", title: `${x.n}: ${sign(x.d1, 2)} today, ${sign(x.m1)} over a month` })), { nd: 2 }),
+          `Weighted by company size, all markets together. <a href="heatmap.html">Heatmap</a>`));
+      }
+    } catch (e) { console.error("Today brief section failed", e); }
 
-    // ---- biggest moves among large companies
-    const large = stocks.filter((s) => (s.mcapUsd || 0) >= 10e9 && s.d1 != null);
-    if (large.length) {
-      const g = large.slice().sort((a, b) => b.d1 - a.d1).slice(0, 6), l = large.slice().sort((a, b) => a.d1 - b.d1).slice(0, 6);
-      const max = Math.max(0.5, ...g.concat(l).map((s) => Math.abs(s.d1)));
-      const rows = (arr) => diverging(arr.map((s) => ({ label: s.s, v: s.d1, href: stockUrl(s.t), title: `${s.n}: ${sign(s.d1, 2)} today` })), { nd: 1, max });
-      const vol = large.filter((s) => s.relVol >= 2).sort((a, b) => b.relVol - a.relVol).slice(0, 6);
-      out.push(card("Biggest moves, companies over $10B",
-        `<div class="brief-two"><div><h3>Up the most</h3>${rows(g)}</div><div><h3>Down the most</h3>${rows(l)}</div></div>
-         ${vol.length ? `<h3>Heavy trading</h3><div class="ig-chips">${vol.map((s) => `<a href="${stockUrl(s.t)}" title="${esc(s.n)}: ${s.relVol.toFixed(1)}× its usual volume"><b>${esc(s.s)}</b> <span class="num">${s.relVol.toFixed(1)}×</span> ${pct(s.d1)}</a>`).join("")}</div>` : ""}`,
-        `<a href="screener.html?screen=Gainers">Gainers</a> · <a href="screener.html?screen=Losers">Losers</a> · <a href="screener.html?screen=Unusual%20volume">Unusual volume</a>`));
-    }
+    try {
+      // ---- biggest moves among large companies
+      const large = stocks.filter((s) => (s.mcapUsd || 0) >= 10e9 && s.d1 != null);
+      if (large.length) {
+        const g = large.slice().sort((a, b) => b.d1 - a.d1).slice(0, 6), l = large.slice().sort((a, b) => a.d1 - b.d1).slice(0, 6);
+        const max = Math.max(0.5, ...g.concat(l).map((s) => Math.abs(s.d1)));
+        const rows = (arr) => diverging(arr.map((s) => ({ label: s.s, v: s.d1, href: stockUrl(s.t), title: `${s.n}: ${sign(s.d1, 2)} today` })), { nd: 1, max });
+        const vol = large.filter((s) => s.relVol >= 2).sort((a, b) => b.relVol - a.relVol).slice(0, 6);
+        out.push(card("Biggest moves, companies over $10B",
+          `<div class="brief-two"><div><h3>Up the most</h3>${rows(g)}</div><div><h3>Down the most</h3>${rows(l)}</div></div>
+           ${vol.length ? `<h3>Heavy trading</h3><div class="ig-chips">${vol.map((s) => `<a href="${stockUrl(s.t)}" title="${esc(s.n)}: ${s.relVol.toFixed(1)}× its usual volume"><b>${esc(s.s)}</b> <span class="num">${s.relVol.toFixed(1)}×</span> ${pct(s.d1)}</a>`).join("")}</div>` : ""}`,
+          `<a href="screener.html?screen=Gainers">Gainers</a> · <a href="screener.html?screen=Losers">Losers</a> · <a href="screener.html?screen=Unusual%20volume">Unusual volume</a>`));
+      }
+    } catch (e) { console.error("Today brief section failed", e); }
 
-    // ---- highs, lows and chart signals
-    const hi = stocks.filter((s) => s.fromHi != null && s.fromHi >= -0.5), lo = stocks.filter((s) => s.fromLo != null && s.fromLo <= 0.5);
-    const sig = (k) => stocks.filter((s) => (s.sig || []).includes(k)).sort((a, b) => (b.mcapUsd || 0) - (a.mcapUsd || 0));
-    const SIGS = [["goldenCross", "Golden crosses", "up", "Golden cross"], ["high20", "20-day breakouts", "up", "20-day breakout"], ["volUp", "Volume surges up", "up", "Volume surge up"],
-      ["deathCross", "Death crosses", "down", "Death cross"], ["low20", "20-day breakdowns", "down", "20-day breakdown"], ["volDown", "Volume surges down", "down", "Volume surge down"]];
-    out.push(card("Highs, lows and chart signals",
-      `<h3>Near a 52-week high or low</h3>${split(hi.length, lo.length, "near highs", "near lows")}
-       <div class="ig-sigs">${SIGS.map(([k, label, t, screen]) => {
-        const arr = sig(k);
-        return `<a class="ig-sig ${t}" href="screener.html?screen=${encodeURIComponent(screen)}" title="${esc(arr.slice(0, 8).map((s) => s.s).join(", ") || "None today")}">
-          <b class="num">${arr.length}</b><span>${label}</span><span class="muted small">${esc(arr.slice(0, 3).map((s) => s.s).join(" · "))}</span></a>`;
-      }).join("")}</div>`,
-      `Chart signals update with each evening's rebuild. <a href="screener.html?screen=Golden%20cross">Signals in the screener</a>`));
-
-    // ---- your watchlist as tiles coloured by today's move
-    const mine = [...new Set(Watch.all().lists.flatMap((l) => l.tickers))].map((t) => byT[t]).filter((s) => s && s.d1 != null);
-    if (mine.length) {
-      const avg = mine.reduce((a, s) => a + s.d1, 0) / mine.length;
-      const max = Math.max(1, ...mine.map((s) => Math.abs(s.d1)));
-      out.push(card(`Your watchlist <span class="ig-tag">${pct(avg, 2)} average</span>`,
-        `<div class="ig-heat">${mine.sort((a, b) => b.d1 - a.d1).map((s) => {
-          const a = Math.min(1, Math.abs(s.d1) / max);
-          return `<a href="${stockUrl(s.t)}" class="${s.d1 >= 0 ? "pos" : "neg"}" style="--a:${(0.15 + a * 0.65).toFixed(2)}" title="${esc(s.n)}: ${sign(s.d1, 2)}"><b>${esc(s.s)}</b><span class="num">${sign(s.d1)}</span></a>`;
+    try {
+      // ---- highs, lows and chart signals
+      const hi = stocks.filter((s) => s.fromHi != null && s.fromHi >= -0.5), lo = stocks.filter((s) => s.fromLo != null && s.fromLo <= 0.5);
+      const sig = (k) => stocks.filter((s) => (s.sig || []).includes(k)).sort((a, b) => (b.mcapUsd || 0) - (a.mcapUsd || 0));
+      const SIGS = [["goldenCross", "Golden crosses", "up", "Golden cross"], ["high20", "20-day breakouts", "up", "20-day breakout"], ["volUp", "Volume surges up", "up", "Volume surge up"],
+        ["deathCross", "Death crosses", "down", "Death cross"], ["low20", "20-day breakdowns", "down", "20-day breakdown"], ["volDown", "Volume surges down", "down", "Volume surge down"]];
+      out.push(card("Highs, lows and chart signals",
+        `<h3>Near a 52-week high or low</h3>${split(hi.length, lo.length, "near highs", "near lows")}
+         <div class="ig-sigs">${SIGS.map(([k, label, t, screen]) => {
+          const arr = sig(k);
+          return `<a class="ig-sig ${t}" href="screener.html?screen=${encodeURIComponent(screen)}" title="${esc(arr.slice(0, 8).map((s) => s.s).join(", ") || "None today")}">
+            <b class="num">${arr.length}</b><span>${label}</span><span class="muted small">${esc(arr.slice(0, 3).map((s) => s.s).join(" · "))}</span></a>`;
         }).join("")}</div>`,
-        `<a href="watchlist.html">Your watchlists and alerts</a>`));
-    }
+        `Chart signals update with each evening's rebuild. <a href="screener.html?screen=Golden%20cross">Signals in the screener</a>`));
+    } catch (e) { console.error("Today brief section failed", e); }
 
-    // ---- the next 7 days: earnings, economic releases and ex-dividend dates per day
-    const today = new Date(); today.setHours(12, 0, 0, 0);
-    const days = [...Array(7)].map((_, n) => { const d = new Date(today); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); });
-    const earn = (k) => stocks.filter((s) => s.earnings === k).sort((a, b) => (b.mcapUsd || 0) - (a.mcapUsd || 0));
-    const econ = (k) => ((E && E.events) || []).filter((e) => e.key && e.d === k && ["US", "CA", "JP"].includes(e.c));
-    const exd = (k) => stocks.filter((s) => s.exDiv === k && s.divYield >= 3);
-    const cols = days.map((k) => ({ k, e: earn(k), c: econ(k), x: exd(k) }));
-    const most = Math.max(1, ...cols.map((c) => c.e.length));
-    if (cols.some((c) => c.e.length || c.c.length || c.x.length)) {
-      out.push(card("Coming up this week",
-        `<div class="ig-week">${cols.map((c) => `<div class="ig-day" title="${c.e.length} earnings reports, ${c.c.length} key economic releases, ${c.x.length} ex-dividend dates (3%+ yield)">
-          <span class="muted">${day(c.k)}</span>
-          <span class="ig-col"><i style="height:${(c.e.length / most * 100).toFixed(0)}%"></i></span>
-          <b class="num">${c.e.length}</b>
-          <span class="ig-names">${c.e.slice(0, 2).map((s) => `<a href="${stockUrl(s.t)}">${esc(s.s)}</a>`).join("")}</span>
-          ${c.c.slice(0, 2).map((e) => `<span class="ig-econ" title="${esc(e.why || e.n)}">${e.f} ${esc(e.n)}</span>`).join("")}
-          ${c.x.length ? `<span class="ig-ex">${c.x.length} ex-div</span>` : ""}
-        </div>`).join("")}</div>
-        <p class="hint">Bars: earnings reports each day. Below them: the biggest companies reporting, key economic releases and ex-dividend dates with yields of 3% or more.</p>`,
-        `<a href="earnings.html#cal">Earnings calendar</a> · <a href="earnings.html?k=econ#cal">Economic calendar</a> · <a href="dividends.html#cal">Ex-dividend dates</a>`, "wide"));
-    }
+    try {
+      // ---- your watchlist as tiles coloured by today's move
+      const mine = [...new Set(Watch.all().lists.flatMap((l) => l.tickers))].map((t) => byT[t]).filter((s) => s && s.d1 != null);
+      if (mine.length) {
+        const avg = mine.reduce((a, s) => a + s.d1, 0) / mine.length;
+        const max = Math.max(1, ...mine.map((s) => Math.abs(s.d1)));
+        out.push(card(`Your watchlist <span class="ig-tag">${pct(avg, 2)} average</span>`,
+          `<div class="ig-heat">${mine.sort((a, b) => b.d1 - a.d1).map((s) => {
+            const a = Math.min(1, Math.abs(s.d1) / max);
+            return `<a href="${stockUrl(s.t)}" class="${s.d1 >= 0 ? "pos" : "neg"}" style="--a:${(0.15 + a * 0.65).toFixed(2)}" title="${esc(s.n)}: ${sign(s.d1, 2)}"><b>${esc(s.s)}</b><span class="num">${sign(s.d1)}</span></a>`;
+          }).join("")}</div>`,
+          `<a href="watchlist.html">Your watchlists and alerts</a>`));
+      }
+    } catch (e) { console.error("Today brief section failed", e); }
+
+    try {
+      // ---- the next 7 days: earnings, economic releases and ex-dividend dates per day
+      const today = new Date(); today.setHours(12, 0, 0, 0);
+      const days = [...Array(7)].map((_, n) => { const d = new Date(today); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); });
+      const earn = (k) => stocks.filter((s) => s.earnings === k).sort((a, b) => (b.mcapUsd || 0) - (a.mcapUsd || 0));
+      const econ = (k) => ((E && E.events) || []).filter((e) => e.key && e.d === k && ["US", "CA", "JP"].includes(e.c));
+      const exd = (k) => stocks.filter((s) => s.exDiv === k && s.divYield >= 3);
+      const cols = days.map((k) => ({ k, e: earn(k), c: econ(k), x: exd(k) }));
+      const most = Math.max(1, ...cols.map((c) => c.e.length));
+      if (cols.some((c) => c.e.length || c.c.length || c.x.length)) {
+        out.push(card("Coming up this week",
+          `<div class="ig-week">${cols.map((c) => `<div class="ig-day" title="${c.e.length} earnings reports, ${c.c.length} key economic releases, ${c.x.length} ex-dividend dates (3%+ yield)">
+            <span class="muted">${day(c.k)}</span>
+            <span class="ig-col"><i style="height:${(c.e.length / most * 100).toFixed(0)}%"></i></span>
+            <b class="num">${c.e.length}</b>
+            <span class="ig-names">${c.e.slice(0, 2).map((s) => `<a href="${stockUrl(s.t)}">${esc(s.s)}</a>`).join("")}</span>
+            ${c.c.slice(0, 2).map((e) => `<span class="ig-econ" title="${esc(e.why || e.n)}">${e.f} ${esc(e.n)}</span>`).join("")}
+            ${c.x.length ? `<span class="ig-ex">${c.x.length} ex-div</span>` : ""}
+          </div>`).join("")}</div>
+          <p class="hint">Bars: earnings reports each day. Below them: the biggest companies reporting, key economic releases and ex-dividend dates with yields of 3% or more.</p>`,
+          `<a href="earnings.html#cal">Earnings calendar</a> · <a href="earnings.html?k=econ#cal">Economic calendar</a> · <a href="dividends.html#cal">Ex-dividend dates</a>`, "wide"));
+      }
+    } catch (e) { console.error("Today brief section failed", e); }
 
     $("brief").innerHTML = out.join("");
     const when = $("brief-when");
