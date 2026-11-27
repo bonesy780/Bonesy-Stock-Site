@@ -1,22 +1,27 @@
+// The week-by-week calendar, shown as a section of the Earnings page (earnings and the economic calendar)
+// and the Dividends page (ex-dividend dates). The page holds <section id="cal" data-kinds="earnings,econ">
+// with the controls below, each id starting with "cal-" so they don't clash with the page's own.
 (async function () {
   const { esc, money, pct, big, stockUrl, store, Watch } = UI;
-  const $ = (id) => document.getElementById(id);
+  const root = document.getElementById("cal");
+  if (!root) return;
+  const $ = (id) => document.getElementById("cal-" + id);
 
   let M;
   try {
     M = await UI.market();
   } catch (e) {
-    $("updated").textContent = "Stock data could not be loaded.";
     $("week").innerHTML = `<div class="panel empty">Stock data could not be loaded. Try again after the next data refresh.</div>`;
     return;
   }
-  UI.updated(M.generated);
 
-  const KINDS = { earnings: "Earnings", exDiv: "Ex-dividend", econ: "Economy" };
-  const state = { kind: "earnings", market: "", mine: false, keyOnly: true, ...store.get("calendar", {}) };
+  const ALL = { earnings: "Earnings", exDiv: "Ex-dividend", econ: "Economy" };
+  const KINDS = Object.fromEntries((root.dataset.kinds || "earnings").split(",").filter((k) => ALL[k]).map((k) => [k, ALL[k]]));
+  const saveKey = "calendar-" + Object.keys(KINDS).join("-");
+  const state = { kind: Object.keys(KINDS)[0], market: "", mine: false, keyOnly: true, ...store.get(saveKey, {}) };
   const asked = new URLSearchParams(location.search).get("k");
-  if (asked && KINDS[asked]) state.kind = asked;
-  if (!KINDS[state.kind]) state.kind = "earnings";
+  if (asked && KINDS[asked]) { state.kind = asked; root.scrollIntoView(); }
+  if (!KINDS[state.kind]) state.kind = Object.keys(KINDS)[0];
   // The economic calendar (econ.json): releases and central bank decisions, by country
   let E = null;
   const econ = () => E || (E = UI.load("econ.json").then((d) => d.events || []).catch(() => []));
@@ -71,10 +76,11 @@
   const esort = { key: "date", dir: 1 };
 
   function render() {
-    store.set("calendar", state);
+    store.set(saveKey, state);
     $("key-wrap").hidden = state.kind !== "econ";
     $("mine-wrap").hidden = state.kind === "econ";
     $("key").checked = state.keyOnly;
+    $("kind").hidden = Object.keys(KINDS).length < 2;
     $("kind").innerHTML = Object.entries(KINDS).map(([k, l]) => `<button role="tab" aria-selected="${k === state.kind}" data-k="${k}">${l}</button>`).join("");
     const days = [...Array(7)].map((_, i) => { const d = new Date(monday); d.setUTCDate(d.getUTCDate() + i); return d; });
     const fmt = (d, o) => d.toLocaleDateString(undefined, { timeZone: "UTC", ...o });

@@ -12,7 +12,8 @@
   }
   const when = new Date(M.generated);
   UI.updated(when);
-  $("lede").textContent = `The last session across the eight markets, in plain words. Written ${when.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}.`;
+  const lede = $("brief-when");
+  if (lede) lede.textContent = `The last session across the eight markets, in plain words. Written ${when.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}.`;
 
   const name = (i) => i.name.replace(/ \(.*\)/, "");
   const link = (s) => `<a class="co-link" href="${stockUrl(s.t)}" title="${esc(s.n)}">${esc(s.s)}</a>`;
@@ -79,7 +80,7 @@
         <div><h3>Down the most</h3><ul class="brief-movers">${l.map((s) => `<li>${link(s)} <span class="muted">${esc(s.n)}</span> ${pct(s.d1, 2)}</li>`).join("")}</ul></div>
       </div>
       ${vol.length ? `<p>Unusually heavy trading in ${list(vol.map((s) => `${link(s)} (${s.relVol.toFixed(1)}× normal volume, ${pct(s.d1)})`))}, often a sign of news.</p>` : ""}`,
-      `Companies worth $10B or more. <a href="movers.html">All movers</a>`);
+      `Companies worth $10B or more. <a href="screener.html?screen=Gainers">All movers in the screener</a>`);
   }
 
   // ---- highs, lows and signals
@@ -94,7 +95,7 @@
       ${gc.length ? `<li>Golden crosses (50-day average moving above the 200-day): ${names(gc)}.</li>` : ""}
       ${dc.length ? `<li>Death crosses (50-day average moving below the 200-day): ${names(dc)}.</li>` : ""}
       ${vu.length ? `<li>Rose on heavy volume: ${names(vu)}.</li>` : ""}
-    </ul>`, `<a href="signals.html">All signals</a>`);
+    </ul>`, `<a href="screener.html?screen=Golden%20cross">Chart signals in the screener</a>`);
 
   // ---- your watchlist
   const mine = [...new Set(Watch.all().lists.flatMap((l) => l.tickers))].map((t) => M.byTicker[t]).filter((s) => s && s.d1 != null);
@@ -125,7 +126,7 @@
       ${econ.length ? `<p class="brief-lead">On the economic calendar: ${list(econ.slice(0, 6).map((e) => `${e.f} ${esc(e.n)} (${new Date(e.d + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short" })})`))}.</p>` : ""}
       ${earn.length ? `<p class="brief-lead">${earn.length} companies report earnings in the next 7 days, including ${list(earn.slice(0, 6).map((s) => `${link(s)} (${new Date(s.earnings + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short" })})`))}.</p>` : ""}
       ${exd.length ? `<p>Going ex-dividend with yields of 3% or more: ${list(exd.slice(0, 5).map((s) => `${link(s)} ${s.divYield.toFixed(1)}%`))}.</p>` : ""}`,
-      `<a href="calendar.html">Calendar</a> · <a href="calendar.html?k=econ">Economic calendar</a> · <a href="dividends.html">Dividends</a>`);
+      `<a href="earnings.html#cal">Earnings calendar</a> · <a href="earnings.html?k=econ#cal">Economic calendar</a> · <a href="dividends.html#cal">Ex-dividend dates</a>`);
   }
 
   $("brief").innerHTML = sections.join("");

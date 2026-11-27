@@ -1,10 +1,10 @@
+// Price alerts, a section of the Watchlists page (<section id="alerts">, with every id inside starting "al-").
+// The 🔔 on a watchlist row sends an "alert-for" event with the stock, which picks it here.
 (async function () {
   const { esc, money, pct, stockUrl, Alerts } = UI;
-  const $ = (id) => document.getElementById(id);
+  if (!document.getElementById("alerts")) return;
+  const $ = (id) => document.getElementById("al-" + id);
   const M = await UI.market().catch(() => null);
-  if (M) {
-    UI.updated(M.generated, "Prices updated");
-  }
   const stocks = await UI.load("stocks.json").catch(() => []);
   const byT = Object.fromEntries(stocks.map((s) => [s.t, s]));
   const live = {};
@@ -131,8 +131,19 @@
   pushView();
 
   window.addEventListener("alerts", render);
-  const want = new URLSearchParams(location.search).get("t");
-  if (want && byT[want]) { pick = want; $("sym").placeholder = `${byT[want].s} · ${byT[want].n}`; }
+  const choose = (t) => {
+    pick = t;
+    $("sym").placeholder = `${symOf(t)} · ${nameOf(t)}`;
+    showNow(); refresh();
+  };
+  // ?alert=AAPL (from a stock page, or the old Alerts page's ?t=) picks that stock
+  const want = new URLSearchParams(location.search).get("alert");
+  if (want && (byT[want] || (M && M.byTicker[want]))) { choose(want); setTimeout(() => document.getElementById("alerts").scrollIntoView(), 300); }
+  window.addEventListener("alert-for", (e) => {
+    choose(e.detail);
+    document.getElementById("alerts").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("value").focus({ preventScroll: true });
+  });
   showNow();
   render();
 

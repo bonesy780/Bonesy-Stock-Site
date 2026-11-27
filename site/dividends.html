@@ -55,6 +55,24 @@
   <p class="hint" id="explain"></p>
   <div class="panel table-wrap" id="table"></div>
 
+  <section class="cal-embed" id="cal" data-kinds="exDiv">
+    <div class="section-head">
+      <h2>Ex-dividend calendar</h2>
+      <p>Which stocks go ex-dividend each day. To get the next payment you need to own the stock before its ex-dividend date.</p>
+    </div>
+    <div class="toolbar">
+      <div class="seg" id="cal-kind" role="tablist" aria-label="Calendar"></div>
+      <div class="seg" id="cal-weeknav"><button id="cal-prev" aria-label="Previous week">‹</button><button id="cal-this">This week</button><button id="cal-next" aria-label="Next week">›</button></div>
+      <strong id="cal-week-label"></strong>
+      <span class="spacer"></span>
+      <label class="hint">Market <select class="field" id="cal-market"><option value="">All markets</option></select></label>
+      <label class="hint check" id="cal-mine-wrap"><input type="checkbox" id="cal-mine"> My watchlists only</label>
+      <label class="hint check" id="cal-key-wrap" hidden><input type="checkbox" id="cal-key"> Market movers only</label>
+    </div>
+    <div class="cal-week" id="cal-week"></div>
+    <div class="subhead"><h3 id="cal-list-title">This week in detail</h3><p id="cal-list-help"></p></div>
+    <div class="panel table-wrap" id="cal-table"></div>
+  </section>
   <section class="panel div-plan" id="plan">
     <div class="div-plan-head">
       <div>
@@ -77,6 +95,7 @@
 <script src="common.js?v=__V__"></script>
 <script src="live.js?v=__V__"></script>
 <script src="dividends.js?v=__V__"></script>
+<script src="calendar.js?v=__V__"></script>
 <script src="theme.js?v=__V__" defer></script>
 </body>
 </html>

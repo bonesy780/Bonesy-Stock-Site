@@ -457,7 +457,10 @@ section { margin-bottom: 40px; }
 .toolbar label { display: inline-flex; align-items: center; gap: 6px; }
 
 /* stock screener */
-.presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.presets { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.preset-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.preset-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); min-width: 64px; }
+.signal-help { margin: 8px 0 0; }
 .presets .chip { font-size: 13px; padding: 5px 12px; }
 .screen { padding: 14px 16px 4px; margin-bottom: 16px; }
 .screen-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -597,8 +600,9 @@ button.heat-sec-name i { font-style: normal; opacity: .75; }
 @media (max-width: 640px) { .calc-grid { grid-template-columns: 1fr; } }
 
 /* earnings and dividend calendar */
-#weeknav button { font-size: 15px; }
-#weeknav #this { font-size: 13px; }
+#cal-weeknav button { font-size: 15px; }
+#cal-weeknav #cal-this { font-size: 13px; }
+.cal-embed { margin-top: 28px; }
 label.check { display: inline-flex; gap: 6px; align-items: center; }
 .cal-week { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 8px; }
 .cal-day { padding: 12px; min-height: 160px; }
@@ -807,12 +811,19 @@ table.rot-table { min-width: 620px; font-size: 13px; }
 .pf-notes li.warn { background: var(--down-soft); }
 .pf-notes li.good { background: var(--up-soft); }
 
-/* ---- Grouped menu on wide screens, one scrolling row on narrow ones */
+/* ---- Grouped menu. On narrow screens the row scrolls sideways and a drop-down opens as a panel under it */
 .top .menu .menu-wide, .top .menu .menu-flat { display: flex; gap: 2px; align-items: center; }
+/* The real estate and Daily News menus still pair a wide row with a flat one for phones */
 .top .menu .menu-flat { display: none; }
 @media (max-width: 900px) {
-  .top .menu .menu-wide { display: none; }
+  .top .menu .menu-wide:has(+ .menu-flat) { display: none; }
   .top .menu .menu-flat { display: flex; }
+}
+.top .menu .menu-group { flex: none; }
+.top .menu .menu-btn { white-space: nowrap; }
+@media (max-width: 900px) {
+  .top .menu .menu-btn { padding: 6px 10px; font-size: 13px; }
+  .top .menu .menu-pop { position: fixed; left: 12px; right: 12px; min-width: 0; display: grid; grid-template-columns: 1fr 1fr; box-shadow: 0 12px 32px rgba(0, 0, 0, .18); }
 }
 @media (min-width: 901px) {
   .top .menu { overflow: visible; }
@@ -834,6 +845,11 @@ table.rot-table { min-width: 620px; font-size: 13px; }
 .wl-note { all: unset; cursor: pointer; color: var(--muted); font-size: 13px; padding: 2px 6px; border-radius: 6px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
 .wl-note:hover, .wl-note:focus-visible { background: var(--surface-2); color: var(--text); }
 .wl-note.has { color: var(--text); }
+.wl-bell { all: unset; cursor: pointer; font-size: 14px; padding: 2px 6px; border-radius: 6px; opacity: .45; display: inline-flex; gap: 3px; align-items: center; }
+.wl-bell:hover, .wl-bell:focus-visible { background: var(--surface-2); opacity: 1; }
+.wl-bell.on { opacity: 1; }
+.wl-bell .num { font-size: 12px; color: var(--accent); }
+.wl-alerts { margin-top: 32px; scroll-margin-top: 90px; }
 .wl-dlg { width: min(460px, calc(100vw - 32px)); padding: 20px; color: var(--text); }
 .wl-dlg::backdrop { background: rgba(0,0,0,.45); }
 .wl-dlg h2 { margin: 0 0 2px; font-size: 18px; }
@@ -950,31 +966,6 @@ table.op-table { min-width: 0; }
 .line-label select { padding: 4px 8px; font-size: 12px; }
 
 /* Ask page */
-.ask { padding: 0; overflow: hidden; }
-.ask-log { max-height: min(60vh, 560px); min-height: 220px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-.ask-intro p { margin: 0 0 10px; color: var(--muted); }
-.ask-msg { display: flex; }
-.ask-msg.me { justify-content: flex-end; }
-.ask-msg .bubble { max-width: min(680px, 88%); padding: 10px 14px; border-radius: 14px; line-height: 1.5; font-size: 14px; overflow-wrap: anywhere; }
-.ask-msg.me .bubble { background: var(--accent); color: var(--on-color); border-bottom-right-radius: 4px; }
-.ask-msg.bot .bubble { background: var(--bg); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-.ask-msg .bubble p { margin: 0 0 8px; }
-.ask-msg .bubble p:last-of-type { margin-bottom: 0; }
-.ask-msg .bubble.wait { color: var(--muted); font-style: italic; }
-.ask-msg .bubble .hint { display: block; margin-top: 8px; }
-.ask-page { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
-.ask-page:hover { text-decoration: underline; }
-.ask-related { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
-.ask-related .chip, .ask-intro .chip { font-size: 12px; text-align: left; }
-.ask-form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
-.ask-form .field { flex: 1; }
-.ask-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 0 16px 12px; flex-wrap: wrap; }
-.ask-topics { margin-top: 18px; }
-.ask-topic { border-top: 1px solid var(--border); }
-.ask-topic summary { cursor: pointer; padding: 11px 16px; font-weight: 500; font-size: 14px; }
-.ask-topic summary:hover { color: var(--accent); }
-.ask-body { padding: 0 16px 14px; font-size: 14px; line-height: 1.55; color: var(--text); }
-.ask-body p { margin: 0 0 8px; }
 
 /* ---- page background: plain, with a faint grid that fades out down the page */
 body { position: relative; }
@@ -1284,3 +1275,27 @@ body::before {
   .ad-head .seg { margin-bottom: 12px; }
 }
 .ad-tags .tag .up, .story-meta .tag .up { color: var(--up); } .ad-tags .tag .down, .story-meta .tag .down { color: var(--down); }
+
+/* ---- Today page (brief, news and the weekly recap on one page) */
+.today-jump { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+.today-jump .chip { text-decoration: none; }
+.today-sec { margin-top: 28px; scroll-margin-top: 90px; }
+
+/* ---- About the data */
+.about-find { flex: 1 1 260px; max-width: 420px; }
+.about-list { display: grid; gap: 8px; }
+.about-topic summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
+.about-topic p { margin: 10px 0 0; color: var(--text, inherit); line-height: 1.55; }
+.about-topic .about-go { display: inline-block; margin-top: 8px; font-size: 14px; }
+
+/* ---- Markets page: how past buy ideas have done (picks.js) */
+.track { padding: 16px 18px; display: grid; gap: 14px; }
+.track-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.track-stats > div { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; }
+.track-stats b { font-size: 20px; }
+.track-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.track-two h3 { margin: 0 0 6px; font-size: 14px; }
+.track-weeks { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.track-weeks li { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: space-between; padding: 6px 0; border-top: 1px solid var(--border); font-size: 14px; }
+.track .hint { margin: 0; }
+.track-stats .small { font-size: 12px; }

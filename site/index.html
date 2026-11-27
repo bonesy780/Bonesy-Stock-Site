@@ -40,7 +40,7 @@
     const pick = localStorage.getItem("home-pick");
     let fromHere = false;
     try { fromHere = !!document.referrer && new URL(document.referrer).host === location.host; } catch {}
-    if (pick && !fromHere && !/[?&]choose/.test(location.search)) location.replace(pick === "re" ? "re/" : pick === "daily" ? "daily/" : "news.html");
+    if (pick && !fromHere && !/[?&]choose/.test(location.search)) location.replace(pick === "re" ? "re/" : pick === "daily" ? "daily/" : "today.html");
   } catch {}
 </script>
 </head>
@@ -68,7 +68,7 @@
 
   <section class="hm-grid" aria-label="Choose where to go">
     <!-- 1. Stocks -->
-    <a class="hm-card hm-stocks" href="news.html" data-pick="stocks">
+    <a class="hm-card hm-stocks" href="today.html" data-pick="stocks">
       <div class="hm-art" aria-hidden="true">
         <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
           <defs>
@@ -214,7 +214,7 @@
       <a href="re/world.html" data-pick="re"><span>🌍</span><b>World housing</b><i>60 countries ranked</i></a>
       <a href="re/listings.html" data-pick="re"><span>🏡</span><b>Homes for sale</b><i>big North American cities</i></a>
       <a href="re/tools.html" data-pick="re"><span>🧮</span><b>Mortgage calculator</b><i>U.S., Canada, Mexico</i></a>
-      <a href="daily/" data-pick="daily"><span>⚡</span><b>2-minute briefing</b><i>the day in one read</i></a>
+      <a href="today.html" data-pick="stocks"><span>⚡</span><b>Today in markets</b><i>brief, news and the week</i></a>
       <a href="portfolio.html" data-pick="stocks"><span>🎮</span><b>Paper trading</b><i>practice with pretend cash</i></a>
     </div>
   </section>

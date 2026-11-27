@@ -15,7 +15,7 @@ self.addEventListener("push", (e) => {
       items = (d.fired || []).slice(0, Math.max(1, Math.min(3, d.unread || 1)));
     } catch (err) { /* fall back to a general notice */ }
     if (!items.length) {
-      return self.registration.showNotification("Price alert", { body: "One of your price alerts went off. Open the Alerts page to see it.", tag: "price-alert", icon: "icon-192.png", data: { url: "alerts.html" } });
+      return self.registration.showNotification("Price alert", { body: "One of your price alerts went off. Open Watchlists & Alerts to see it.", tag: "price-alert", icon: "icon-192.png", data: { url: "watchlist.html#alerts" } });
     }
     for (const a of items) {
       await self.registration.showNotification("🔔 Price alert", {
@@ -28,7 +28,7 @@ self.addEventListener("push", (e) => {
 
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
-  const url = new URL((e.notification.data && e.notification.data.url) || "alerts.html", self.registration.scope).href;
+  const url = new URL((e.notification.data && e.notification.data.url) || "watchlist.html#alerts", self.registration.scope).href;
   e.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const w of wins) if (w.url === url && "focus" in w) return w.focus();

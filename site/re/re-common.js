@@ -385,7 +385,7 @@
     if (menu) {
       const isHere = ([href, , also]) => href === here || (also || []).includes(here);
       const link = (p) => `<a href="${p[0]}"${isHere(p) ? ' aria-current="page"' : ""}>${esc(p[1])}</a>`;
-      const row = PAGES.map(link).join("") + `<a class="menu-switch" href="../news.html" title="Go to the stock market site">Stocks ↗</a><a class="menu-switch" href="../daily/" title="The day's headlines from about 90 outlets">Daily News ↗</a>`;
+      const row = PAGES.map(link).join("") + `<a class="menu-switch" href="../today.html" title="Go to the stock market site">Stocks ↗</a><a class="menu-switch" href="../daily/" title="The day's headlines from about 90 outlets">Daily News ↗</a>`;
       menu.innerHTML = `<div class="menu-wide">${row}</div><div class="menu-flat">${row}</div>`;
       const on = menu.querySelector(".menu-flat [aria-current]");
       if (on && getComputedStyle(menu.querySelector(".menu-flat")).display !== "none") on.scrollIntoView({ block: "nearest", inline: "center" });

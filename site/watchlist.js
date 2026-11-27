@@ -63,6 +63,10 @@
     { key: "toTarget", label: "My target", title: "Your own target price, and how far the price is from it", val: (r) => r.toTarget,
       html: (r) => r.target ? `<span class="num">${money(r.target, r.cur)}</span><div class="${Math.abs(r.toTarget) < 2 ? "pill buy" : "tk"}">${Math.abs(r.toTarget) < 2 ? "Near target" : (r.toTarget > 0 ? "+" : "") + r.toTarget.toFixed(1) + "%"}</div>` : "–" },
     { key: "note", label: "Notes", sm: true, html: (r) => `<button class="wl-note ${r.note || r.target ? "has" : ""}" data-note="${esc(r.t)}" title="${r.note ? esc(r.note) : "Add a note or target price"}" aria-label="Notes for ${esc(r.s)}">${r.note ? esc(r.note.length > 16 ? r.note.slice(0, 15) + "…" : r.note) : "✎"}</button>` },
+    { key: "bell", label: "Alert", sm: true, html: (r) => {
+      const n = UI.Alerts.all().active.filter((x) => x.t === r.t).length;
+      return `<button class="wl-bell${n ? " on" : ""}" data-bell="${esc(r.t)}" title="${n ? `${n} alert${n > 1 ? "s" : ""} set. Add another` : "Set a price alert"}" aria-label="Price alert for ${esc(r.s)}">🔔${n ? `<span class="num">${n}</span>` : ""}</button>`;
+    } },
     { key: "rm", label: "", sm: true, html: (r) => `<button class="x" data-rm="${esc(r.t)}" title="Remove ${esc(r.s)} from this list" aria-label="Remove ${esc(r.s)}">✕</button>` },
   ];
   let confirmDelete = false;
@@ -109,6 +113,11 @@
     confirmDelete = false;
     Watch.save(v);
   });
+  $("table").addEventListener("click", (e) => {
+    const bell = e.target.closest("[data-bell]");
+    if (bell) { window.dispatchEvent(new CustomEvent("alert-for", { detail: bell.dataset.bell })); return; }
+  });
+  window.addEventListener("alerts", () => render());
   $("table").addEventListener("click", (e) => {
     const b = e.target.closest("[data-rm]");
     if (!b) return;
@@ -185,6 +194,13 @@
   // ---- notes dialog
   const dlg = $("note-dlg");
   let editing = null;
+  // "Set a price alert" in the dialog: close it and pick this stock in the alerts section
+  dlg.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-close-note]")) return;
+    e.preventDefault();
+    dlg.close();
+    if (editing) window.dispatchEvent(new CustomEvent("alert-for", { detail: editing }));
+  });
   $("table").addEventListener("click", (e) => {
     const b = e.target.closest("[data-note]");
     if (!b) return;
