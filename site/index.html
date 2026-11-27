@@ -40,7 +40,7 @@
     const pick = localStorage.getItem("home-pick");
     let fromHere = false;
     try { fromHere = !!document.referrer && new URL(document.referrer).host === location.host; } catch {}
-    if (pick && !fromHere && !/[?&]choose/.test(location.search)) location.replace(pick === "re" ? "re/" : pick === "daily" ? "daily/" : "today.html");
+    if (pick && !fromHere && !/[?&]choose/.test(location.search)) location.replace(pick === "re" ? "re/" : pick === "daily" ? "daily/" : "news.html");
   } catch {}
 </script>
 </head>
@@ -68,7 +68,7 @@
 
   <section class="hm-grid" aria-label="Choose where to go">
     <!-- 1. Stocks -->
-    <a class="hm-card hm-stocks" href="today.html" data-pick="stocks">
+    <a class="hm-card hm-stocks" href="news.html" data-pick="stocks">
       <div class="hm-art" aria-hidden="true">
         <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice">
           <defs>

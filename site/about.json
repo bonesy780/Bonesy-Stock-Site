@@ -116,7 +116,7 @@
  {
   "id": "news",
   "title": "Where does the news come from?",
-  "page": "today.html#news",
+  "page": "news.html",
   "answer": "Market news comes from Yahoo Finance's headlines for each index and its biggest companies, topped up with Google News search results, keeping stories from the last 7 days. 'Top stories' takes the 10 newest stories from each of 10 outlets: their own RSS feeds for the Wall Street Journal, Financial Times, Bloomberg, CNBC, MarketWatch, The Economist, Forbes and Investing.com, and Google News limited to the outlet's site for Reuters and Yahoo Finance, which have no public feed. Stories marked 'Subscription' may need a paid account to read."
  },
  {
