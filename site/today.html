@@ -6,7 +6,7 @@
 <script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
 <meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
 <title>Today · TopTicker</title>
-<meta name="description" content="Today in the markets: a plain-language brief on the last session across eight markets, the day&#x27;s top market news from major outlets, and the weekly recap with how past buy ideas have done.">
+<meta name="description" content="Today in the markets as charts: index moves, breadth, sectors, big movers, signals and the week ahead across eight markets, refreshed every 15 minutes, plus the weekly recap with how past buy ideas have done.">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="canonical" href="https://www.topticker.ca/today.html">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TopTicker">
 <meta property="og:title" content="Today · TopTicker">
-<meta property="og:description" content="Today in the markets: a plain-language brief on the last session across eight markets, the day&#x27;s top market news from major outlets, and the weekly recap with how past buy ideas have done.">
+<meta property="og:description" content="Today in the markets as charts: index moves, breadth, sectors, big movers, signals and the week ahead across eight markets, refreshed every 15 minutes, plus the weekly recap with how past buy ideas have done.">
 <meta property="og:url" content="https://www.topticker.ca/today.html">
 <meta property="og:image" content="https://www.topticker.ca/img/share-stocks.png">
 <meta property="og:image:width" content="1200">
@@ -40,12 +40,11 @@
 <main id="main" class="wrap">
   <section class="hero">
     <h1>Today in the markets</h1>
-    <p>The last session across the eight markets in plain words, the day's market news, and the week's recap with how the site's past picks have done.</p>
+    <p>The last session across the eight markets in plain words, and the week's recap with how the site's past picks have done.</p>
   </section>
 
   <nav class="chips today-jump" aria-label="On this page">
-    <a class="chip" href="#brief-sec">Brief</a>
-    <a class="chip" href="#news-sec">News</a>
+    <a class="chip" href="#brief-sec">At a glance</a>
     <a class="chip" href="#recap">This week and the picks</a>
   </nav>
 
@@ -60,34 +59,23 @@
 
     <section class="today-sec" id="brief-sec">
       <div class="section-head" id="brief-head">
-        <h2>The brief</h2>
+        <h2>The markets at a glance</h2>
         <p id="brief-when">The last session across the eight markets, in plain words.</p>
       </div>
       <div class="brief" id="brief"></div>
     </section>
-
-    <section class="today-sec" id="news-sec">
-      <div class="section-head">
-        <h2>Market news</h2>
-        <p>Top stories from ten major financial outlets, plus the past week's stories for each of the eight markets and their biggest companies.</p>
-      </div>
-      <nav class="tabs" id="tabs" aria-label="Market"></nav>
-      <section id="news" class="news" aria-live="polite"></section>
-    </section>
   </div>
 
-  <p class="disclaimer"><strong>Not financial advice.</strong> The brief and recap are written automatically from the latest data from Yahoo Finance, which can be delayed or wrong. The picks are automatic screens, not recommendations, and past results don't predict future ones; returns are price changes before dividends, fees and taxes, in each stock's own currency. Headlines link to the original publishers and are gathered automatically from Yahoo Finance and Google News. 🔒 Subscription means a paid subscription is needed to read the story, and 🔑 Sign-in means the outlet gives a few free stories before asking you to sign in.</p>
+  <p class="disclaimer"><strong>Not financial advice.</strong> The brief and recap are written automatically from the latest data from Yahoo Finance, which can be delayed or wrong. The picks are automatic screens, not recommendations, and past results don't predict future ones; returns are price changes before dividends, fees and taxes, in each stock's own currency.</p>
 </main>
 
-<footer class="wrap foot">Data: Yahoo Finance via yfinance. News: Yahoo Finance and Google News.</footer>
+<footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
 
 <script src="common.js?v=__V__"></script>
 <script src="live.js?v=__V__"></script>
 <script src="macro.js?v=__V__"></script>
-<script src="paywall.js?v=__V__"></script>
 <script src="today.js?v=__V__"></script>
 <script src="brief.js?v=__V__"></script>
-<script src="news.js?v=__V__"></script>
 <script src="recap.js?v=__V__"></script>
 <script src="theme.js?v=__V__" defer></script>
 </body>

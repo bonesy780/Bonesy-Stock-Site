@@ -597,6 +597,15 @@ def build():
         tape["items"].append({"t": ixo["benchmark"], "ix": ixo["id"], "p": ixo["level"], "c": ixo["chg1d"]})
         tape["items"] += [{"t": r["ticker"], "s": r["symbol"], "p": r.get("price"), "c": r.get("chg1d")} for r in ixo["top"][:3]]
     write_json(OUT.parent / "tape.json", tape, allow_nan=False, default=str)
+    # Small file for the Today page's brief, rewritten every run (every 15 minutes while markets trade): each
+    # stock's latest price, day and week change and distance from its 52-week high, so the charts there move
+    # through the day instead of waiting for the evening rebuild of market.json
+    def r2(v):
+        return None if v is None or v != v else round(float(v), 2)
+    pulse = {"generated": out["generated"],
+             "s": {t: [float(f"{r['price']:.5g}"), r2(r.get("chg1d")), r2(r.get("chg1w")), r2(r.get("fromHigh"))]
+                   for t, r in everyone.items() if r.get("price") is not None}}
+    write_json(OUT.parent / "pulse.json", pulse, allow_nan=False, default=str)
     for ixo in indexes_out:
         log(f"{ixo['name']}: {ixo['priced']}/{ixo['members']} priced, top: "
             + ", ".join(f"{r['symbol']} {r['chg3m']:+.0f}%" for r in ixo["top"][:3]))

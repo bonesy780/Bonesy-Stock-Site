@@ -1,5 +1,6 @@
 site/data.json
 site/tape.json
+site/pulse.json
 __pycache__/
 site/news.json
 site/stocks.json

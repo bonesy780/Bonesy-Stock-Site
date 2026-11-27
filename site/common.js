@@ -5,7 +5,8 @@
   // Top-level links first, then three drop-downs. Every screen size shows the same short row; the drop-downs
   // open as a panel under the menu on phones.
   const PAGES = [
-    ["today.html", "Today", ["news.html", "brief.html", "recap.html"]],
+    ["news.html", "News"],
+    ["today.html", "Today", ["brief.html", "recap.html"]],
     ["markets.html", "Top 10"],
     ["heatmap.html", "Heatmap"],
     ["screener.html", "Screener", ["movers.html", "signals.html"]],

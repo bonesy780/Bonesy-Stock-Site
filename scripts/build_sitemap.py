@@ -15,7 +15,7 @@ BASE = "https://www.topticker.ca/"
 SITE = Path(__file__).resolve().parent.parent / "site"
 
 PAGES = [
-    "", "today.html", "markets.html", "stock.html", "screener.html",
+    "", "news.html", "today.html", "markets.html", "stock.html", "screener.html",
     "heatmap.html", "aerospace.html", "analysts.html", "dividends.html", "earnings.html",
     "compare.html", "plan.html", "backtest.html", "options.html", "tools.html", "watchlist.html", "portfolio.html",
     "about.html", "funds.html", "insiders.html", "account.html", "daily/",

@@ -5,7 +5,7 @@
   const $ = (id) => document.getElementById(id);
   const PAGE_NAMES = {
     "markets.html": "Markets", "stock.html": "Stock Lookup", "watchlist.html": "Watchlists", "portfolio.html": "Paper Trading",
-    "screener.html": "Screener", "today.html": "Today", "today.html#recap": "the weekly recap", "today.html#news": "Market news", "heatmap.html": "Heatmap",
+    "screener.html": "Screener", "today.html": "Today", "today.html#recap": "the weekly recap", "news.html": "Market News", "heatmap.html": "Heatmap",
     "analysts.html": "Analysts", "dividends.html": "Dividends", "earnings.html": "Earnings", "earnings.html#cal": "the calendar",
     "compare.html": "Compare", "backtest.html": "Backtest", "options.html": "Options", "funds.html": "ETFs & Crypto", "insiders.html": "Insiders",
     "daily/": "Daily News", "re/": "Real Estate", "re/listings.html": "Homes for sale", "re/world.html": "World housing markets",
@@ -16,7 +16,7 @@
   catch { $("topics").innerHTML = `<div class="panel empty">The notes could not be loaded. Try reloading the page.</div>`; return; }
   const link = (k) => {
     if (!k.page) return "";
-    const href = k.page.replace("today.html#recap", "today.html#recap-sec").replace("today.html#news", "today.html#news-sec");
+    const href = k.page.replace("today.html#recap", "today.html#recap-sec");
     return `<a class="about-go" href="${esc(href)}">Open ${esc(PAGE_NAMES[k.page] || k.page)} →</a>`;
   };
   function render() {
