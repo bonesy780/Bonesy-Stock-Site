@@ -216,8 +216,6 @@ jobs:
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python scripts/build_re_invest.py
-      - name: Give the live service the Ask page's notes
-        run: cp site/ask-kb.json worker/ask-kb.json
       - name: Deploy the live price service
         id: worker
         if: steps.mode.outputs.full == 'true' && env.CF_TOKEN != '' && env.CF_ACCOUNT != ''
@@ -227,7 +225,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: worker
-      - name: Switch on Claude answers for the Ask page
+      - name: Switch on Claude for "Explain this stock"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

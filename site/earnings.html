@@ -40,7 +40,7 @@
 <main id="main" class="wrap">
   <section class="hero">
     <h1>Earnings: coming up and just reported</h1>
-    <p>Who reports today, tomorrow, over the next week and over the next month. Prices often jump or drop on earnings day, so it helps to know what is coming for the stocks you own or watch. Below that, see who beat or missed expectations in the last month.</p>
+    <p>Who reports today, tomorrow, over the next week and over the next month. Prices often jump or drop on earnings day, so it helps to know what is coming for the stocks you own or watch. Below that, see who beat or missed expectations in the last month, and a week-by-week calendar of earnings and economic releases.</p>
   </section>
 
   <div class="toolbar">
@@ -66,7 +66,26 @@
     <div class="panel table-wrap" id="results"></div>
   </section>
 
-  <p class="disclaimer"><strong>Not financial advice.</strong> Dates come from Yahoo Finance and refresh every weekday after the US close. Dates marked "estimated" are not yet confirmed by the company and often move. Report times are shown in your own time zone. Check the company's investor relations page before trading around a report.</p>
+  <section class="cal-embed" id="cal" data-kinds="earnings,econ">
+    <div class="section-head">
+      <h2>Week by week: earnings and the economy</h2>
+      <p>Pick a week to see who reports each day, or switch to the economic calendar: jobs, inflation and GDP releases and central bank rate decisions, which can move the whole market.</p>
+    </div>
+    <div class="toolbar">
+      <div class="seg" id="cal-kind" role="tablist" aria-label="Calendar"></div>
+      <div class="seg" id="cal-weeknav"><button id="cal-prev" aria-label="Previous week">‹</button><button id="cal-this">This week</button><button id="cal-next" aria-label="Next week">›</button></div>
+      <strong id="cal-week-label"></strong>
+      <span class="spacer"></span>
+      <label class="hint">Market <select class="field" id="cal-market"><option value="">All markets</option></select></label>
+      <label class="hint check" id="cal-mine-wrap"><input type="checkbox" id="cal-mine"> My watchlists only</label>
+      <label class="hint check" id="cal-key-wrap" hidden><input type="checkbox" id="cal-key"> Market movers only</label>
+    </div>
+    <div class="cal-week" id="cal-week"></div>
+    <div class="subhead"><h3 id="cal-list-title">This week in detail</h3><p id="cal-list-help"></p></div>
+    <div class="panel table-wrap" id="cal-table"></div>
+  </section>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Dates come from Yahoo Finance and refresh every weekday after the US close. Dates marked "estimated" are not yet confirmed by the company and often move. Report times are shown in your own time zone. Check the company's investor relations page before trading around a report. Economic releases come from Nasdaq's economic calendar and refresh through the day.</p>
 </main>
 
 <footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
@@ -75,6 +94,7 @@
 <script src="live.js?v=__V__"></script>
 <script src="earnings.js?v=__V__"></script>
 <script src="earnings-results.js?v=__V__"></script>
+<script src="calendar.js?v=__V__"></script>
 <script src="theme.js?v=__V__" defer></script>
 </body>
 </html>

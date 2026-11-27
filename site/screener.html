@@ -40,16 +40,18 @@
 <main id="main" class="wrap">
   <section class="hero">
     <h1>Stock screener</h1>
-    <p>Filter about 1,450 stocks in the eight markets by size, valuation, growth, dividends, price moves, technicals and analyst views. Start from a ready-made screen or build your own.</p>
+    <p>Filter about 1,450 stocks in the eight markets by size, valuation, growth, dividends, price moves, technicals and analyst views. Start from a ready-made screen, today’s movers or a chart signal, or build your own.</p>
   </section>
 
-  <div class="presets" id="presets" role="group" aria-label="Ready-made screens"></div>
+  <div class="presets" id="presets" role="group" aria-label="Ready-made screens, movers and chart signals"></div>
 
   <div class="panel screen">
     <div class="screen-head">
       <div class="chips" id="markets" role="group" aria-label="Markets"></div>
       <label class="hint">Sector <select class="field" id="sector"><option value="">Any sector</option></select></label>
+      <label class="hint">Chart signal <select class="field" id="signal"><option value="">Any or none</option></select></label>
     </div>
+    <p class="hint signal-help" id="signal-help" hidden></p>
     <div class="filters" id="filters"></div>
     <div class="toolbar screen-tools">
       <select class="field" id="add" aria-label="Add a filter"><option value="">+ Add a filter…</option></select>

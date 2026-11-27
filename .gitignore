@@ -8,7 +8,6 @@ site/market.json
 site/fund/
 site/trends.json
 site/ratings/
-worker/ask-kb.json
 site/re/data.json
 site/re/hist.json
 site/re/listings.json

@@ -14,7 +14,7 @@
   const cls = (v) => (v == null ? "" : v >= 0 ? "up" : "down");
   const out = (label, value, extra = "", c = "") => `<div class="calc-out ${extra}"><span>${esc(label)}</span><strong class="num ${c}">${value}</strong></div>`;
 
-  // A little line chart for the growth and options calculators
+  // A little line chart for the calculators that show growth over time
   function lineChart(pts, { W = 460, H = 180, zero = false, fmtY = (v) => v.toFixed(0), fmtX = (x) => x, fill = true } = {}) {
     if (pts.length < 2) return "";
     const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
@@ -34,6 +34,8 @@
       <text class="axis" x="${W - pad.r}" y="${H - 4}" text-anchor="end">${fmtX(xs[xs.length - 1])}</text></svg>`;
   }
 
+  // The options payoff, compound growth and dividend income calculators were dropped: the Options page,
+  // the Invest Plan and the Dividends income planner do those jobs.
   // Each calculator: inputs [id, label, default, opts] and a calc(values) returning the result HTML.
   // A "stock" input lets the reader pick a stock to fill `fills` from its latest data.
   const CALCS = [
@@ -83,49 +85,6 @@
         return out("New average cost", f2(na), "lead") + out("Total shares", total.toLocaleString()) + out("Total invested", f2(cost))
           + out("Change in average", p2(v.avg ? (na / v.avg - 1) * 100 : null), "", cls(-(na - v.avg)))
           + out("Rise needed to break even", p2(v.price ? (na / v.price - 1) * 100 : null).replace("+", ""));
-      },
-    },
-    {
-      id: "div", title: "Dividend income",
-      intro: "Yearly and monthly income from a dividend stock, and what reinvesting the dividends (DRIP) could grow to.",
-      stock: { p: "price", divYield: "yield" },
-      inputs: [["amount", "Amount invested ($)", 10000], ["price", "Share price", 40], ["yield", "Dividend yield (%)", 4], ["growth", "Dividend growth per year (%)", 5], ["priceGrowth", "Share price growth per year (%)", 3], ["years", "Years", 20], ["drip", "Reinvest dividends", 1, { type: "check" }]],
-      calc: (v) => {
-        const shares0 = v.price ? v.amount / v.price : 0;
-        const income = v.amount * v.yield / 100;
-        let shares = shares0, price = v.price, dps = v.price * v.yield / 100, total = 0;
-        const pts = [[0, v.amount]];
-        for (let y = 1; y <= Math.min(60, Math.max(0, Math.round(v.years))); y++) {
-          const paid = shares * dps;
-          total += paid;
-          price *= 1 + v.priceGrowth / 100;
-          if (v.drip) shares += paid / price;
-          dps *= 1 + v.growth / 100;
-          pts.push([y, shares * price]);
-        }
-        const finalIncome = shares * dps / (1 + v.growth / 100);
-        return out("Yearly income now", f2(income), "lead") + out("Monthly", f2(income / 12)) + out("Quarterly", f2(income / 4))
-          + out("Shares bought", shares0.toLocaleString(undefined, { maximumFractionDigits: 2 }))
-          + out(`Value after ${Math.round(v.years)} years`, f2(pts[pts.length - 1][1])) + out(`Yearly income in year ${Math.round(v.years)}`, f2(finalIncome))
-          + out("Total dividends received", f2(total))
-          + lineChart(pts, { fmtY: (y) => UI.big(y), fmtX: (x) => `Year ${x}` });
-      },
-    },
-    {
-      id: "grow", title: "Compound growth",
-      intro: "How regular investing grows over time with compounding, for example in a TFSA, RRSP or 401(k).",
-      inputs: [["start", "Starting amount ($)", 5000], ["monthly", "Added each month ($)", 500], ["rate", "Yearly return (%)", 7], ["years", "Years", 25], ["inflation", "Inflation (%) for today's dollars", 2.5]],
-      calc: (v) => {
-        const months = Math.min(720, Math.max(0, Math.round(v.years * 12))), r = (1 + v.rate / 100) ** (1 / 12) - 1;
-        let bal = v.start;
-        const pts = [[0, bal]];
-        for (let m = 1; m <= months; m++) { bal = bal * (1 + r) + v.monthly; if (m % 12 === 0) pts.push([m / 12, bal]); }
-        const put = v.start + v.monthly * months;
-        const real = bal / (1 + v.inflation / 100) ** (months / 12);
-        return out(`Value after ${months / 12} years`, f2(bal), "lead") + out("You put in", f2(put)) + out("Growth from returns", f2(bal - put), "", "up")
-          + out("In today's dollars", f2(real))
-          + out("Years to double (rule of 72)", v.rate > 0 ? (72 / v.rate).toFixed(1) : "–")
-          + lineChart(pts, { fmtY: (y) => UI.big(y), fmtX: (x) => `Year ${x}` });
       },
     },
     {
@@ -206,29 +165,6 @@
       },
     },
     {
-      id: "opt", title: "Options payoff",
-      intro: "Profit or loss at expiry for a single call or put, and the stock price where it breaks even. One contract is usually 100 shares.",
-      stock: { p: "strike" },
-      inputs: [["kind", "Type", "call", { type: "select", options: [["call", "Call (bet the price rises)"], ["put", "Put (bet the price falls)"]] }],
-        ["side", "Position", "buy", { type: "select", options: [["buy", "Buy (long)"], ["sell", "Sell / write (short)"]] }],
-        ["strike", "Strike price", 100], ["premium", "Premium per share", 4], ["contracts", "Contracts", 1]],
-      calc: (v) => {
-        const mult = v.contracts * 100, sign = v.side === "buy" ? 1 : -1;
-        const pay = (S) => sign * ((v.kind === "call" ? Math.max(0, S - v.strike) : Math.max(0, v.strike - S)) - v.premium) * mult;
-        const be = v.kind === "call" ? v.strike + v.premium : v.strike - v.premium;
-        const lo = Math.max(0, v.strike * 0.6), hi = v.strike * 1.4;
-        const pts = [];
-        for (let i = 0; i <= 80; i++) { const S = lo + (hi - lo) * i / 80; pts.push([S, pay(S)]); }
-        const cost = v.premium * mult;
-        const maxProfit = v.side === "buy" ? (v.kind === "call" ? "Unlimited" : f2((v.strike - v.premium) * mult)) : f2(cost);
-        const maxLoss = v.side === "buy" ? f2(cost) : (v.kind === "call" ? "Unlimited" : f2((v.strike - v.premium) * mult));
-        return out("Break-even stock price", f2(be), "lead") + out(v.side === "buy" ? "Cost (premium paid)" : "Premium received", f2(cost))
-          + out("Most you can make", maxProfit, "", "up") + out("Most you can lose", maxLoss, "", "down")
-          + lineChart(pts, { zero: true, fmtY: (y) => (y >= 0 ? "+" : "−") + UI.big(Math.abs(y)), fmtX: (x) => "$" + x.toFixed(0) })
-          + `<p class="hint">Chart: profit or loss at expiry (up and down) for stock prices from ${f2(lo)} to ${f2(hi)}. Before expiry the option also has time value, so it's worth more than this.</p>`;
-      },
-    },
-    {
       id: "fx", title: "Currency converter",
       intro: "Convert between the currencies of the markets on this site at the last daily exchange rate, for example to compare a Canadian and a US stock.",
       inputs: [["amount", "Amount", 1000], ["from", "From", "USD", { type: "select", options: [] }], ["to", "To", "CAD", { type: "select", options: [] }]],
@@ -263,6 +199,7 @@
   };
 
   let only = store.get("calcTab", "all");
+  if (only !== "all" && !CALCS.some((c) => c.id === only)) only = "all"; // a calculator that has since been removed
   function render() {
     $("calc-tabs").innerHTML = [["all", "All"]].concat(CALCS.map((c) => [c.id, c.title])).map(([id, t]) =>
       `<button class="tab" role="tab" aria-selected="${id === only}" data-id="${id}">${esc(t)}</button>`).join("");

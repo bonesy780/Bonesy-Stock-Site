@@ -214,7 +214,7 @@
           ${UI.star(t, "Watch")}
           <a class="btn small" href="portfolio.html?t=${encodeURIComponent(t)}">Paper trade</a>
           <a class="btn small" href="compare.html?t=${encodeURIComponent(t)},^GSPC">Compare</a>
-          <a class="btn small" href="alerts.html?t=${encodeURIComponent(t)}">Set alert</a>
+          <a class="btn small" href="watchlist.html?alert=${encodeURIComponent(t)}#alerts">Set alert</a>
           <span id="explain-slot"></span>
         </div>
       </div>

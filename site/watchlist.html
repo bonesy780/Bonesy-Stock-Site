@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script>try{var t=localStorage.getItem("theme");if(t&&!matchMedia("(max-width: 640px)").matches)document.documentElement.dataset.theme=t}catch(e){}</script>
 <meta name="theme-color" content="#0e1116" media="(max-width: 640px)">
-<title>Watchlists · TopTicker</title>
+<title>Watchlists & Alerts · TopTicker</title>
 <meta name="description" content="Keep your own lists of stocks to follow, with live prices, day moves, 52-week ranges, valuations and upcoming earnings.">
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <link rel="canonical" href="https://www.topticker.ca/watchlist.html">
@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TopTicker">
-<meta property="og:title" content="Watchlists · TopTicker">
+<meta property="og:title" content="Watchlists & Alerts · TopTicker">
 <meta property="og:description" content="Keep your own lists of stocks to follow, with live prices, day moves, 52-week ranges, valuations and upcoming earnings.">
 <meta property="og:url" content="https://www.topticker.ca/watchlist.html">
 <meta property="og:image" content="https://www.topticker.ca/img/share-stocks.png">
@@ -39,8 +39,8 @@
 
 <main id="main" class="wrap">
   <section class="hero">
-    <h1>Watchlists</h1>
-    <p>Keep lists of the stocks you follow. Tap the ☆ next to any stock on the site, or add one here. Your lists are saved in this browser only.</p>
+    <h1>Watchlists and alerts</h1>
+    <p>Keep lists of the stocks you follow. Tap the ☆ next to any stock on the site, or add one here, and tap 🔔 to set a <a href="#alerts">price alert</a>. Your lists are saved in this browser, or on every device with a free <a href="account.html">account</a>.</p>
   </section>
 
   <div class="list-tabs" id="lists" role="tablist" aria-label="Your watchlists"></div>
@@ -64,12 +64,47 @@
       <p class="hint" id="note-price"></p>
       <label>Your notes <textarea class="field" id="note-text" rows="4" maxlength="500" placeholder="Why you're watching it, what would make you buy or sell…"></textarea></label>
       <label>Target price <input class="field" id="note-target" type="number" min="0" step="any" inputmode="decimal" placeholder="Optional"></label>
-      <p class="hint">Saved in this browser and shown on every list with this stock. Set a <a href="alerts.html">price alert</a> to be told when it gets there.</p>
+      <p class="hint">Saved in this browser and shown on every list with this stock. Set a <a href="#alerts" data-close-note>price alert</a> to be told when it gets there.</p>
       <div class="wl-dlg-btns"><button class="btn" value="cancel" formnovalidate>Cancel</button><button class="btn primary" value="save">Save</button></div>
     </form>
   </dialog>
 
-  <p class="disclaimer"><strong>Not financial advice.</strong> Prices come from Yahoo Finance and can be delayed up to 20 minutes. Valuations, analyst views and earnings dates refresh each weekday after the US close.</p>
+  <section class="wl-alerts" id="alerts">
+    <div class="section-head">
+      <h2>🔔 Price alerts</h2>
+      <p>Get told when a stock reaches your price or moves a lot in a day. Tap 🔔 on any stock in your list, or pick one below. Alerts are checked every minute on any page of this site while it's open, and with push alerts on, every 5 minutes even when it's closed. They're saved in this browser, or on every device you use with a free <a href="account.html">account</a>.</p>
+    </div>
+  <form class="panel alert-form" id="al-form" autocomplete="off">
+    <div class="lookup"><input id="al-sym" class="field" type="search" placeholder="Search a stock…" aria-label="Stock" spellcheck="false"></div>
+    <select class="field" id="al-kind" aria-label="Alert when"></select>
+    <input class="field" id="al-value" type="number" step="any" min="0" inputmode="decimal" placeholder="Price" aria-label="Alert value">
+    <input class="field" id="al-note" type="text" maxlength="80" placeholder="Note (optional), e.g. buy zone" aria-label="Note">
+    <button class="btn primary" id="al-add" type="submit">Add alert</button>
+    <div class="alert-stock" id="al-now"></div>
+  </form>
+
+  <div class="toolbar">
+    <span class="hint" id="al-perm"></span>
+    <span class="spacer"></span>
+    <button class="btn" id="al-notify" hidden>Turn on pop-up notifications</button>
+  </div>
+
+  <section class="panel push-box" id="al-push-box" hidden>
+    <div><h3>Alerts with the site closed</h3>
+      <p class="hint" id="al-push-text">Turn on push alerts and TopTicker checks your alerts every 5 minutes on its own server, then sends a notification to this device even when no page of the site is open.</p></div>
+    <button class="btn primary" id="al-push-btn" type="button">Turn on push alerts</button>
+  </section>
+
+  <div class="subhead"><h3>Active alerts</h3></div>
+  <div class="panel table-wrap" id="al-active"></div>
+
+  <div class="subhead"><h3>Triggered</h3><p>Alerts that have gone off. Each fires once, so add it again to keep watching.</p></div>
+  <div class="panel table-wrap" id="al-fired"></div>
+  <div class="more"><button class="btn" id="al-clear" hidden>Clear triggered alerts</button></div>
+
+  </section>
+
+  <p class="disclaimer"><strong>Not financial advice.</strong> Prices come from Yahoo Finance and can be delayed up to 20 minutes. Valuations, analyst views and earnings dates refresh each weekday after the US close. Without push alerts, alerts only run while a page of this site is open. They use the site's prices, which can be delayed up to 20 minutes or, without the live price service, only update after each close. Don't rely on them for time-critical trades. Your broker's own alerts are more dependable.</p>
 </main>
 
 <footer class="wrap foot">Data: Yahoo Finance via yfinance.</footer>
@@ -77,6 +112,7 @@
 <script src="common.js?v=__V__"></script>
 <script src="live.js?v=__V__"></script>
 <script src="watchlist.js?v=__V__"></script>
+<script src="alerts.js?v=__V__"></script>
 <script src="theme.js?v=__V__" defer></script>
 </body>
 </html>

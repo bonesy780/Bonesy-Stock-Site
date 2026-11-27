@@ -2,33 +2,29 @@
 // number formatting helpers, and the watchlists saved in this browser.
 (function () {
   // [href, label, other file names that count as this page, menu group]
+  // Top-level links first, then three drop-downs. Every screen size shows the same short row; the drop-downs
+  // open as a panel under the menu on phones.
   const PAGES = [
-    ["news.html", "Market News"],
-    ["markets.html", "Markets"],
+    ["today.html", "Today", ["news.html", "brief.html", "recap.html"]],
+    ["markets.html", "Top 10"],
     ["heatmap.html", "Heatmap"],
-    ["aerospace.html", "Aerospace & Defence", null, "Sectors"],
+    ["screener.html", "Screener", ["movers.html", "signals.html"]],
     ["stock.html", "Stock Lookup"],
-    ["watchlist.html", "Watchlists"],
-    ["portfolio.html", "Paper Trading"],
-    ["plan.html", "Invest Plan"],
-    ["screener.html", "Screener"],
-    ["movers.html", "Movers"],
-    ["funds.html", "ETFs & Crypto"],
-    ["brief.html", "Daily Brief", null, "Research"],
-    ["signals.html", "Signals", null, "Research"],
     ["analysts.html", "Analysts", null, "Research"],
+    ["earnings.html", "Earnings & Calendar", ["calendar.html"], "Research"],
     ["dividends.html", "Dividends", null, "Research"],
-    ["earnings.html", "Earnings", null, "Research"],
-    ["calendar.html", "Calendar", null, "Research"],
     ["insiders.html", "Insiders", null, "Research"],
-    ["recap.html", "Weekly Recap", null, "Research"],
+    ["funds.html", "ETFs & Crypto", null, "Research"],
+    ["aerospace.html", "Aerospace & Defence", null, "Research"],
     ["compare.html", "Compare", null, "Tools"],
     ["backtest.html", "Backtest", null, "Tools"],
     ["options.html", "Options", null, "Tools"],
-    ["alerts.html", "Alerts", null, "Tools"],
+    ["plan.html", "Invest Plan", null, "Tools"],
     ["tools.html", "Calculators", null, "Tools"],
-    ["ask.html", "Ask"],
-    ["account.html", "Account"],
+    ["about.html", "About the data", ["ask.html"], "Tools"],
+    ["watchlist.html", "Watchlists & Alerts", ["alerts.html"], "My stuff"],
+    ["portfolio.html", "Paper Trading", null, "My stuff"],
+    ["account.html", "Account", null, "My stuff"],
     ["daily/", "Daily News ↗"],
     ["re/", "Real Estate ↗"],
   ];
@@ -357,7 +353,7 @@
     if (menu) {
       const isHere = ([href, , also]) => href === here || (also || []).includes(here);
       const link = (p) => `<a href="${p[0]}"${isHere(p) ? ' aria-current="page"' : ""}>${esc(p[1])}</a>`;
-      // Wide screens: grouped, with Research and Tools as drop-downs. Narrow screens: one scrolling row.
+      // Grouped, with Research, Tools and My stuff as drop-downs
       const seen = new Set();
       const grouped = PAGES.map((p) => {
         const g = p[3];
@@ -369,11 +365,13 @@
         return `<div class="menu-group"><button type="button" class="menu-btn${on ? " on" : ""}" aria-expanded="false" aria-haspopup="true">${esc(g)}<i aria-hidden="true">▾</i></button>
           <div class="panel menu-pop" hidden>${items.map(link).join("")}</div></div>`;
       }).join("");
-      menu.innerHTML = `<div class="menu-wide">${grouped}</div><div class="menu-flat">${PAGES.map(link).join("")}</div>`;
+      menu.innerHTML = `<div class="menu-wide">${grouped}</div>`;
       const close = (except) => menu.querySelectorAll(".menu-group").forEach((g) => {
         if (g === except) return;
         g.querySelector(".menu-pop").hidden = true; g.querySelector(".menu-btn").setAttribute("aria-expanded", "false");
       });
+      // On phones the menu row scrolls sideways, which would cut a drop-down off, so it opens fixed under the row
+      const narrow = () => matchMedia("(max-width: 900px)").matches;
       menu.addEventListener("click", (e) => {
         const b = e.target.closest(".menu-btn");
         if (!b) return;
@@ -381,12 +379,17 @@
         close(g);
         pop.hidden = !pop.hidden;
         b.setAttribute("aria-expanded", String(!pop.hidden));
-        if (!pop.hidden) pop.querySelector("a").focus();
+        // (the header's blur makes it the frame a fixed panel is placed in, so measure from the header's top)
+        const frame = menu.closest(".top");
+        pop.style.top = narrow() ? Math.round(b.getBoundingClientRect().bottom + 4 - (frame ? frame.getBoundingClientRect().top : 0)) + "px" : "";
+        if (!pop.hidden) pop.querySelector("a").focus({ preventScroll: true });
       });
       document.addEventListener("click", (e) => { if (!e.target.closest(".menu-group")) close(); });
       document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-      const on = menu.querySelector(".menu-flat [aria-current]");
-      if (on && getComputedStyle(menu.querySelector(".menu-flat")).display !== "none") on.scrollIntoView({ block: "nearest", inline: "center" });
+      menu.addEventListener("scroll", () => close(), { passive: true });
+      window.addEventListener("resize", () => close());
+      const on = menu.querySelector("[aria-current], .menu-btn.on");
+      if (on && narrow()) on.scrollIntoView({ block: "nearest", inline: "center" });
     }
     const box = document.getElementById("jump");
     if (box) picker(box, (s) => { location.href = stockUrl(s.t); }, { any: true });

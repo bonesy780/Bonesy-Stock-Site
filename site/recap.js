@@ -12,7 +12,7 @@
   const gen = new Date(R.generated);
   UI.updated(gen);
   const wk = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
-  $("lede").textContent = `The week of ${wk(R.weekOf)} in markets, and an honest check on how the site's past buy and sell ideas have done since they were picked.`;
+  $("recap-lede").textContent = `The week of ${wk(R.weekOf)} in markets, and an honest check on how the site's past buy and sell ideas have done since they were picked.`;
   const out = [];
   const sec = (title, body, cls = "") => out.push(`<section class="panel recap-sec ${cls}"><h2>${title}</h2>${body}</section>`);
   const link = (s) => `<a href="${stockUrl(s.t)}" title="${esc(s.n)}"><b>${esc(s.s || s.t)}</b> <span class="muted">${esc(s.n || "")}</span></a>`;

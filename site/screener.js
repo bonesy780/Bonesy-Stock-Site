@@ -41,6 +41,7 @@
     { k: "rsi", label: "RSI (14)", unit: "", group: "Technicals", help: "Momentum from 0 to 100. Over 70 is often called overbought, under 30 oversold" },
     { k: "vsSma50", label: "vs 50-day avg", unit: "%", group: "Technicals", help: "Price compared with its 50-day average", get: (s) => (s.sma50 ? (s.p / s.sma50 - 1) * 100 : null) },
     { k: "vsSma200", label: "vs 200-day avg", unit: "%", group: "Technicals", help: "Price compared with its 200-day average", get: (s) => (s.sma200 ? (s.p / s.sma200 - 1) * 100 : null) },
+    { k: "gap", label: "Gap at the open", unit: "%", group: "Technicals", help: "Today's open vs the previous close. Gaps usually follow overnight news", get: (s) => (s.o != null && s.pc ? (s.o / s.pc - 1) * 100 : null) },
     { k: "relVol", label: "Relative volume", unit: "x", group: "Technicals", help: "Last session's volume ÷ the 50-day average" },
     { k: "volat", label: "Volatility", unit: "%", group: "Technicals", help: "How much the price swings, as a yearly percent from the last 3 months of daily moves" },
     { k: "beta", label: "Beta", unit: "", group: "Technicals", help: "How much the stock tends to move with the market. 1 = same as the market" },
@@ -57,6 +58,7 @@
   };
 
   const PRESETS = [
+    // Ready-made screens. group: which row of chips it sits in. sort/view: how the results open. signal: a chart signal to match
     { name: "Value", help: "Cheap on earnings and book value, still profitable", f: { pe: [0, 15], pb: [null, 3], margin: [5, null], mcapUsd: [2, null] } },
     { name: "Dividend income", help: "Yield over 3% with a payout the company can afford", f: { divYield: [3, null], payout: [null, 80], mcapUsd: [2, null] } },
     { name: "Growth", help: "Revenue and earnings growing over 15% a year", f: { revGrowth: [15, null], epsGrowth: [15, null], mcapUsd: [2, null] } },
@@ -67,7 +69,50 @@
     { name: "Quality", help: "High return on equity and margins, modest debt", f: { roe: [20, null], margin: [15, null], de: [null, 100] } },
     { name: "Low volatility", help: "Calm stocks that swing less than the market", f: { volat: [null, 20], beta: [null, 0.8], mcapUsd: [10, null] } },
     { name: "Mega caps", help: "Companies worth over $200B", f: { mcapUsd: [200, null] } },
+    // Movers (this used to be its own page)
+    { group: "Movers", name: "Gainers", help: "Up the most today, companies worth $2B or more", f: { d1: [0, null], mcapUsd: [2, null] }, sort: { key: "d1", dir: -1 }, view: "Performance" },
+    { group: "Movers", name: "Losers", help: "Down the most today, companies worth $2B or more", f: { d1: [null, 0], mcapUsd: [2, null] }, sort: { key: "d1", dir: 1 }, view: "Performance" },
+    { group: "Movers", name: "Most active", help: "The most money traded in the last session", f: { dollarVolUsd: [100, null] }, sort: { key: "dollarVolUsd", dir: -1 } },
+    { group: "Movers", name: "Unusual volume", help: "At least 1.5 times the usual volume. Heavy trading often comes with news", f: { relVol: [1.5, null], mcapUsd: [2, null] }, sort: { key: "relVol", dir: -1 }, view: "Technicals" },
+    { group: "Movers", name: "Gap up", help: "Opened 1% or more above the previous close", f: { gap: [1, null], mcapUsd: [2, null] }, sort: { key: "gap", dir: -1 }, view: "Technicals" },
+    { group: "Movers", name: "Gap down", help: "Opened 1% or more below the previous close", f: { gap: [null, -1], mcapUsd: [2, null] }, sort: { key: "gap", dir: 1 }, view: "Technicals" },
+    { group: "Movers", name: "52W highs", help: "Within 1% of the year's high", f: { fromHi: [-1, null], mcapUsd: [2, null] }, sort: { key: "fromHi", dir: -1 }, view: "Technicals" },
+    { group: "Movers", name: "52W lows", help: "Within 1% of the year's low", f: { fromLo: [null, 1], mcapUsd: [2, null] }, sort: { key: "fromLo", dir: 1 }, view: "Technicals" },
+    { group: "Movers", name: "Most shorted", help: "5% or more of the tradable shares sold short. Mostly US stocks", f: { shortFloat: [5, null] }, sort: { key: "shortFloat", dir: -1 }, view: "Analysts" },
+    { group: "Movers", name: "Overbought", help: "RSI over 70: rose fast, pullbacks are common", f: { rsi: [70, null], mcapUsd: [2, null] }, sort: { key: "rsi", dir: -1 }, view: "Technicals" },
+    // Chart signals (this used to be the Signals page). Every signal is also in the "Chart signal" menu
+    { group: "Signals", name: "Golden cross", signal: "goldenCross", f: { mcapUsd: [2, null] } },
+    { group: "Signals", name: "20-day breakout", signal: "high20", f: { mcapUsd: [2, null] } },
+    { group: "Signals", name: "MACD bullish", signal: "macdBull", f: { mcapUsd: [2, null] } },
+    { group: "Signals", name: "Volume surge up", signal: "volUp", f: { mcapUsd: [2, null] } },
+    { group: "Signals", name: "Bollinger squeeze", signal: "squeeze", f: { mcapUsd: [2, null] } },
+    { group: "Signals", name: "Death cross", signal: "deathCross", f: { mcapUsd: [2, null] } },
+    { group: "Signals", name: "20-day breakdown", signal: "low20", f: { mcapUsd: [2, null] } },
+    { group: "Signals", name: "Volume surge down", signal: "volDown", f: { mcapUsd: [2, null] } },
   ];
+  // Chart signals worked out by build_market.py (each stock's "sig" list). tone: up = bullish, down = bearish, flat = either way
+  const SIGNALS = [
+    ["goldenCross", "Golden cross", "up", "The 50-day average crossed above the 200-day average in the last 2 weeks. Seen as the start of a longer uptrend."],
+    ["above200", "Back above 200-day", "up", "The price closed back above its 200-day average in the last 3 days, often read as the long-term trend turning up."],
+    ["above50", "Back above 50-day", "up", "The price closed back above its 50-day average in the last 3 days, a sign the medium-term trend is improving."],
+    ["macdBull", "MACD bullish cross", "up", "The MACD line crossed above its signal line in the last 3 days, meaning upward momentum is building."],
+    ["high20", "20-day breakout", "up", "Closed above every close of the previous 20 sessions. Breakouts to new highs often keep going for a while."],
+    ["volUp", "Volume surge up", "up", "Rose 2% or more on more than twice the usual volume, a sign of strong buying, often on news."],
+    ["rsiRebound", "RSI rebound", "up", "RSI climbed back above 30 after being oversold, which some traders read as selling pressure easing."],
+    ["oversold", "Oversold (RSI under 30)", "flat", "Fell fast enough that RSI is under 30. Oversold stocks sometimes bounce, but a falling stock can keep falling."],
+    ["squeeze", "Bollinger squeeze", "flat", "The Bollinger Bands are the narrowest in 6 months. Quiet stretches like this often come before a big move, in either direction."],
+    ["overbought", "Overbought (RSI over 70)", "flat", "Rose fast enough that RSI is over 70. Strong stocks can stay overbought, but pullbacks are common."],
+    ["deathCross", "Death cross", "down", "The 50-day average crossed below the 200-day average in the last 2 weeks. Seen as the start of a longer downtrend."],
+    ["below200", "Broke below 200-day", "down", "The price closed below its 200-day average in the last 3 days, often read as the long-term trend turning down."],
+    ["below50", "Broke below 50-day", "down", "The price closed below its 50-day average in the last 3 days."],
+    ["macdBear", "MACD bearish cross", "down", "The MACD line crossed below its signal line in the last 3 days, meaning momentum is fading."],
+    ["low20", "20-day breakdown", "down", "Closed below every close of the previous 20 sessions."],
+    ["volDown", "Volume surge down", "down", "Fell 2% or more on more than twice the usual volume, a sign of heavy selling."],
+  ];
+  const SIG = Object.fromEntries(SIGNALS.map((x) => [x[0], x]));
+  for (const p of PRESETS) if (p.signal && !p.help) p.help = SIG[p.signal][3];
+  // A preset is "on" when the filters and the signal match it
+  const presetKey = (x) => JSON.stringify([x.f, x.signal || ""]);
 
   const VIEWS = {
     Overview: ["p", "d1", "mcapUsd", "pe", "divYield", "recMean", "spark"],
@@ -108,7 +153,7 @@
   const labelOf = (k) => k === "spark" ? trendName() : LABELS[k] || (FK[k] ? FK[k].label.replace("Change ", "") : k);
 
   // ---- state: chosen markets, sector, filters { key: [min, max] }, column view and sort
-  const empty = () => ({ markets: [], sector: "", f: {}, view: "Overview", trend: "m1", sort: { key: "mcapUsd", dir: -1 } });
+  const empty = () => ({ markets: [], sector: "", signal: "", f: {}, view: "Overview", trend: "m1", sort: { key: "mcapUsd", dir: -1 } });
   let S = empty();
   try {
     if (location.hash.length > 1) S = { ...S, trend: store.get("screen", {}).trend || "m1", ...JSON.parse(decodeURIComponent(location.hash.slice(1))) };
@@ -125,14 +170,17 @@
     $("trend").disabled = false;
     if (!Object.keys(T).length) $("count").textContent = "Longer trends are not ready yet. They appear after the next data refresh.";
   }
-  const persist = () => { store.set("screen", S); history.replaceState(null, "", "#" + encodeURIComponent(JSON.stringify({ markets: S.markets, sector: S.sector, f: S.f }))); };
+  const persist = () => { store.set("screen", S); history.replaceState(null, "", "#" + encodeURIComponent(JSON.stringify({ markets: S.markets, sector: S.sector, signal: S.signal, f: S.f, sort: S.sort, view: S.view }))); };
 
   // Sectors present in the data
   const sectors = [...new Set(M.stocks.map((s) => s.sector).filter(Boolean))].sort();
   $("sector").innerHTML += sectors.map((x) => `<option>${esc(x)}</option>`).join("");
   const groups = [...new Set(F.map((f) => f.group))];
   $("add").innerHTML += groups.map((g) => `<optgroup label="${esc(g)}">${F.filter((f) => f.group === g).map((f) => `<option value="${f.k}">${esc(f.label)}</option>`).join("")}</optgroup>`).join("");
-  $("presets").innerHTML = PRESETS.map((p, i) => `<button class="chip" data-p="${i}" title="${esc(p.help)}">${esc(p.name)}</button>`).join("");
+  $("signal").innerHTML += [["up", "Bullish"], ["flat", "Either way"], ["down", "Bearish"]].map(([t, l]) =>
+    `<optgroup label="${l}">${SIGNALS.filter((x) => x[2] === t).map((x) => `<option value="${x[0]}">${esc(x[1])}</option>`).join("")}</optgroup>`).join("");
+  $("presets").innerHTML = ["Screens", "Movers", "Signals"].map((g) => `<div class="preset-row"><span class="preset-label">${g}</span>${PRESETS.map((p, i) => [p, i]).filter(([p]) => (p.group || "Screens") === g)
+    .map(([p, i]) => `<button class="chip" data-p="${i}" title="${esc(p.help)}">${esc(p.name)}</button>`).join("")}</div>`).join("");
 
   function savedList() {
     const saved = store.get("savedScreens", []);
@@ -144,6 +192,9 @@
   function renderFilters() {
     $("markets").innerHTML = M.indexes.map((i) => `<button class="chip" aria-pressed="${S.markets.includes(i.id)}" data-m="${i.id}">${esc(i.name.replace(/ \(.*\)/, ""))}</button>`).join("");
     $("sector").value = S.sector;
+    $("signal").value = S.signal || "";
+    $("signal-help").textContent = S.signal && SIG[S.signal] ? SIG[S.signal][3] : "";
+    $("signal-help").hidden = !S.signal;
     const keys = Object.keys(S.f).filter((k) => FK[k]);
     $("filters").innerHTML = keys.length ? keys.map((k) => {
       const f = FK[k], [lo, hi] = S.f[k];
@@ -157,8 +208,7 @@
       </div>`;
     }).join("") : `<p class="hint">No filters yet. Pick a ready-made screen above or add a filter below.</p>`;
     for (const b of $("presets").querySelectorAll(".chip")) {
-      const p = PRESETS[+b.dataset.p];
-      b.setAttribute("aria-pressed", String(JSON.stringify(p.f) === JSON.stringify(S.f)));
+      b.setAttribute("aria-pressed", String(presetKey(PRESETS[+b.dataset.p]) === presetKey(S)));
     }
   }
 
@@ -168,6 +218,7 @@
     rows = M.stocks.filter((s) => {
       if (S.markets.length && !S.markets.some((m) => s.ix.includes(m))) return false;
       if (S.sector && s.sector !== S.sector) return false;
+      if (S.signal && !(s.sig || []).includes(S.signal)) return false;
       for (const [k, [lo, hi]] of active) {
         const v = val(s, FK[k]);
         if (v == null || (lo != null && v < lo) || (hi != null && v > hi)) return false;
@@ -212,7 +263,11 @@
   $("presets").addEventListener("click", (e) => {
     const b = e.target.closest(".chip");
     if (!b) return;
-    S.f = JSON.parse(JSON.stringify(PRESETS[+b.dataset.p].f));
+    const p = PRESETS[+b.dataset.p];
+    S.f = JSON.parse(JSON.stringify(p.f));
+    S.signal = p.signal || "";
+    S.sort = p.sort ? { ...p.sort } : { key: "mcapUsd", dir: -1 };
+    if (p.view) S.view = p.view;
     limit = 50; persist(); render();
   });
   $("markets").addEventListener("click", (e) => {
@@ -224,6 +279,7 @@
     $("markets").querySelector(`[data-m="${m}"]`).focus();
   });
   $("sector").addEventListener("change", () => { S.sector = $("sector").value; limit = 50; persist(); results(); });
+  $("signal").addEventListener("change", () => { S.signal = $("signal").value; limit = 50; persist(); render(); });
   $("add").addEventListener("change", () => {
     const k = $("add").value;
     $("add").value = "";
@@ -244,7 +300,7 @@
     typing = setTimeout(() => { limit = 50; persist(); results(); renderPresetsOnly(); }, 200);
   });
   const renderPresetsOnly = () => {
-    for (const b of $("presets").querySelectorAll(".chip")) b.setAttribute("aria-pressed", String(JSON.stringify(PRESETS[+b.dataset.p].f) === JSON.stringify(S.f)));
+    for (const b of $("presets").querySelectorAll(".chip")) b.setAttribute("aria-pressed", String(presetKey(PRESETS[+b.dataset.p]) === presetKey(S)));
   };
   $("filters").addEventListener("click", (e) => {
     const b = e.target.closest("[data-rm]");
@@ -283,7 +339,7 @@
       box.replaceWith(btn);
       if (ok && name) {
         const saved = store.get("savedScreens", []).filter((x) => x.name !== name);
-        saved.push({ name, markets: S.markets, sector: S.sector, f: S.f });
+        saved.push({ name, markets: S.markets, sector: S.sector, signal: S.signal, f: S.f });
         store.set("savedScreens", saved);
         savedList();
         btn.textContent = "Saved ✓";
@@ -297,7 +353,7 @@
     const x = store.get("savedScreens", [])[+$("saved").value];
     $("saved").value = "";
     if (!x) return;
-    S = { ...S, markets: x.markets || [], sector: x.sector || "", f: x.f || {} };
+    S = { ...S, markets: x.markets || [], sector: x.sector || "", signal: x.signal || "", f: x.f || {} };
     limit = 50; persist(); render();
   });
   $("share").addEventListener("click", async () => {
@@ -319,6 +375,12 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 
-  render();
+  // ?screen=Gainers (or any ready-made screen's name) opens that screen, e.g. from the old Movers and Signals pages
+  const asked = new URLSearchParams(location.search).get("screen");
+  const askedAt = asked ? PRESETS.findIndex((p) => p.name.toLowerCase() === asked.toLowerCase()) : -1;
+  if (askedAt >= 0) {
+    history.replaceState(null, "", location.pathname);
+    $("presets").querySelector(`[data-p="${askedAt}"]`).click();
+  } else render();
   if (S.trend !== "m1") loadTrends().then(results);
 })();

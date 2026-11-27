@@ -3,789 +3,240 @@
   "id": "overview",
   "title": "Where does the site get its data?",
   "page": "markets.html",
-  "keys": [
-   "source",
-   "sources",
-   "yahoo",
-   "yfinance",
-   "provider",
-   "providers",
-   "overall",
-   "general",
-   "everything"
-  ],
-  "answer": "Almost all prices and company facts come from Yahoo Finance, read through yfinance, a free Python library. A GitHub Actions job rebuilds all the data every weekday after the US close (22:30 UTC) and on Sundays at 12:00 UTC, then publishes the site to GitHub Pages. In between, every 15 minutes it refreshes the stock and housing news, and while Asian or North American markets are open it also refreshes prices and the top 10 rankings (the screener, dividends, movers and price history pages stay on the last full rebuild). Index member lists come from Wikipedia, stockanalysis.com, Nikkei's own site and the Yahoo screener. News comes from Yahoo Finance, Google News and each outlet's RSS feed. Live prices during the day come from a small Cloudflare Worker that asks Yahoo for quotes."
+  "answer": "Almost all prices and company facts come from Yahoo Finance, read through yfinance, a free Python library. A GitHub Actions job rebuilds all the data every weekday after the US close (22:30 UTC) and on Sundays at 12:00 UTC, then publishes the site to GitHub Pages. In between, every 15 minutes it refreshes the stock and housing news, and while Asian or North American markets are open it also refreshes prices and the top 10 rankings (the screener, dividends and price history pages stay on the last full rebuild). Index member lists come from Wikipedia, stockanalysis.com, Nikkei's own site and the Yahoo screener. News comes from Yahoo Finance, Google News and each outlet's RSS feed. Live prices during the day come from a small Cloudflare Worker that asks Yahoo for quotes."
  },
  {
   "id": "schedule",
   "title": "When is the data updated?",
   "page": "markets.html",
-  "keys": [
-   "when",
-   "update",
-   "updated",
-   "refresh",
-   "stale",
-   "old",
-   "schedule",
-   "daily",
-   "often",
-   "time",
-   "late",
-   "delay",
-   "delayed"
-  ],
   "answer": "The full build runs every weekday at 22:30 UTC (after the US close) and on Sundays at 12:00 UTC, and again whenever the site's code changes. It takes about an hour. Rankings, screener figures, signals, analyst data and history all come from that build. Prices on the home page and the stock lookup also refresh live while the page is open (every 30 seconds on the home page, every minute on the lookup) through the live price service. Some exchanges reach Yahoo up to 20 minutes late."
  },
  {
   "id": "live",
   "title": "How do live prices work?",
   "page": "stock.html",
-  "keys": [
-   "live",
-   "real",
-   "realtime",
-   "real-time",
-   "intraday",
-   "quote",
-   "quotes",
-   "worker",
-   "cloudflare",
-   "after",
-   "hours",
-   "afterhours",
-   "premarket",
-   "dot"
-  ],
   "answer": "GitHub Pages can only serve files, so a Cloudflare Worker fetches quotes from Yahoo's chart service and caches them for 20 seconds (charts for 60 seconds). The pages ask it for fresh prices while the tab is open. After-hours prices on the lookup chart are the extended-hours trades Yahoo reports after the last regular close; most exchanges outside the US have no after-hours session. If the worker can't be reached, the pages show the prices saved at the last build."
  },
  {
   "id": "members",
   "title": "How do you know which stocks are in each index?",
   "page": "markets.html",
-  "keys": [
-   "index",
-   "member",
-   "members",
-   "constituents",
-   "list",
-   "which",
-   "stocks",
-   "included",
-   "missing",
-   "sp500",
-   "nasdaq",
-   "dow",
-   "tsx",
-   "nikkei",
-   "kospi",
-   "taiwan",
-   "venture",
-   "tsxv",
-   "wikipedia"
-  ],
   "answer": "Each build downloads the current member list for each index: the S&P 500, S&P/TSX Composite and KOSPI 200 from their Wikipedia pages, the Nasdaq-100 and Dow from stockanalysis.com, the Nikkei 225 from Nikkei's own index page, and the TSX Venture as the 250 largest Venture companies by market cap from Yahoo's stock screener (exchange VAN). The Taiwan 50 uses a list saved in the repository. If a download fails, the last saved list in data/constituents/ is used. TSX Venture shares under 10 US cents or under $50M market cap are dropped; on the other markets the floor is $1 a share and $300M."
  },
  {
   "id": "ranking",
   "title": "How are the top 10 stocks ranked?",
   "page": "markets.html",
-  "keys": [
-   "rank",
-   "ranking",
-   "top",
-   "10",
-   "score",
-   "leaders",
-   "best",
-   "order",
-   "weights",
-   "chosen"
-  ],
   "answer": "Each stock gets a score from 0 to 100: 40% from momentum (the average of its percentile ranks on 3-month, 6-month and 12-month returns, where the 12-month return skips the latest month), 30% from the analyst consensus, 15% from market cap (log scale) and 15% from steadiness (lower 3-month volatility), with momentum, size and steadiness ranked within its index. The analyst average is blended with 3 neutral votes, so a rating from one or two analysts counts for less than one from twenty. The 40 strongest by momentum in each index get full analyst data, and the top 10 by score are shown. Stocks that haven't traded for over a week are left out. Penny stocks are excluded: under $1 US (10 cents on the TSX Venture) or under $300M market cap ($50M on the Venture)."
  },
  {
   "id": "ideas",
   "title": "How are buy and sell ideas picked?",
   "page": "markets.html",
-  "keys": [
-   "buy",
-   "sell",
-   "idea",
-   "ideas",
-   "pick",
-   "picks",
-   "recommend",
-   "recommendation",
-   "watch",
-   "week",
-   "watchlist",
-   "coming"
-  ],
   "answer": "Buy ideas are stocks up over 3 months, trading above their 50-day and 200-day averages, rated Buy or better on average (Yahoo's mean rating 2.2 or lower) by at least 5 analysts, with an average price target at least 10% above the price (targets more than 150% above or 70% below the price are treated as bad data and ignored). Earnings in the next two weeks are flagged. Sell ideas are stocks down over 3 months and below their 50-day average that either have a weak rating (2.8 or worse from at least 3 analysts) or trade above their average target (at least 3 analysts). The 'stocks to watch' list picks stocks reporting earnings in the next 7 days, breaking out near a 52-week high, or that moved 10% or more last week. These are automatic rules applied to public data, not recommendations or financial advice."
  },
  {
   "id": "analyst",
   "title": "Where do analyst ratings and price targets come from?",
   "page": "analysts.html",
-  "keys": [
-   "analyst",
-   "analysts",
-   "rating",
-   "ratings",
-   "consensus",
-   "target",
-   "targets",
-   "price target",
-   "strong buy",
-   "hold",
-   "upgrade",
-   "downgrade",
-   "firm",
-   "firms",
-   "who rates"
-  ],
   "answer": "The consensus rating, number of analysts and price targets (mean, high, low and median) are Yahoo Finance's figures, which Yahoo gathers from the brokers that cover each stock. Yahoo gives a mean from 1 (Strong Buy) to 5 (Sell); the site labels 1.5 or lower Strong Buy, up to 2.5 Buy, up to 3.5 Hold, up to 4.5 Underperform, and above that Sell. 'Who rates it' on the stock lookup lists the last 12 months of named firms' upgrades, downgrades and new coverage with their price targets (Yahoo's upgrade and downgrade history), plus how many analysts said Strong Buy to Strong Sell in each of the last 4 months. Yahoo doesn't publish which firms make up the consensus, so that history is the closest public record."
  },
  {
   "id": "52week",
   "title": "How are the 52-week high and low worked out?",
   "page": "stock.html",
-  "keys": [
-   "52",
-   "52-week",
-   "52w",
-   "week",
-   "year",
-   "high",
-   "low",
-   "range",
-   "yearly"
-  ],
   "answer": "They're the highest and lowest prices traded during the day over the last 365 days, from Yahoo's daily high and low, so a sharp dip that recovered the same day still counts. Prices are adjusted for stock splits but not for dividends, so they match what the stock really traded at. On the lookup, the live price can push past them during the day."
  },
  {
   "id": "history",
   "title": "Where does the price chart history come from?",
   "page": "stock.html",
-  "keys": [
-   "chart",
-   "history",
-   "historical",
-   "candles",
-   "daily",
-   "5-minute",
-   "minute",
-   "intraday",
-   "split",
-   "dividend",
-   "adjusted",
-   "close"
-  ],
   "answer": "Each build downloads Yahoo's full daily history for every stock (back to its listing) and 5-minute prices for the last 5 days. Daily prices are kept for the last ~2 years, then thinned to weekly back to 6 years and monthly before that, keeping each stretch's highest and lowest close so peaks survive. Prices are the actual traded closes, adjusted for splits but not dividends. Today's chart and the live price come from the live price service."
  },
  {
   "id": "returns",
   "title": "How are the returns (1M, 1Y, 5Y...) calculated?",
   "page": "stock.html",
-  "keys": [
-   "return",
-   "returns",
-   "performance",
-   "1m",
-   "3m",
-   "6m",
-   "ytd",
-   "1y",
-   "3y",
-   "5y",
-   "10y",
-   "cagr",
-   "annual",
-   "per year",
-   "change"
-  ],
   "answer": "Returns compare the latest close with the close on or just before the start date (for YTD, the last close of the previous year). They are price only: dividends are not added back. For 3 years and longer, the yearly rate is the compound annual growth rate: (end ÷ start) to the power of 1 ÷ years, minus 1."
  },
  {
   "id": "indicators",
   "title": "How are the chart indicators (SMA, RSI, MACD, Bollinger) worked out?",
   "page": "stock.html",
-  "keys": [
-   "indicator",
-   "indicators",
-   "sma",
-   "ema",
-   "moving",
-   "average",
-   "rsi",
-   "macd",
-   "bollinger",
-   "bands",
-   "technical",
-   "volume"
-  ],
   "answer": "Your browser works them out from the saved closing prices: simple moving averages over 20, 50 or 200 bars; exponential averages over 20 or 50; Bollinger Bands at 2 standard deviations around the 20-bar average; RSI over 14 bars with Wilder's smoothing; and MACD as the 12-bar minus the 26-bar exponential average, with a 9-bar signal line. The screener's RSI and 50- and 200-day averages are worked out the same way during the build."
  },
  {
   "id": "signals",
   "title": "How are chart signals detected?",
-  "page": "signals.html",
-  "keys": [
-   "signal",
-   "signals",
-   "golden",
-   "death",
-   "cross",
-   "crossover",
-   "breakout",
-   "breakdown",
-   "squeeze",
-   "surge",
-   "oversold",
-   "overbought",
-   "rebound"
-  ],
+  "page": "screener.html",
   "answer": "The build checks each stock's daily prices. Golden or death cross: the 50-day average crossed the 200-day in the last 10 sessions. Crossing the 50- or 200-day average: the price crossed it in the last 3 sessions. MACD crossover: MACD crossed its signal line in the last 3 sessions. 20-day breakout or breakdown: today's close is above (or below) every close of the previous 20 sessions. Volume surge: volume over twice the 50-day average with a move of 2% or more. Bollinger squeeze: band width at its narrowest in 6 months. RSI under 30 is oversold, over 70 overbought, and a rebound is RSI crossing back above 30."
  },
  {
   "id": "fundamentals",
   "title": "Where do P/E, margins, debt and other financials come from?",
   "page": "stock.html",
-  "keys": [
-   "pe",
-   "p/e",
-   "valuation",
-   "earnings",
-   "eps",
-   "margin",
-   "margins",
-   "revenue",
-   "debt",
-   "cash",
-   "roe",
-   "beta",
-   "book",
-   "peg",
-   "ebitda",
-   "financials",
-   "fundamentals",
-   "profile",
-   "sector",
-   "industry",
-   "employees",
-   "description",
-   "float",
-   "institutions",
-   "insiders"
-  ],
   "answer": "They're Yahoo Finance's company figures (the same summary Yahoo shows on its quote pages), refreshed with each build: valuation (trailing and forward P/E, PEG, price to book and sales, EV/EBITDA), profits and growth, cash, debt and ratios, ownership and short interest, beta, the company profile, sector and industry. Yahoo gets these from company filings through its data providers. A stock with a figure missing on Yahoo shows a dash."
  },
  {
   "id": "mcap",
   "title": "How is market cap worked out, and why is it in US dollars?",
   "page": "screener.html",
-  "keys": [
-   "market",
-   "cap",
-   "mcap",
-   "size",
-   "usd",
-   "currency",
-   "dollars",
-   "convert",
-   "conversion",
-   "fx",
-   "exchange rate",
-   "cad",
-   "yen",
-   "won"
-  ],
   "answer": "Market cap is Yahoo's figure in the stock's own currency. To compare stocks across the eight markets, the site converts it to US dollars at the exchange rate from Yahoo (CAD=X, JPY=X, KRW=X and TWD=X) on the day of the build. Prices are always shown in the stock's own currency."
  },
  {
   "id": "dividends",
   "title": "How are dividend yields and payout safety worked out?",
   "page": "dividends.html",
-  "keys": [
-   "dividend",
-   "dividends",
-   "yield",
-   "payout",
-   "ex-dividend",
-   "exdividend",
-   "income",
-   "safe",
-   "risk",
-   "frequency",
-   "monthly",
-   "quarterly"
-  ],
   "answer": "Payment history comes from Yahoo. How often a company pays is judged from the typical gap between its recent payments, and the yield is the last year's payments divided by today's price. A company with no payment in about 400 days is marked as not paying. The safety rating adds up warning signs: paying out more than it earns or paying while losing money (2 signs each), paying out over 75% of earnings, debt over twice its equity (not counted for banks, real estate and utilities), earnings down more than 20% from a year earlier, a yield over 9%, and shares down more than 30% over the year. Two or more signs is 'At risk', one is 'Watch'."
  },
  {
   "id": "earnings",
   "title": "Where do earnings dates come from?",
   "page": "earnings.html",
-  "keys": [
-   "earnings",
-   "report",
-   "reports",
-   "date",
-   "dates",
-   "calendar",
-   "before open",
-   "after close",
-   "estimated",
-   "confirmed",
-   "quarter",
-   "results"
-  ],
   "answer": "From Yahoo's earnings timestamps for each stock. If Yahoo marks the date as an estimate, or gives a date range instead of one day, the site shows it as estimated. 'Before open', 'During trading' or 'After close' comes from comparing the report time with that exchange's regular hours. Companies sometimes move their dates, so check the company's own announcement before trading on it."
  },
  {
   "id": "movers",
   "title": "How are market movers worked out?",
-  "page": "movers.html",
-  "keys": [
-   "mover",
-   "movers",
-   "gainers",
-   "losers",
-   "active",
-   "unusual",
-   "gap",
-   "gaps",
-   "shorted",
-   "short",
-   "breadth",
-   "advancing",
-   "declining"
-  ],
+  "page": "screener.html",
   "answer": "From the build's daily prices for every stock in the eight indexes. Most active ranks by the value traded (price times volume, in US dollars). Unusual volume is today's volume at least 1.5 times the 50-day average. A gap is the open at least 1% away from the previous close. 52-week highs and lows are stocks within 1% of them. Most shorted uses Yahoo's short interest as a share of the float (5% or more). Oversold and overbought use the 14-day RSI."
  },
  {
   "id": "screener",
   "title": "Where does the screener's data come from?",
   "page": "screener.html",
-  "keys": [
-   "screener",
-   "screen",
-   "filter",
-   "filters",
-   "trend",
-   "column"
-  ],
   "answer": "From market.json, built each run from Yahoo for every stock in the eight indexes: price moves, volume, technicals (RSI, moving averages, volatility), valuation, profits, dividends, analyst views and the next earnings date. The trend column is a 30-point line of closing prices over the period you choose, from the saved price history."
  },
  {
   "id": "heatmap",
   "title": "How is the heatmap built?",
   "page": "heatmap.html",
-  "keys": [
-   "heatmap",
-   "heat",
-   "map",
-   "treemap",
-   "sector",
-   "sectors",
-   "tiles",
-   "color"
-  ],
   "answer": "Each tile is a stock, sized by market cap (or all the same size with the Equal size option) and colored by its price change over the period you pick, grouped by Yahoo's sector for that company. Click a sector name to zoom in, where stocks are grouped by industry. Hovering (or tapping) a tile shows its price, recent moves, a one-month chart and the latest headline about the company, from Yahoo Finance news. The sector grid averages the members' changes for each period, weighted by company size."
  },
  {
   "id": "news",
   "title": "Where does the news come from?",
-  "page": "news.html",
-  "keys": [
-   "news",
-   "headline",
-   "headlines",
-   "story",
-   "stories",
-   "wsj",
-   "bloomberg",
-   "reuters",
-   "cnbc",
-   "ft",
-   "economist",
-   "forbes",
-   "marketwatch",
-   "investing",
-   "rss",
-   "google"
-  ],
+  "page": "today.html#news",
   "answer": "Market news comes from Yahoo Finance's headlines for each index and its biggest companies, topped up with Google News search results, keeping stories from the last 7 days. 'Top stories' takes the 10 newest stories from each of 10 outlets: their own RSS feeds for the Wall Street Journal, Financial Times, Bloomberg, CNBC, MarketWatch, The Economist, Forbes and Investing.com, and Google News limited to the outlet's site for Reuters and Yahoo Finance, which have no public feed. Stories marked 'Subscription' may need a paid account to read."
  },
  {
   "id": "daily-news",
   "title": "Where does the Daily News page get its stories?",
   "page": "daily/",
-  "keys": [
-   "daily",
-   "world",
-   "headlines",
-   "morning",
-   "outlets",
-   "cnn",
-   "espn",
-   "cbc",
-   "province",
-   "state",
-   "genre",
-   "briefing",
-   "big stories",
-   "local"
-  ],
   "answer": "The Daily News page gathers the past 48 hours of headlines every 15 minutes from about 90 outlets' public RSS feeds, including Yahoo, CNBC, Bloomberg, Forbes, Front Office Sports, Benzinga, the BBC, NPR, CBC (with its provincial feeds), Global News and The Globe and Mail. Outlets without a working public feed (CNN, ESPN, The Action Network, Sports Business Journal, AP, Reuters, Politico, CTV, National Post, Toronto Star, TSN) are filled from Google News results limited to their site, searched about once an hour. Local stories for every US state and Canadian province come from Google News searches every two hours, kept only when the headline names the place. Only the headline, a short summary and a picture are shown, linking to the publisher. Genres come from the outlet's section plus words in the headline, and 'Everyone's talking about' groups headlines from three or more outlets that share most of their words."
  },
  {
   "id": "brief",
-  "title": "Who writes the daily brief?",
-  "page": "brief.html",
-  "keys": [
-   "brief",
-   "daily",
-   "summary",
-   "written",
-   "write",
-   "ai"
-  ],
+  "title": "Who writes the brief on the Today page?",
+  "page": "today.html",
   "answer": "Nobody writes it by hand. The page builds the sentences from the latest data each time you open it: how each market did, breadth, the best and worst sectors, big moves, new highs and lows, signals, your watchlist and the week ahead."
  },
  {
   "id": "options",
   "title": "How does the options builder price options?",
   "page": "options.html",
-  "keys": [
-   "option",
-   "options",
-   "call",
-   "put",
-   "premium",
-   "black",
-   "scholes",
-   "greeks",
-   "delta",
-   "volatility",
-   "implied",
-   "strike",
-   "expiry"
-  ],
   "answer": "The site has no live option quotes. It estimates premiums with the Black-Scholes model, using the stock's price, the days to expiry, a volatility and an interest rate you can change. The volatility starts at the stock's own 3-month historical volatility (from the build) and the rate at 4%. The chance of profit assumes the price follows a lognormal distribution at that volatility. Real option prices will differ, so check your broker's quotes."
  },
  {
   "id": "backtest",
   "title": "How does the backtest work?",
   "page": "backtest.html",
-  "keys": [
-   "backtest",
-   "back",
-   "test",
-   "replay",
-   "portfolio",
-   "simulate",
-   "rebalance",
-   "rebalancing"
-  ],
   "answer": "It replays your portfolio on the saved price history for each stock or index, with your starting amount, monthly additions and rebalancing, and compares it with a benchmark index. It uses prices adjusted for splits but not dividends, so it leaves out dividend income and understates returns for high-yield stocks. Fees and taxes aren't included."
  },
  {
   "id": "paper",
   "title": "Where are my watchlists, paper trades and alerts saved?",
   "page": "watchlist.html",
-  "keys": [
-   "watchlist",
-   "watchlists",
-   "paper",
-   "trading",
-   "portfolio",
-   "alerts",
-   "alert",
-   "saved",
-   "save",
-   "stored",
-   "browser",
-   "device",
-   "account",
-   "login",
-   "sync"
-  ],
   "answer": "In your own browser (local storage), so they stay on this device and in this browser only. There are no accounts, and nothing is sent anywhere. Paper trades fill at the site's latest prices. Alerts are checked every minute while any page of the site is open. Clearing your browser's site data erases them, and the watchlist page can download a CSV as a backup. With a free account (Account page) they are also saved on the site's live service under a private account key and kept the same on every device you sign in on; the newest change to each item wins. Push alerts, turned on from the Alerts page, store your active alerts and this browser's push address so the service can check them every 5 minutes and notify you with the site closed."
  },
  {
   "id": "hours",
   "title": "How do the market clocks know when exchanges open?",
   "page": "markets.html",
-  "keys": [
-   "clock",
-   "clocks",
-   "open",
-   "closed",
-   "hours",
-   "countdown",
-   "holiday",
-   "holidays",
-   "session",
-   "timezone"
-  ],
   "answer": "From a fixed table of each exchange's regular trading hours in its own time zone (for example Toronto and New York 9:30 to 16:00 local time). They also know the exchange holidays for New York, Toronto and Tokyo (and New York's early 1 p.m. closes), from each exchange's published calendar. Seoul and Taipei holidays follow the lunar calendar and aren't included, so on those days the KOSPI and Taiwan clocks may say the market is open when it's closed."
  },
  {
   "id": "compare",
   "title": "How does the compare page line stocks up?",
   "page": "compare.html",
-  "keys": [
-   "compare",
-   "comparison",
-   "versus",
-   "vs",
-   "side"
-  ],
   "answer": "It charts each stock or index as a % change from the same start date using the saved price history, so different prices and currencies line up. The figures table uses the same Yahoo data as the screener."
  },
  {
   "id": "accuracy",
   "title": "Why might a number differ from my broker?",
   "page": "markets.html",
-  "keys": [
-   "wrong",
-   "different",
-   "differ",
-   "mismatch",
-   "accurate",
-   "accuracy",
-   "incorrect",
-   "broker",
-   "itrade",
-   "td",
-   "ibkr",
-   "error",
-   "bug"
-  ],
   "answer": "Common reasons: the build runs once a day, so most figures are as of the last close; some exchanges reach Yahoo up to 20 minutes late; past prices are adjusted for splits but not dividends; a broker may use another data provider or count trades from other venues; and market caps are converted to US dollars at the build day's rate. Yahoo's own data can also have gaps or errors. If a number looks wrong, mention it and it can be checked against Yahoo directly."
  },
  {
   "id": "realestate",
   "title": "Where does the real estate data come from?",
   "page": "re/",
-  "keys": [
-   "real",
-   "estate",
-   "housing",
-   "house",
-   "home",
-   "homes",
-   "zillow",
-   "zhvi",
-   "zori",
-   "rent",
-   "rents",
-   "cmhc",
-   "statcan",
-   "shf",
-   "mexico",
-   "canada",
-   "property",
-   "mortgage"
-  ],
   "answer": "The real estate pages use free public statistics. US metro areas: Zillow Research's monthly CSVs (typical home value, rent, homes for sale, new listings, days to pending, price cuts, sale-to-list ratio, market heat and Zillow's 12-month forecast). Canada: Statistics Canada's New Housing Price Index by city (new homes only, because the CREA MLS resale index is licensed) and CMHC's average two-bedroom rent, plus the Bank of Canada's 5-year mortgage rate. Mexico: Sociedad Hipotecaria Federal's quarterly prices by state, entered by hand because SHF only publishes PDF and Excel. FRED supplies US mortgage rates, exchange rates and the BIS house price index for all three countries. The build runs with the stock data."
  },
  {
   "id": "realestate-world",
   "title": "How are the world housing markets ranked?",
   "page": "re/world.html",
-  "keys": [
-   "world",
-   "global",
-   "international",
-   "country",
-   "countries",
-   "bis",
-   "oecd",
-   "investor",
-   "score",
-   "top",
-   "europe",
-   "asia",
-   "abroad",
-   "foreign"
-  ],
   "answer": "The World page covers about 60 countries from the BIS residential property price database: price change before and after inflation, the change in US dollars (what a US-based investor gained, currency moves included), the central bank policy rate and, for about 25 countries, the OECD price-to-income ratio against the country's own long-run average. The investor score (0 to 100) ranks each country against the others on real price momentum (30%), 10-year real growth (20%), value (25%), the change in interest rates over the year (15%) and the currency against the US dollar (10%). Countries whose figures are more than 18 months old are left out unless you tick the box, and countries under sanctions are shown but not scored. Figures are quarterly national statistics, not live prices, and leave out rents, costs, taxes and foreign-buyer rules."
  },
  {
   "id": "realestate-listings",
   "title": "Are the home listings real?",
   "page": "re/listings.html",
-  "keys": [
-   "listing",
-   "listings",
-   "sale",
-   "mls",
-   "realtor",
-   "sample",
-   "fake",
-   "rentcast",
-   "active"
-  ],
   "answer": "Real US listings appear when the repo has a RentCast API key (secret RENTCAST_API_KEY). Its free plan allows 50 requests a month, so 10 big US cities are fetched once a week. Everywhere else, and in the US without a key, the page shows homes marked Sample, made up from each market's typical price to show how the page works. MLS, REALTOR.ca and Mexican portal listings are licensed, so the page links to those sites instead of copying them."
  },
  {
   "id": "realestate-score",
   "title": "How are buyer's and seller's markets worked out?",
   "page": "re/",
-  "keys": [
-   "buyer",
-   "buyers",
-   "seller",
-   "sellers",
-   "score",
-   "balanced",
-   "upper",
-   "hand",
-   "buy",
-   "ideas",
-   "watch"
-  ],
   "answer": "Each US metro gets a score from -100 (buyer's market) to +100 (seller's market): the average of Zillow's heat index, the sale-to-list ratio, the share of listings with a price cut, days to pending, the change in homes for sale on a year ago and the 3-month price trend, each scaled to -1..1. Buy ideas among the 100 biggest metros favour a buyer's market (40%), a good gross rent yield (30%), Zillow's forecast (20%) and prices below their peak (10%). Markets to watch are those whose last 3 months differ most from the past year's pace, or whose supply jumped. These are rules, not advice."
  },
  {
   "id": "macro",
   "title": "Where do the rates, oil, gold, dollar and Bitcoin figures come from?",
   "page": "markets.html",
-  "keys": [
-   "vix",
-   "10-year",
-   "treasury",
-   "yield",
-   "oil",
-   "gold",
-   "dollar",
-   "bitcoin",
-   "macro",
-   "commodities"
-  ],
   "answer": "They come from Yahoo Finance: the VIX (^VIX), the US 10-year Treasury yield (^TNX), WTI crude oil futures (CL=F), gold futures (GC=F), the US dollar index (DX-Y.NYB), the US dollar in Canadian dollars (CAD=X) and Bitcoin (BTC-USD). Daily closes are saved every 15 minutes and, with live prices on, the Markets page and ticker tape refresh them every minute. The 10-year yield's daily move is shown in basis points (hundredths of a percentage point)."
  },
  {
   "id": "funds",
   "title": "Where does the ETFs and Crypto page get its data?",
   "page": "funds.html",
-  "keys": [
-   "etf",
-   "fund",
-   "crypto",
-   "coin",
-   "expense ratio",
-   "fee",
-   "holdings",
-   "bitcoin",
-   "ethereum"
-  ],
   "answer": "About 50 popular US and Canadian ETFs are listed by hand in the build script, grouped by type. Prices and returns are Yahoo Finance daily closes, refreshed every 15 minutes; each fund's fee (expense ratio), yield, size, category and top 10 holdings come from Yahoo's fund profile and refresh after each weekday's US close. The crypto list is the 10 biggest coins by market value from Yahoo's cryptocurrency screener, leaving out stablecoins pegged to the dollar."
  },
  {
   "id": "econ",
   "title": "Where does the economic calendar come from?",
-  "page": "calendar.html",
-  "keys": [
-   "economic",
-   "calendar",
-   "cpi",
-   "inflation",
-   "jobs",
-   "payrolls",
-   "fed",
-   "fomc",
-   "bank of canada",
-   "gdp",
-   "rate decision"
-  ],
+  "page": "earnings.html#cal",
   "answer": "From Nasdaq's public economic calendar, covering the past week and the next two for the US, Canada, Japan, South Korea, Taiwan, the euro zone, Germany, the UK and China. The whole window is fetched every 3 hours and yesterday's and today's releases every 15 minutes, so actual figures appear soon after they come out. 'Market movers' are flagged by name: rate decisions, inflation (CPI, PCE, PPI), jobs, GDP, retail sales and a few big surveys."
  },
  {
   "id": "earnhist",
   "title": "How is the earnings beat or miss worked out?",
   "page": "stock.html",
-  "keys": [
-   "beat",
-   "miss",
-   "surprise",
-   "earnings history",
-   "eps",
-   "reaction"
-  ],
   "answer": "Yahoo Finance's earnings history gives each of the last four quarters' actual earnings per share and the analysts' average estimate beforehand; the surprise is the difference as a percent of the estimate. The reaction day is worked out by the site: the trading day with the highest volume (against the 20 days before) between 10 and 80 days after the quarter ended, which is almost always the day the market reacted to the report. The move is that day's close against the day before."
  },
  {
   "id": "insiders",
   "title": "Where do insider trades come from?",
   "page": "insiders.html",
-  "keys": [
-   "insider",
-   "form 4",
-   "director",
-   "officer",
-   "cluster",
-   "buying",
-   "selling"
-  ],
   "answer": "From the insider transactions Yahoo Finance collects, mostly US companies' SEC Form 4 filings; coverage for Canadian and Asian companies is thin. Each filing's wording sorts it into a buy (open-market purchase), sale, option exercise, share award or gift; company buybacks are left out. The Insiders page ranks the biggest buys and sales of the last 90 days in US dollars, and a cluster buy is two or more different insiders buying the same stock in that time. The 6-month tally is Yahoo's own count."
  },
  {
   "id": "recap",
   "title": "How does the weekly recap track the picks?",
-  "page": "recap.html",
-  "keys": [
-   "recap",
-   "weekly",
-   "picks",
-   "track record",
-   "how did",
-   "performance"
-  ],
+  "page": "today.html#recap",
   "answer": "Once a week, the first full update saves that week's buy ideas, sell ideas and stocks to watch, with their prices and each market's index level, into the site's code repository. The recap then compares each saved price with the latest close, and each pick's index over the same time, for the last 12 weeks. Returns are price changes only, before dividends, fees and taxes."
  },
  {
   "id": "explain",
   "title": "Who writes the Explain this stock summary?",
   "page": "stock.html",
-  "keys": [
-   "explain",
-   "summary",
-   "claude",
-   "ai"
-  ],
   "answer": "Claude, Anthropic's AI model, writes it on request from only the figures the site has saved for that stock: the company profile and financials, the last four quarters of earnings, insider trades and recent analyst rating changes. Each stock's explanation is kept for 12 hours. It's told not to guess numbers or give buy or sell advice, but it can still make mistakes."
  },
  {
   "id": "re-invest",
   "title": "Where do the real estate lending rates, heat map and property type figures come from?",
   "page": "re/",
-  "keys": [
-   "lending",
-   "rates",
-   "mortgage",
-   "ecb",
-   "euribor",
-   "sofr",
-   "prime",
-   "commercial",
-   "cap rate",
-   "vacancy",
-   "reit",
-   "heat map",
-   "heatmap",
-   "investors",
-   "permits",
-   "construction",
-   "office",
-   "industrial",
-   "data center",
-   "hotel",
-   "multifamily"
-  ],
   "answer": "scripts/build_re_invest.py builds re/invest.json in every full run. US rates: the Fed funds target range and SOFR from the New York Fed, prime (top of the Fed range plus 3 points), Freddie Mac's 30- and 15-year fixed mortgage rates and the US Treasury's 5- and 10-year yields. Canada: the Bank of Canada's policy rate, CORRA, posted 1-, 3- and 5-year mortgage rates, its estimated 5-year variable rate, the average rates chartered banks charged on new uninsured variable and 5-year fixed mortgages, new commercial (non-residential) mortgages and business loans, prime and the 5- and 10-year bond yields. Europe: the ECB's deposit and main refinancing rates, €STR, 3-month Euribor, euro area mortgage rates by fixation period and by country, loans to companies over €1 million and the 10-year AAA euro yield from the ECB data portal, plus the Bank of England's Bank Rate and UK 2- and 5-year fixed and standard variable mortgage rates. Each rate shows its change on a year ago. The investor heat map ranks every place on each figure against the others shown (house and commercial prices, rate changes, value, currency, Zillow demand figures for US metros, Statistics Canada building permits by type for Canadian cities) and the interest score averages those ranks. Property type cards show REIT returns and dividend yields from Yahoo Finance, grouped by type and region, alongside cap rates, vacancy and rent growth that are rounded ranges from public CBRE, Cushman & Wakefield, CMHC, STR and NIC reports, kept by hand in data/realestate/asset_classes.json with the period they are from. Construction spending by type is from the Census Bureau and commercial property prices from the BIS."
  }
 ]
