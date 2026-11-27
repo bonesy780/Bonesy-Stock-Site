@@ -1363,3 +1363,33 @@ body::before {
 .brief > .ig { margin: 0; }
 .ig-row { flex-wrap: wrap; }
 @media (max-width: 640px) { .ig-ix { padding: 10px; } .ig-big { font-size: 19px; } }
+
+/* ---- Market News: markets at a glance strip (glance.js) */
+.glance { margin: 0 0 18px; }
+.glance-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.glance-head h2 { margin: 0; font-size: 18px; }
+.glance-head a { color: var(--accent); text-decoration: none; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.glance-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.glance-card { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); text-decoration: none; font-size: 13px; }
+.glance-card.up { border-top-color: var(--up); } .glance-card.down { border-top-color: var(--down); }
+.glance-card .spark { grid-column: 1 / -1; width: 100%; }
+.glance-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) {
+  .glance-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 4px; }
+  .glance-row::-webkit-scrollbar { display: none; }
+  .glance-card { flex: 0 0 140px; scroll-snap-align: start; }
+}
+.table-wrap { position: relative; } /* keeps hidden labels inside a table from widening the page on phones */
+
+/* ---- phones: the header tucks away while scrolling down (common.js), tighter spacing */
+@media (max-width: 640px) {
+  .top { transition: transform .22s ease; will-change: transform; }
+  .top.tuck { transform: translateY(-100%); }
+  .today-jump { margin-top: 4px; }
+  .today-sec { margin-top: 20px; }
+  .brief { gap: 12px; }
+  .brief-sec { padding: 14px; }
+  .glance-card { flex-basis: 160px; }
+  .section-head h2 { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) { .top { transition: none; } }

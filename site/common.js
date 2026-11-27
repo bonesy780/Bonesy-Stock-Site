@@ -6,7 +6,7 @@
   // open as a panel under the menu on phones.
   const PAGES = [
     ["news.html", "News"],
-    ["today.html", "Today", ["brief.html", "recap.html"]],
+    ["today.html", "Today's Charts", ["brief.html", "recap.html"]],
     ["markets.html", "Top 10"],
     ["heatmap.html", "Heatmap"],
     ["screener.html", "Screener", ["movers.html", "signals.html"]],
@@ -391,6 +391,20 @@
       window.addEventListener("resize", () => close());
       const on = menu.querySelector("[aria-current], .menu-btn.on");
       if (on && narrow()) on.scrollIntoView({ block: "nearest", inline: "center" });
+    }
+    // Phones: the header (ticker tape, search, menu and market clocks) slides away while scrolling down the
+    // page and comes back on the first scroll up, so it doesn't take a fifth of a small screen
+    const top = document.querySelector(".top");
+    if (top) {
+      let lastY = scrollY;
+      addEventListener("scroll", () => {
+        const y = scrollY, small = matchMedia("(max-width: 640px)").matches;
+        const busy = top.contains(document.activeElement) && document.activeElement.matches("input") || top.querySelector(".menu-pop:not([hidden])");
+        if (!small || y < 120 || busy) top.classList.remove("tuck");
+        else if (y > lastY + 6) top.classList.add("tuck");
+        else if (y < lastY - 6) top.classList.remove("tuck");
+        lastY = y;
+      }, { passive: true });
     }
     const box = document.getElementById("jump");
     if (box) picker(box, (s) => { location.href = stockUrl(s.t); }, { any: true });
